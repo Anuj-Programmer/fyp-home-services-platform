@@ -7,6 +7,7 @@ import OTPpage from './pages/register/OtpPage.jsx';
 import RegisterInfo from './pages/register/RegisterInfo.jsx';
 import LoginPage from './pages/login/LoginPage.jsx';
 import VerifyLoginOtp from './pages/login/VerifyLoginOtp.jsx';
+import "./App.css";
 
 
 function App() {
@@ -25,6 +26,10 @@ function App() {
          <Route path="/verify-otp-login" element={<VerifyLoginOtp />} />
        </Routes>
      </BrowserRouter>
+     {/* <BrowserRouter>
+     <Test />
+     </BrowserRouter> */}
+     
     </>
   )
 }

@@ -18,7 +18,7 @@ connectDB();
 const app = express();
 
 // Middleware
-app.use(cors()); // You can customize the CORS options here if needed
+app.use(cors()); 
 app.use(morgan('dev'));
 app.use(express.json());
 

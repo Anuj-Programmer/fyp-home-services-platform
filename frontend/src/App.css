@@ -1,8 +1,16 @@
-@import 'tailwindcss/base'; /* only if using preflight/base utilities, optional in v4 */
-@import 'tailwindcss/components';  /* component classes */
-@import 'tailwindcss/utilities';   /* utility classes */
-
-/* Your custom styles */
+/* app.css */
 #root {
   margin: 10px;
+}
+
+:root {
+  --primary-color: #142257;
+}
+
+.txt-color-primary {
+  color: var(--primary-color);
+}
+
+.bg-color-main {
+  background-color: var(--primary-color);
 }

@@ -1,3 +1,16 @@
+/* index.css */
 @import "tailwindcss";
+@import "tailwindcss/utilities";
+
+/* global custom variables */
+:root {
+  --primary-color: #142257;
+}
+
+/* Ensure no browser default gaps so full-bleed sections reach edges */
+html, body {
+  margin: 0;
+  padding: 0;
+}
 
 

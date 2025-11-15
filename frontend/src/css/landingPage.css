@@ -1,0 +1,7 @@
+.HeroBanner {
+    background: linear-gradient(90deg, var(--primary-color) 0%, #1F2E68 50%, #28387A 100%);
+}
+
+.icon-bg {
+    background-color: var(--primary-color);
+}

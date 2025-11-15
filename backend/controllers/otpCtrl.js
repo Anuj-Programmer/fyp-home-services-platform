@@ -119,7 +119,7 @@ const verifyLoginOtp = async (req, res) => {
     if (!record) return res.status(400).json({ message: "Invalid OTP" });
     if (record.expiresAt < new Date()) return res.status(400).json({ message: "OTP expired" });
 
-    // OTP verified → remove OTPs
+
     await OTP.deleteMany({ email });
 
     // Get user
@@ -139,9 +139,37 @@ const verifyLoginOtp = async (req, res) => {
   }
 };
 
+// ------------------- Contact Form -------------------
+const sendContactMessage = async (req, res) => {
+  try {
+    const { name, email, message } = req.body;
+    if (!name || !email || !message) {
+      return res.status(400).json({ message: "Name, email, and message are required" });
+    }
+
+    // Send email to your support/admin
+    await transporter.sendMail({
+      from: `"${name}" <${email}>`, // sender info
+      to: process.env.EMAIL_USER,   // your receiving email
+      subject: "New Contact Form Message",
+      text: message,
+      html: `<p><strong>Name:</strong> ${name}</p>
+             <p><strong>Email:</strong> ${email}</p>
+             <p><strong>Message:</strong><br/>${message}</p>`,
+    });
+
+    res.status(200).json({ message: "Message sent successfully!" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error sending message" });
+  }
+};
+
+
 module.exports = {
   sendOtp,
   verifyOtp,
   sendLoginOtp,
-  verifyLoginOtp
+  verifyLoginOtp,
+  sendContactMessage
 };
