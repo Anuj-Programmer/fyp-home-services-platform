@@ -241,20 +241,24 @@ function LandingPage() {
         </section>
 
         <section className="w-full px-6 lg:px-32 py-20 flex flex-col gap-10">
-          {/* Content Row */}
-          <div className="w-full flex flex-col lg:flex-row justify-between items-start gap-10 text-center lg:text-left">
+          <div className="w-full flex flex-col lg:flex-row justify-between gap-10 text-center lg:text-left items-center lg:items-start">
             {/* Left Title */}
             <h2 className="text-2xl sm:text-4xl lg:text-5xl font-semibold txt-color-primary leading-tight w-full lg:max-w-2xl hidden md:block">
               Effective Service Requires an Expert Service Team
             </h2>
 
             {/* Right Description */}
-            <div className="flex flex-col gap-3 max-w-md">
-              <h4 className="text-xl font-semibold txt-color-primary">
+            <div className="flex flex-col gap-3 max-w-md w-full lg:w-auto">
+              {/* Mobile text */}
+              <h2 className="text-2xl font-semibold txt-color-primary block md:hidden">
+                Our Service Providers
+              </h2>
+
+              <h4 className="text-xl font-semibold txt-color-primary hidden md:block text-center lg:text-left">
                 Expert Team
               </h4>
 
-              <p className="text-base text-stone-500 leading-6">
+              <p className="text-base text-stone-500 leading-6 hidden md:block text-center lg:text-left">
                 We have professional expert service technicians ensuring
                 top-notch cleanliness and hygiene for your space.
               </p>
