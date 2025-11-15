@@ -14,7 +14,7 @@ function App() {
   const [count, setCount] = useState(0)
 
   return (
-    <>
+    <div className='pt-15'>
      <BrowserRouter>
        <Routes>
          <Route path="/" element={<LandingPage />} />
@@ -30,7 +30,7 @@ function App() {
      <Test />
      </BrowserRouter> */}
      
-    </>
+    </div>
   )
 }
 

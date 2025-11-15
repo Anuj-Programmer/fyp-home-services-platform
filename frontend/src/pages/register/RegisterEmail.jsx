@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
+import Navbar from "@/blocks/Navbar";
 
 function RegisterEmail() {
   const [email, setEmail] = useState("");
@@ -52,6 +53,7 @@ function RegisterEmail() {
 
   return (
     <>
+    <Navbar />
     <Toaster position="top-center" reverseOrder={false} />
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6 sm:p-8">

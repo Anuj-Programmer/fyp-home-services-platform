@@ -2,23 +2,25 @@ import React, { useState } from "react";
 import { List, X } from "phosphor-react";
 import { Link } from "react-router-dom";
 import "../css/nav.css";
+import Logo from "../assets/Logo.png"
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <nav className="text-black border-b border-gray-400 ">
+    <nav className="text-black  border-gray-400 bg-gray-100 fixed top-0 left-0 w-full z-50 shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
-          
-          <div className="text-2xl font-bold">HomeCare</div>
+          <Link to="/" className=" Logo">
+            <img className="w-40" src={Logo} alt="HomeCare Logo" />
+          </Link>
 
-         
           <div className="hidden md:flex space-x-4">
-            <button>
-              Become a Technician
-            </button>
-            <Link to="/login" className="px-4 py-2 bg-white-600 rounded-[15px] hover:bg-gray-100 border">
+            <button>Become a Technician</button>
+            <Link
+              to="/login"
+              className="px-4 py-2 bg-white-600 rounded-[15px] hover:bg-gray-50 border"
+            >
               Login
             </Link>
             <Link
@@ -29,7 +31,6 @@ const Navbar = () => {
             </Link>
           </div>
 
-         
           <div className="md:hidden">
             <button
               onClick={() => setIsOpen(!isOpen)}
@@ -41,16 +42,18 @@ const Navbar = () => {
         </div>
       </div>
 
-     
       {isOpen && (
         <div className="md:hidden bg-white-700">
           <div className="px-2 pt-2 pb-3 space-y-1">
-            <button>
+            <button className="block w-full text-left px-4 py-2">
               Become a Technician
             </button>
-            <button className="block w-full text-left px-4 py-2 hover:bg-gray-100 border-b border-gray-400">
+            <Link
+              to="/login"
+              className="block w-full text-left px-4 py-2 hover:bg-gray-100 border-b border-gray-400"
+            >
               Login
-            </button>
+            </Link>
             <Link
               to="/register"
               className="block w-full text-left px-4 py-2 hover:bg-gray-100"
