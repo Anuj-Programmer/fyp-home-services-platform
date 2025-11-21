@@ -23,6 +23,7 @@ import Footer from "@/blocks/Footer";
 import axios from "axios";
 import { toast, Toaster } from "react-hot-toast";
 
+
 function LandingPage() {
   const servicesRef = useRef(null);
 
@@ -65,7 +66,7 @@ function LandingPage() {
     },
     {
       id: 2,
-      name: "Priya Verma",
+      name: "Rachin Verma",
       service: "Plumbing Repair",
       price: "$30/hr",
       rating: 4.6,
@@ -81,11 +82,11 @@ function LandingPage() {
       rating: 4.9,
       verified: true,
       image:
-        "https://images.unsplash.com/photo-1520975922217-3d3d6c6a4f86?auto=format&fit=crop&w=600&q=80",
+        "https://images.unsplash.com/photo-1595152772835-219674b2a8a6?auto=format&fit=crop&w=600&q=80",
     },
     {
       id: 4,
-      name: "Sita Rai",
+      name: "Dib Rai",
       service: "Gardening",
       price: "$20/hr",
       rating: 4.5,
@@ -97,7 +98,7 @@ function LandingPage() {
   return (
     <>
       <Toaster position="top-center" reverseOrder={false} />
-      <Navbar />
+      <Navbar/>
       <div className="">
         <section className="w-full px-6 lg:px-32 py-20 flex flex-col lg:flex-row items-center justify-between gap-12 relative rounded-2xl overflow-hidden">
           {/* Gradient overlay */}
@@ -120,12 +121,12 @@ function LandingPage() {
 
             {/* Buttons */}
             <div className="flex gap-4 mt-6">
-              <button className="bg-color-main text-white px-6 py-3 rounded-md font-semibold">
+              <button className="bg-color-main text-white px-6 py-3 rounded-md font-semibold btn-filled-slide">
                 Become a Professional
               </button>
               <button
                 onClick={scrollToServices}
-                className="border border-color-main text-color-main px-6 py-3 rounded-md font-semibold"
+                className="border border-color-main text-color-main btn-transparent-slide px-6 py-3 rounded-md font-semibold"
               >
                 View All Services
               </button>
@@ -464,7 +465,7 @@ function LandingPage() {
 
               <button
                 type="submit"
-                className="px-6 py-3 bg-color-main text-white rounded-md font-medium hover:bg-blue-900 transition"
+                className="px-6 py-3 bg-color-main text-white rounded-md font-medium btn-filled-slide hover:bg-blue-900 transition"
               >
                 Send Message
               </button>

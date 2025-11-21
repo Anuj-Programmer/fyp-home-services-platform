@@ -16,24 +16,45 @@ const transporter = nodemailer.createTransport({
 // ------------------- 3) Create Profile -------------------
 const createProfile = async (req, res) => {
   try {
-    const { firstName, lastName, email, address } = req.body;
+    const {
+      firstName,
+      lastName,
+      email,
+      address,
+      phone,
+      detailedAddress = {},
+    } = req.body;
 
     if (!firstName || !lastName || !email || !address) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).json({ message: "User already exists" });
+    let user = await User.findOne({ email });
 
-    const newUser = await User.create({
+    if (user) {
+      user.firstName = firstName;
+      user.lastName = lastName;
+      user.address = address;
+      if (phone) user.phone = phone;
+      user.detailedAddress = {
+        ...(user.detailedAddress?.toObject?.() || user.detailedAddress || {}),
+        ...detailedAddress,
+      };
+      await user.save();
+      return res.json({ message: "Profile updated successfully", user });
+    }
+
+    user = await User.create({
       firstName,
       lastName,
       email,
+      phone,
+      detailedAddress,
       isEmailVerified: true,
-      address
+      address,
     });
 
-    res.json({ message: "Profile created successfully", user: newUser });
+    res.json({ message: "Profile created successfully", user });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error creating profile" });
@@ -63,7 +84,7 @@ const registerUser = async (req, res) => {
       isEmailVerified: true, // must be true after OTP verified
       address
     });
-    const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ userId: newUser._id, isAdmin: false }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
     res.status(201).json({ message: "User registered successfully", user: newUser, token});
   } catch (error) {
@@ -72,10 +93,25 @@ const registerUser = async (req, res) => {
   }
 };
 
-module.exports = { registerUser };
-
-
+const updateProfile = async (req, res) => {
+  try {
+    const {
+      firstName,
+      lastName,
+      email,
+      address,
+      phone,
+      detailedAddress,
+    } = req.body;
+    const user = await User.findOneAndUpdate({ email }, { firstName, lastName, address, phone, detailedAddress }, { new: true });
+    res.json({ message: "Profile updated successfully", user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error updating profile" });
+  }
+};
 module.exports = {
   createProfile,
-  registerUser
+  registerUser,
+  updateProfile 
 };

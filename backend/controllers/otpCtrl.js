@@ -124,6 +124,9 @@ const verifyLoginOtp = async (req, res) => {
 
     // Get user
     const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
     // Generate JWT
     const token = jwt.sign(
@@ -131,6 +134,7 @@ const verifyLoginOtp = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "7d" } // 7 days token
     );
+
 
     res.json({ message: "Login successful", token, user });
   } catch (error) {

@@ -32,7 +32,16 @@ const userSchema = new mongoose.Schema({
   isHouseVerified: { type: Boolean, default: false },
 
   // Admin flag
-  isAdmin: { type: Boolean, default: false }
+  isAdmin: { type: Boolean, default: false },
+
+  notification:{
+    type: Array,
+    default: []
+  },
+  seenNotifications:{
+    type: Array,
+    default: []
+  }
 }, { timestamps: true });
 
 // Virtual for full name

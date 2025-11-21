@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import Navbar from "@/blocks/Navbar";
+import Logo from "../../assets/faviconLogo.png";
 
 function RegisterEmail() {
   const [email, setEmail] = useState("");
@@ -55,9 +56,10 @@ function RegisterEmail() {
     <>
     <Navbar />
     <Toaster position="top-center" reverseOrder={false} />
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6 sm:p-8">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
+    <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-4">
+      <div className="w-full max-w-md bg-white rounded-lg  p-6 sm:p-8">
+        <img src={Logo} alt="Logo" className="mx-auto mb-6" />
+        <h2 className="text-2xl font-bold txt-color-primary mb-12 text-center">
           Register with Email
         </h2>
 
@@ -68,8 +70,8 @@ function RegisterEmail() {
         )}
 
         <form onSubmit={handleSendOtp} className="space-y-4">
-          <div>
-            <label className="block text-gray-700 mb-2">Email Address</label>
+          <div className="mb-6">
+            <label className="block text-gray-700 mb-4">Email Address</label>
             <input
               type="email"
               placeholder="Enter your email"
@@ -82,7 +84,7 @@ function RegisterEmail() {
 
           <button
             type="submit"
-            className={`w-full bg-color-main hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition ${
+            className={`w-full bg-color-main hover:txt-color-hover text-white btn-filled-slide font-semibold py-2 px-4 rounded-lg transition ${
               loading ? "opacity-70 cursor-not-allowed" : ""
             }`}
             disabled={loading}
@@ -93,7 +95,7 @@ function RegisterEmail() {
 
         <p className="text-sm text-gray-500 mt-4 text-center">
           Already have an account?{" "}
-          <a href="/login" className="text-blue-500 hover:underline">
+          <a href="/login" className="txt-color-primary hover:underline">
             Log in
           </a>
         </p>

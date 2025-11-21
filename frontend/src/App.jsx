@@ -1,14 +1,18 @@
 import { useState } from 'react'
 import LandingPage from './pages/LandingPage.jsx'
 import HomePage from './pages/HomePage.jsx'
+import AdminPanel from './pages/AdminPanel.jsx'
 import RegisterEmail from './pages/register/RegisterEmail.jsx'
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import OTPpage from './pages/register/OtpPage.jsx';
 import RegisterInfo from './pages/register/RegisterInfo.jsx';
 import LoginPage from './pages/login/LoginPage.jsx';
 import VerifyLoginOtp from './pages/login/VerifyLoginOtp.jsx';
+import ProtectedRoute from './routeprotection/ProtectedRoute.jsx';
 import "./App.css";
-
+import Booking from './pages/Booking.jsx';
+import Profile from './pages/Profile.jsx';
+import Services from './pages/Services.jsx';
 
 function App() {
   const [count, setCount] = useState(0)
@@ -18,12 +22,30 @@ function App() {
      <BrowserRouter>
        <Routes>
          <Route path="/" element={<LandingPage />} />
-         <Route path="/home" element={<HomePage />} />
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute>
+              <HomePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute requireAdmin>
+              <AdminPanel />
+            </ProtectedRoute>
+          }
+        />
          <Route path="/register" element={<RegisterEmail />} />
          <Route path="/verify-otp" element={<OTPpage />} />
          <Route path="/register-details" element={<RegisterInfo />} />
          <Route path="/login" element={<LoginPage />} />
          <Route path="/verify-otp-login" element={<VerifyLoginOtp />} />
+         <Route path="/bookings" element={<ProtectedRoute><Booking /></ProtectedRoute>} />
+         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+         <Route path="/services" element={<ProtectedRoute><Services /></ProtectedRoute>} />
        </Routes>
      </BrowserRouter>
      {/* <BrowserRouter>

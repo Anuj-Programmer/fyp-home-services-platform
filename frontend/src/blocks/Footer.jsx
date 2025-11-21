@@ -1,15 +1,19 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import Cookies from "js-cookie";
 import Logo from "../assets/LogoLight.png"
 
 function Footer() {
+  const token = Cookies.get("token") || localStorage.getItem("token");
+  const isAuthenticated = Boolean(token);
+
   return (
      <footer className="bg-gray-900 text-white py-12">
         <div className="container mx-auto px-6 flex flex-col lg:flex-row justify-between gap-10">
           <div>
             <div className='mb-7'>
-            <Link to="/" >
-            <img src={Logo} alt="ProCleaning Logo" />
+            <Link to={isAuthenticated ? "/home" : "/"} >
+            <img src={Logo} alt="HomeCare Logo" />
             </Link>
           </div>
             <p className="text-gray-400">
@@ -37,7 +41,7 @@ function Footer() {
           </div>
         </div>
         <div className="text-center mt-12 text-gray-500">
-          © 2025 ProCleaning. All rights reserved.
+          © 2025 HomeCare. All rights reserved.
         </div>
       </footer>
   )

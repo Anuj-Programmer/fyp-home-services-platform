@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { toast } from "react-hot-toast";
+import { toast, Toaster } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import Navbar from "@/blocks/Navbar";
 
 function RegisterInfo() {
   const [firstName, setFirstName] = useState("");
@@ -40,14 +41,15 @@ function RegisterInfo() {
         lastName,
         phone,
         address,
-      });
+      },{withCredentials: true});
 
       toast.success(data.message || "Registration completed!");
 
       // Clear localStorage flags after registration
       localStorage.removeItem("email");
       localStorage.removeItem("otpVerified");
-      localStorage.setItem("token", data.token);
+      localStorage.setItem("token", data.token);    
+      // Cookies.set("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
       // Redirect to dashboard or home page
@@ -63,9 +65,12 @@ function RegisterInfo() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6 sm:p-8">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
+    <>
+    <Toaster position="top-center" reverseOrder={false} />
+    <Navbar/>
+    <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-4">
+      <div className="w-full max-w-md bg-white rounded-lg  p-6 sm:p-8">
+        <h2 className="text-2xl font-bold txt-color-primary mb-10 text-center">
           Complete Your Profile
         </h2>
 
@@ -103,7 +108,7 @@ function RegisterInfo() {
             />
           </div>
 
-          <div>
+          <div className="mb-6">
             <label className="block text-gray-700 mb-1">Address</label>
             <input
               type="text"
@@ -116,7 +121,7 @@ function RegisterInfo() {
 
           <button
             type="submit"
-            className={`w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition ${
+            className={`w-full bg-color-main btn-filled-slide text-white font-semibold py-2 px-4 rounded-lg transition ${
               loading ? "opacity-70 cursor-not-allowed" : ""
             }`}
             disabled={loading}
@@ -126,6 +131,7 @@ function RegisterInfo() {
         </form>
       </div>
     </div>
+    </>
   );
 }
 

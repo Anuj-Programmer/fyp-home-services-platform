@@ -3,12 +3,128 @@
 
 :root {
   --primary-color: #142257;
+  --hover-color: #1A2D6F;
 }
 
 .txt-color-primary {
   color: var(--primary-color);
 }
 
+.txt-color-hover {
+  color: var(--hover-color);
+}
+
 .bg-color-main {
   background-color: var(--primary-color);
 }
+
+.bg-color-hover {
+  background-color: var(--hover-color);
+}
+
+.btn-smooth {
+  background-color: #142257;
+  color: white;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+}
+
+.btn-smooth:hover {
+  background-color: transparent;
+  color: #142257;
+  border-color: #142257;
+}
+
+.btn-smooth-outline {
+  background-color: transparent;
+  color: #142257;
+  /* border: 2px solid #142257; */
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+}
+
+.btn-smooth-outline:hover {
+  background-color: #142257;
+  color: white;
+}
+
+.btn-transparent-slide {
+  position: relative;
+  overflow: hidden;
+  /* padding: 12px 28px; */
+  border: 2px solid #142257;
+  background-color: transparent;
+  color: #142257;               /* text blue */
+  /* border-radius: 6px; */
+  cursor: pointer;
+  z-index: 1;
+  transition: color 0.35s ease-in-out;
+}
+
+/* sliding fill layer */
+.btn-transparent-slide::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;                 /* hidden to the left initially */
+  width: 100%;
+  height: 100%;
+  background-color: #142257;   /* fill color */
+  z-index: -1;
+  transition: left 0.5s ease-in-out;
+  /* border-radius: 6px; */
+}
+
+.btn-transparent-slide:hover {
+  color: white;                /* text becomes white */
+}
+
+.btn-transparent-slide:hover::after {
+  left: 0;                     /* slides in to fill button */
+}
+
+
+
+
+
+
+.btn-filled-slide {
+  position: relative;
+  overflow: hidden;
+  /* padding: 12px 28px; */
+  border: 2px solid #142257;
+  background-color: transparent; /* base transparent, pseudo-element does fill */
+  color: white;
+  /* border-radius: 6px; */
+  cursor: pointer;
+  z-index: 1;
+  transition: color 0.35s ease-in-out;
+}
+
+/* sliding fill layer */
+.btn-filled-slide::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #142257;  /* initial filled color */
+  z-index: -1;
+  transform: translateX(0);   /* starts fully covering button */
+  transition: transform 0.5s ease-in-out;
+  /* border-radius: 6px; */
+}
+
+.btn-filled-slide:hover {
+  color: #142257;             /* text changes to blue */
+}
+
+.btn-filled-slide:hover::after {
+  transform: translateX(100%); /* slide out on hover */
+}
+
+
+
+
