@@ -9,6 +9,7 @@ import RegisterInfo from './pages/register/RegisterInfo.jsx';
 import LoginPage from './pages/login/LoginPage.jsx';
 import VerifyLoginOtp from './pages/login/VerifyLoginOtp.jsx';
 import ProtectedRoute from './routeprotection/ProtectedRoute.jsx';
+import PublicRoute from './routeprotection/PublicRoute.jsx';
 import "./App.css";
 import Booking from './pages/Booking.jsx';
 import Profile from './pages/Profile.jsx';
@@ -21,7 +22,14 @@ function App() {
     <div className='pt-15'>
      <BrowserRouter>
        <Routes>
-         <Route path="/" element={<LandingPage />} />
+        <Route
+          path="/"
+          element={
+            <PublicRoute>
+              <LandingPage />
+            </PublicRoute>
+          }
+        />
         <Route
           path="/home"
           element={
@@ -38,11 +46,46 @@ function App() {
             </ProtectedRoute>
           }
         />
-         <Route path="/register" element={<RegisterEmail />} />
-         <Route path="/verify-otp" element={<OTPpage />} />
-         <Route path="/register-details" element={<RegisterInfo />} />
-         <Route path="/login" element={<LoginPage />} />
-         <Route path="/verify-otp-login" element={<VerifyLoginOtp />} />
+        <Route
+          path="/register"
+          element={
+            <PublicRoute>
+              <RegisterEmail />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/verify-otp"
+          element={
+            <PublicRoute>
+              <OTPpage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/register-details"
+          element={
+            <PublicRoute>
+              <RegisterInfo />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <LoginPage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/verify-otp-login"
+          element={
+            <PublicRoute>
+              <VerifyLoginOtp />
+            </PublicRoute>
+          }
+        />
          <Route path="/bookings" element={<ProtectedRoute><Booking /></ProtectedRoute>} />
          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
          <Route path="/services" element={<ProtectedRoute><Services /></ProtectedRoute>} />

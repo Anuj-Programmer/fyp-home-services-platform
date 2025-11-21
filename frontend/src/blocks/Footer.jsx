@@ -7,12 +7,22 @@ function Footer() {
   const token = Cookies.get("token") || localStorage.getItem("token");
   const isAuthenticated = Boolean(token);
 
+  let isAdmin = false;
+  const storedUser = localStorage.getItem("user");
+  if (storedUser) {
+    try {
+      isAdmin = Boolean(JSON.parse(storedUser)?.isAdmin);
+    } catch (error) {
+      console.error("Invalid user data in storage", error);
+    }
+  }
+
   return (
      <footer className="bg-gray-900 text-white py-12">
         <div className="container mx-auto px-6 flex flex-col lg:flex-row justify-between gap-10">
           <div>
             <div className='mb-7'>
-            <Link to={isAuthenticated ? "/home" : "/"} >
+            <Link to={isAdmin ? "/admin" : isAuthenticated ? "/home" : "/"} >
             <img src={Logo} alt="HomeCare Logo" />
             </Link>
           </div>

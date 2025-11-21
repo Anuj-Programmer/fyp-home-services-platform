@@ -16,6 +16,16 @@ const Navbar = () => {
   const token = Cookies.get("token") || localStorage.getItem("token");
   const isAuthenticated = Boolean(token);
 
+  let isAdmin = false;
+  const storedUser = localStorage.getItem("user");
+  if (storedUser) {
+    try {
+      isAdmin = Boolean(JSON.parse(storedUser)?.isAdmin);
+    } catch (error) {
+      console.error("Invalid user data in storage", error);
+    }
+  }
+
   // Hide links only on OTP pages
   const hideNavLinks =
     location.pathname === "/verify-otp" ||
@@ -41,7 +51,7 @@ const Navbar = () => {
           
           {/* Logo */}
           <Link
-            to={isAuthenticated ? "/home" : "/"}
+            to={isAdmin ? "/admin" : isAuthenticated ? "/home" : "/"}
             className="Logo"
             onClick={handleLogoClick}
           >
