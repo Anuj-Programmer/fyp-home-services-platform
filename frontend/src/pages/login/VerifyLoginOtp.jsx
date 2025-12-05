@@ -69,24 +69,30 @@ function VerifyLoginOtp() {
 
     setLoading(true);
     try {
-      const { data } = await axios.post("/api/otp/login/verify", { email, otp});
+      const { data } = await axios.post("/api/otp/login/verify", {
+        email,
+        otp,
+      });
 
       toast.success(data.message || "Login successful!");
-      
-    
 
       localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      // Store user along with role
+      const userWithRole = {
+        ...data.user,
+        role: data.role,
+      };
+      localStorage.setItem("user", JSON.stringify(userWithRole));
       localStorage.setItem("otpVerified", "true");
 
-      const isAdmin = data.user?.isAdmin;
-      const author = isAdmin ? "admin" : "user";
-      localStorage.setItem("author", author);
+      const role = data.role;
 
-      if (isAdmin) {
+      if (role === "admin") {
         navigate("/admin");
+      } else if (role === "technician") {
+        navigate("/technician-dashboard"); // technician dashboard
       } else {
-        navigate("/home");
+        navigate("/home"); // regular user
       }
     } catch (error) {
       console.error(error);
@@ -102,7 +108,7 @@ function VerifyLoginOtp() {
   return (
     <>
       <Toaster position="top-center" reverseOrder={false} />
-      <Navbar/>
+      <Navbar />
       <div className="flex items-center justify-center min-h-[calc(100vh-64px)]  px-4">
         <div className="bg-white rounded-2xl  w-full max-w-md p-8">
           <h2 className="text-2xl font-bold text-center text-gray-800 mb-4">

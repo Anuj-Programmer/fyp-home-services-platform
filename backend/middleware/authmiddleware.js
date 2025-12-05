@@ -1,27 +1,42 @@
 const JWT = require('jsonwebtoken');
 
-module.exports = async (req, res, next) =>{
+module.exports = async (req, res, next) => {
     const token = req.headers.authorization?.split(" ")[1];
     if (!token) {
-      return res.status(401).send({
-        message: "Auth Failed",
-        success: false
-      });
+        return res.status(401).json({
+            success: false,
+            message: "Auth Failed"
+        });
     }
-   try { 
-    JWT.verify(token, process.env.JWT_SECRET, (err, decode) => {
-        if (err) {
-            return res.status(401).send({
-                message:"Auth Failed",
-                success:false
-            })
-        }else{
-            req.body.userId = decode.userId;
-            req.body.isAdmin = decode.isAdmin;
+
+    try {
+        JWT.verify(token, process.env.JWT_SECRET, (err, decode) => {
+            if (err) {
+                return res.status(401).json({
+                    success: false,
+                    message: "Auth Failed"
+                });
+            }
+
+            // For users/admins
+            if (decode.userId) {
+                req.body.userId = decode.userId;
+                req.body.isAdmin = decode.isAdmin || false;
+            }
+
+            // For technicians
+            if (decode.technicianId) {
+                req.body.technicianId = decode.technicianId;
+                req.body.isTechnician = true;
+            }
+
             next();
-        }
-    })
-   } catch (error) {
-    console.log(error);
-   }
-}
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: "Server error"
+        });
+    }
+};

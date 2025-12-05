@@ -1,0 +1,522 @@
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import toast, { Toaster } from "react-hot-toast";
+import Navbar from "@/blocks/Navbar";
+import Footer from "@/blocks/Footer";
+import { uploadToCloudinary } from "@/lib/uploadToCloudinary";
+import "../../css/landingPage.css";
+
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+function TechnicianProfile() {
+  const [user, setUser] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    phone: "",
+    location: "",
+    experienceYears: "",
+    fee: "",
+    photoUrl: "",
+    description: "",
+  });
+
+  const [availability, setAvailability] = useState({
+    Monday: { isAvailable: true, startTime: '09:00', endTime: '17:00' },
+    Tuesday: { isAvailable: true, startTime: '09:00', endTime: '17:00' },
+    Wednesday: { isAvailable: true, startTime: '09:00', endTime: '17:00' },
+    Thursday: { isAvailable: true, startTime: '09:00', endTime: '17:00' },
+    Friday: { isAvailable: true, startTime: '09:00', endTime: '17:00' },
+    Saturday: { isAvailable: false, startTime: '10:00', endTime: '16:00' },
+    Sunday: { isAvailable: false, startTime: '10:00', endTime: '16:00' },
+  });
+
+  const formatMemberSince = (isoDate) => {
+    if (!isoDate) return "—";
+    const date = new Date(isoDate);
+    if (Number.isNaN(date.getTime())) return "—";
+    return date.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const badgeData = [
+    { label: "Completed jobs", value: "-" },
+    { label: "Member since", value: formatMemberSince(user?.createdAt) },
+    { label: "Rating", value: user?.averageRating ? `${user.averageRating}/5` : "—" },
+  ];
+
+  const hydrateFormFromUser = (data) => ({
+    firstName: data?.firstName || "",
+    lastName: data?.lastName || "",
+    phone: data?.phone || "",
+    location: data?.location || "",
+    experienceYears: data?.experienceYears || "",
+    fee: data?.fee || "",
+    photoUrl: data?.photoUrl || "",
+    description: data?.description || "",
+  });
+
+  const hydrateAvailabilityFromUser = (data) => {
+    if (!data?.availability || !Array.isArray(data.availability)) {
+      return {
+        Monday: { isAvailable: true, startTime: '09:00', endTime: '17:00' },
+        Tuesday: { isAvailable: true, startTime: '09:00', endTime: '17:00' },
+        Wednesday: { isAvailable: true, startTime: '09:00', endTime: '17:00' },
+        Thursday: { isAvailable: true, startTime: '09:00', endTime: '17:00' },
+        Friday: { isAvailable: true, startTime: '09:00', endTime: '17:00' },
+        Saturday: { isAvailable: false, startTime: '10:00', endTime: '16:00' },
+        Sunday: { isAvailable: false, startTime: '10:00', endTime: '16:00' },
+      };
+    }
+
+    const result = {};
+    DAYS.forEach(day => {
+      result[day] = { isAvailable: false, startTime: '09:00', endTime: '17:00' };
+    });
+
+    data.availability.forEach(slot => {
+      if (result[slot.day]) {
+        result[slot.day] = {
+          isAvailable: true,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+        };
+      }
+    });
+
+    return result;
+  };
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      const parsed = JSON.parse(storedUser);
+      setUser(parsed);
+      setFormData(hydrateFormFromUser(parsed));
+      setAvailability(hydrateAvailabilityFromUser(parsed));
+    }
+  }, []);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handlePhotoUpload = async (e) => {
+    try {
+      const file = e.target.files[0];
+      if (!file) return;
+      const response = await uploadToCloudinary(file);
+      setFormData((prev) => ({
+        ...prev,
+        photoUrl: response.secure_url,
+      }));
+      toast.success("Photo uploaded successfully");
+    } catch (error) {
+      console.error(error);
+      toast.error("Photo upload failed");
+    }
+  };
+
+  const handleToggleDay = (day) => {
+    setAvailability(prev => ({
+      ...prev,
+      [day]: {
+        ...prev[day],
+        isAvailable: !prev[day].isAvailable
+      }
+    }))
+  };
+
+  const handleTimeChange = (day, type, value) => {
+    setAvailability(prev => ({
+      ...prev,
+      [day]: {
+        ...prev[day],
+        [type]: value
+      }
+    }))
+  };
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+
+    try {
+      const payload = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phone: formData.phone,
+        location: formData.location,
+        experienceYears: parseInt(formData.experienceYears) || 0,
+        fee: parseInt(formData.fee) || 0,
+        photoUrl: formData.photoUrl,
+        description: formData.description,
+        availability: availability,
+      };
+
+      // Include userId in payload so backend can identify the technician
+      if (user?._id) {
+        payload.userId = user._id;
+      }
+
+      const { data } = await axios.put(
+        "/api/technicians/update-technician-profile",
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      toast.success(data.message || "Profile saved successfully");
+      const updatedTechnician = {
+        ...data.technician,
+        role: "technician" // Ensure role is preserved
+      };
+      setUser(updatedTechnician);
+      setFormData(hydrateFormFromUser(updatedTechnician));
+      setAvailability(hydrateAvailabilityFromUser(updatedTechnician));
+      localStorage.setItem("user", JSON.stringify(updatedTechnician));
+    } catch (error) {
+      console.error(error);
+      const errMsg =
+        error.response?.data?.message || "Unable to save profile right now";
+      toast.error(errMsg);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <>
+      <Toaster position="top-center" reverseOrder={false} />
+      <Navbar />
+      <main className="px-4 sm:px-6 lg:px-32 pt-20 sm:pt-24 pb-12 sm:pb-16 min-h-screen bg-stone-50 space-y-8 sm:space-y-12">
+        <section className="flex flex-col lg:flex-row items-start justify-between gap-6 sm:gap-8">
+          <div className="space-y-4">
+            <p className="text-sm font-semibold text-color-main uppercase tracking-wide">
+              Technician Profile
+            </p>
+            <h1 className="text-3xl sm:text-4xl font-bold txt-color-primary">
+              Hi {formData.firstName || "there"}, update your professional details
+            </h1>
+            <p className="text-base text-stone-600 max-w-2xl">
+              Keep your profile current with experience, rates, certifications,
+              and availability to attract more customers and build your reputation.
+            </p>
+          </div>
+
+          <div className="grid gap-2 grid-cols-1 sm:grid-cols-3 w-full lg:w-auto">
+            {badgeData.map((badge) => (
+              <div
+                key={badge.label}
+                className="bg-white rounded-2xl shadow-sm border px-3 sm:px-4 py-2 sm:py-3 text-center"
+              >
+                <p className="text-xs uppercase tracking-wide text-stone-500">
+                  {badge.label}
+                </p>
+                <p className="text-lg font-semibold txt-color-primary">
+                  {badge.value}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="grid gap-6 sm:gap-8 lg:grid-cols-3">
+          <div className="lg:col-span-2 bg-white rounded-3xl shadow-sm border p-4 sm:p-6 space-y-6">
+            <div>
+              <h2 className="text-lg sm:text-xl font-semibold txt-color-primary">
+                Professional information
+              </h2>
+              <p className="text-sm text-stone-500">
+                Update your experience, location, rates, certifications, and availability
+              </p>
+            </div>
+
+            <form onSubmit={handleSaveProfile} className="space-y-8">
+              {/* Basic Information */}
+                <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
+                  <label className="flex flex-col gap-1 text-xs sm:text-sm font-medium text-stone-600">
+                    First name
+                    <input
+                      type="text"
+                      name="firstName"
+                      value={formData.firstName}
+                      onChange={handleInputChange}
+                      className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    required
+                  />
+                </label>
+                  <label className="flex flex-col gap-1 text-xs sm:text-sm font-medium text-stone-600">
+                    Last name
+                    <input
+                      type="text"
+                      name="lastName"
+                      value={formData.lastName}
+                      onChange={handleInputChange}
+                      className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    required
+                  />
+                </label>
+              </div>
+
+              <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
+                <label className="flex flex-col gap-1 text-xs sm:text-sm font-medium text-stone-600">
+                  Phone number
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    placeholder="+977-"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs sm:text-sm font-medium text-stone-600">
+                  Location / Service area
+                  <input
+                    type="text"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleInputChange}
+                    className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    placeholder="e.g. Kathmandu, Bhaktapur"
+                  />
+                </label>
+              </div>
+
+              {/* Professional Details */}
+              <div className="space-y-4 pt-4 border-t">
+                <div>
+                  <h3 className="text-lg font-semibold txt-color-primary">
+                    Professional details
+                  </h3>
+                  <p className="text-sm text-stone-500">
+                    Showcase your expertise and pricing
+                  </p>
+                </div>
+
+                <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
+                  <label className="flex flex-col gap-1 text-xs sm:text-sm font-medium text-stone-600">
+                    Years of experience
+                    <input
+                      type="number"
+                      name="experienceYears"
+                      value={formData.experienceYears}
+                      onChange={handleInputChange}
+                      className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
+                      placeholder="e.g. 5"
+                      min="0"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1 text-xs sm:text-sm font-medium text-stone-600">
+                    Service fee (₹)
+                    <input
+                      type="number"
+                      name="fee"
+                      value={formData.fee}
+                      onChange={handleInputChange}
+                      className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
+                      placeholder="e.g. 500"
+                      min="0"
+                    />
+                  </label>
+                </div>
+
+                <label className="flex flex-col gap-1 text-xs sm:text-sm font-medium text-stone-600">
+                  Profile photo
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
+                  />
+                  {formData.photoUrl && (
+                    <p className="text-xs text-green-600 mt-1">
+                      ✓ Photo uploaded: {formData.photoUrl.substring(0, 50)}...
+                    </p>
+                  )}
+                </label>
+
+                <label className="flex flex-col gap-1 text-xs sm:text-sm font-medium text-stone-600">
+                  About you / Bio
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900 resize-none"
+                    placeholder="Tell customers about your experience, expertise, and what makes you unique..."
+                    rows="4"
+                  />
+                </label>
+              </div>
+
+              {/* Availability Schedule */}
+              <div className="space-y-3 sm:space-y-4 pt-4 border-t">
+                <div>
+                  <h3 className="text-base sm:text-lg font-semibold txt-color-primary">
+                    Your availability
+                  </h3>
+                  <p className="text-sm text-stone-500">
+                    Set your working hours for each day of the week
+                  </p>
+                </div>
+
+                <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {DAYS.map((day) => (
+                    <div
+                      key={day}
+                      className="p-3 sm:p-4 rounded-lg sm:rounded-xl bg-stone-50 border space-y-2 sm:space-y-3"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <h4 className="font-semibold text-xs sm:text-sm text-stone-700">{day}</h4>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleDay(day)}
+                          className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-xs font-medium transition whitespace-nowrap ${
+                            availability[day].isAvailable
+                              ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                        >
+                          {availability[day].isAvailable ? 'Available' : 'Off'}
+                        </button>
+                      </div>
+
+                      {availability[day].isAvailable && (
+                        <div className="space-y-1.5 sm:space-y-2 pt-2 border-t">
+                          <div className="flex gap-1 sm:gap-2 items-center flex-wrap sm:flex-nowrap">
+                            <label className="text-xs font-medium text-stone-600 whitespace-nowrap">
+                              From
+                            </label>
+                            <input
+                              type="time"
+                              value={availability[day].startTime}
+                              onChange={(e) => handleTimeChange(day, 'startTime', e.target.value)}
+                              className="flex-1 px-2 py-1 sm:py-1.5 border rounded text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
+                            />
+                          </div>
+                          <div className="flex gap-1 sm:gap-2 items-center flex-wrap sm:flex-nowrap">
+                            <label className="text-xs font-medium text-stone-600 whitespace-nowrap">
+                              To
+                            </label>
+                            <input
+                              type="time"
+                              value={availability[day].endTime}
+                              onChange={(e) => handleTimeChange(day, 'endTime', e.target.value)}
+                              className="flex-1 px-2 py-1 sm:py-1.5 border rounded text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-3 sm:gap-4">
+                {user && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData(hydrateFormFromUser(user));
+                      setAvailability(hydrateAvailabilityFromUser(user));
+                    }}
+                    className="px-4 py-2 text-xs sm:text-sm font-semibold text-stone-500 hover:text-stone-700 w-full sm:w-auto"
+                  >
+                    Cancel
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  className="px-6 py-2 sm:py-3 bg-color-main text-white rounded-lg sm:rounded-xl font-semibold btn-filled-slide w-full sm:w-auto"
+                  disabled={saving}
+                >
+                  {saving ? "Saving..." : "Save changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div className="space-y-4 sm:space-y-5">
+            <div className="bg-white rounded-3xl shadow-sm border p-5 space-y-3">
+              <h3 className="text-lg font-semibold txt-color-primary">
+                Account health
+              </h3>
+              <p className="text-sm text-stone-500">
+                Keep your account verified to unlock premium features and boost
+                visibility.
+              </p>
+              <div className="flex flex-col gap-3 text-sm">
+                {/* Email verification */}
+                <div className="flex items-center justify-between">
+                  <span>Email verification</span>
+                  <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold">
+                    {user?.isEmailVerified ? "Verified" : "Pending"}
+                  </span>
+                </div>
+
+                {/* Certificate verification */}
+                <div className="flex flex-col gap-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span>Certificate verification</span>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        user?.isVerifiedTechnician
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-amber-100 text-amber-700"
+                      }`}
+                    >
+                      {user?.isVerifiedTechnician ? "Verified" : "Not verified"}
+                    </span>
+                  </div>
+
+                  {!user?.isVerifiedTechnician && (
+                    <p className="text-xs text-stone-500">
+                      Upload a valid certificate to get verified and increase
+                      customer trust.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-3xl shadow-sm border p-4 sm:p-5 space-y-3">
+              <h3 className="text-base sm:text-lg font-semibold txt-color-primary">
+                Service type
+              </h3>
+              <p className="text-sm text-stone-500">
+                Your primary service category
+              </p>
+              <div className="px-4 py-3 bg-stone-50 rounded-xl text-sm font-medium txt-color-primary">
+                {user?.serviceType || "Not specified"}
+              </div>
+            </div>
+
+            <div className="bg-blue-50 rounded-3xl border border-blue-200 p-4 sm:p-5 space-y-3">
+              <h3 className="text-base sm:text-lg font-semibold text-blue-900">
+                💡 Pro tips
+              </h3>
+              <ul className="text-sm text-blue-800 space-y-2">
+                <li>• Set competitive rates to attract more bookings</li>
+                <li>• Update your location for accurate search results</li>
+                <li>• Upload certifications to build customer trust</li>
+                <li>• Keep your availability updated for better visibility</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+      </main>
+      <Footer />
+    </>
+  );
+}
+
+export default TechnicianProfile;

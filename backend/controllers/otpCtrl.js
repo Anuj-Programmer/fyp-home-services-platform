@@ -3,7 +3,10 @@ const jwt = require("jsonwebtoken");
 const router = express.Router();
 const OTP = require("../models/otpModel.js");
 const User = require("../models/userModel.js");
+const Technician = require("../models/technicianModel.js");
 const nodemailer = require("nodemailer");
+const fs = require("fs");
+const path = require("path");
 
 // Validate envs early
 if (!process.env.EMAIL_USER ) {
@@ -36,30 +39,48 @@ const sendOtp = async (req, res) => {
     const { email } = req.body;
     if (!email) return res.status(400).json({ message: "Email is required" });
 
+    // Check User collection
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      // Inform client that user already exists and should login instead
-      return res.status(409).json({ message: "User already exists. Please log in." });
+
+    // Check Technician collection
+    const existingTechnician = await Technician.findOne({ email });
+
+    // If email exists in either collection, block registration
+    if (existingUser || existingTechnician) {
+      return res.status(409).json({
+        message: "Email already registered. Please log in instead."
+      });
     }
 
+    // Generate OTP
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 min
 
     await OTP.create({ email, otp: otpCode, expiresAt });
-    // Send OTP via email
+
+      // ---- Load Template ----
+    const templatePath = path.join(process.cwd(), "templates", "otpTemplate.html");
+    let htmlTemplate = fs.readFileSync(templatePath, "utf8");
+
+    // Replace the {{OTP}} placeholder
+    htmlTemplate = htmlTemplate.replace("{{OTP}}", otpCode);
+
+    // Send OTP email
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
       subject: "Your OTP Code",
-      text: `Your OTP code is ${otpCode}. It will expire in 5 minutes.`
+      html: htmlTemplate
     });
 
     res.json({ message: "OTP sent to your email" });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error sending OTP" });
   }
 };
+
 
 // ------------------- 2) Verify OTP -------------------
 const verifyOtp = async (req, res) => {
@@ -82,64 +103,134 @@ const verifyOtp = async (req, res) => {
 };
 
 // ------------------- Send Login OTP -------------------
+// const sendLoginOtp = async (req, res) => {
+//   try {
+//     const { email } = req.body;
+//     if (!email) return res.status(400).json({ message: "Email is required" });
+
+//     const user = await User.findOne({ email });
+//     if (!user) return res.status(404).json({ message: "User not found" });
+
+//     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+//     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+//     await OTP.create({ email, otp: otpCode, expiresAt });
+
+//     await transporter.sendMail({
+//       from: process.env.EMAIL_USER,
+//       to: email,
+//       subject: "Your Login OTP",
+//       text: `Your OTP code is ${otpCode}. It expires in 5 minutes.`
+//     });
+
+//     res.json({ message: "OTP sent to your email" });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: "Server error sending OTP" });
+//   }
+// };
+
 const sendLoginOtp = async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ message: "Email is required" });
 
-    const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: "User not found" });
+    let user = await User.findOne({ email });
+    let role = "user";
 
+    if (user) {
+      role = user.isAdmin ? "admin" : "user";
+    } else {
+      // Check Technician collection
+      user = await Technician.findOne({ email });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Only allow login if technician is approved
+      if (user.status !== "approved") {
+        return res.status(403).json({
+          message: `Technician account is ${user.status}. Cannot login yet.`,
+        });
+      }
+      role = "technician";
+    }
+
+    // Generate OTP
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
     await OTP.create({ email, otp: otpCode, expiresAt });
 
+      // ---- Load Template ----
+    const templatePath = path.join(process.cwd(), "templates", "otpTemplate.html");
+    let htmlTemplate = fs.readFileSync(templatePath, "utf8");
+
+    // Replace the {{OTP}} placeholder
+    htmlTemplate = htmlTemplate.replace("{{OTP}}", otpCode);
+
+    // Send OTP email
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
-      subject: "Your Login OTP",
-      text: `Your OTP code is ${otpCode}. It expires in 5 minutes.`
+          subject: "Your Login OTP",
+          html: htmlTemplate,
     });
 
-    res.json({ message: "OTP sent to your email" });
+    res.json({ message: "OTP sent to your email", role });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error sending OTP" });
+    res.status(500).json({ message: "Server error sending OTP", error: error.message });
   }
 };
 
-// ------------------- Verify Login OTP & Issue JWT -------------------
+
 const verifyLoginOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
-    if (!email || !otp) return res.status(400).json({ message: "Email and OTP required" });
+    if (!email || !otp)
+      return res.status(400).json({ message: "Email and OTP required" });
 
     const record = await OTP.findOne({ email, otp });
     if (!record) return res.status(400).json({ message: "Invalid OTP" });
-    if (record.expiresAt < new Date()) return res.status(400).json({ message: "OTP expired" });
-
+    if (record.expiresAt < new Date())
+      return res.status(400).json({ message: "OTP expired" });
 
     await OTP.deleteMany({ email });
 
-    // Get user
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    // Check if email belongs to a user/admin first
+    let user = await User.findOne({ email });
+    let role = "user";
+
+    if (user) {
+      role = user.isAdmin ? "admin" : "user";
+    } else {
+      // Check technician collection
+      user = await Technician.findOne({ email });
+      if (user) role = "technician";
     }
 
-    // Generate JWT
-    const token = jwt.sign(
-      { userId: user._id, isAdmin: user.isAdmin },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" } // 7 days token
-    );
+    if (!user) return res.status(404).json({ message: "User not found" });
 
+    // Generate JWT (keep the old middleware-compatible keys)
+    let payload = {};
+    if (role === "admin" || role === "user") payload.userId = user._id;
+    if (role === "admin") payload.isAdmin = true;
+    if (role === "technician") payload.technicianId = user._id;
 
-    res.json({ message: "Login successful", token, user });
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "7d" });
+
+    res.json({
+      message: "Login successful",
+      token,
+      user,
+      role // send role so frontend knows where to redirect
+    });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error verifying OTP" });
+    res
+      .status(500)
+      .json({ message: "Server error verifying OTP", error: error.message });
   }
 };
 

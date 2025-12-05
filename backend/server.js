@@ -6,6 +6,8 @@ const morgan = require('morgan');
 const connectDB = require('./config/db');
 const userRoutes = require("./routes/userRoutes");
 const otpRoutes = require("./routes/otpRoutes");
+const technicianRoutes = require("./routes/technicianRoutes")
+const adminRoutes = require("./routes/adminRoutes")
 const cors = require('cors');
 
 // Load environment variables
@@ -28,6 +30,8 @@ app.get('/', (req, res) => {
 
 app.use("/api/otp", otpRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/technicians", technicianRoutes)
+app.use("/api/admin", adminRoutes)
 
 // Start the server
 const port = process.env.PORT || 8080;

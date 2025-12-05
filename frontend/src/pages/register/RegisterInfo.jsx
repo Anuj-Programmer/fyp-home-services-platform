@@ -18,6 +18,7 @@ function RegisterInfo() {
     // Get email from localStorage
     const storedEmail = localStorage.getItem("email");
     const otpVerified = localStorage.getItem("otpVerified");
+    
 
     if (!storedEmail || !otpVerified) {
       toast.error("You must verify your email first!");
@@ -50,7 +51,13 @@ function RegisterInfo() {
       localStorage.removeItem("otpVerified");
       localStorage.setItem("token", data.token);    
       // Cookies.set("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+        // ⬇️ IMPORTANT: Store role together with user
+    const userWithRole = {
+      ...data.user,
+      role: data.role || "user", // default to "user"
+    };
+
+    localStorage.setItem("user", JSON.stringify(userWithRole));
 
       // Redirect to dashboard or home page
       setTimeout(() => {

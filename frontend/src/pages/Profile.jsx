@@ -11,7 +11,6 @@ function Profile() {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
-    email: "",
     phone: "",
     address: "",
     detailedAddress: {
@@ -30,7 +29,7 @@ function Profile() {
     if (Number.isNaN(date.getTime())) return "—";
     return date.toLocaleString("en-US", {
       month: "short",
-      day:"numeric",
+      day: "numeric",
       year: "numeric",
     });
   };
@@ -44,17 +43,27 @@ function Profile() {
   const hydrateFormFromUser = (data) => ({
     firstName: data?.firstName || "",
     lastName: data?.lastName || "",
-    email: data?.email || "",
     phone: data?.phone || "",
-    address: data?.address || "",
-    detailedAddress: {
-      houseNumber: data?.detailedAddress?.houseNumber || "",
-      street: data?.detailedAddress?.street || "",
-      ward: data?.detailedAddress?.ward || "",
-      district: data?.detailedAddress?.district || "",
-      province: data?.detailedAddress?.province || "",
-      country: data?.detailedAddress?.country || "Nepal",
-    },
+    address: data?.role === "user" ? data?.address || "" : "",
+    detailedAddress:
+      data?.role === "user"
+        ? {
+            houseNumber: data?.detailedAddress?.houseNumber || "",
+            street: data?.detailedAddress?.street || "",
+            ward: data?.detailedAddress?.ward || "",
+            district: data?.detailedAddress?.district || "",
+            province: data?.detailedAddress?.province || "",
+            country: data?.detailedAddress?.country || "Nepal",
+          }
+        : {
+            houseNumber: "",
+            street: "",
+            ward: "",
+            district: "",
+            province: "",
+            country: "Nepal",
+          },
+    role: data?.role || "user",
   });
 
   useEffect(() => {
@@ -65,6 +74,10 @@ function Profile() {
       setFormData(hydrateFormFromUser(parsed));
     }
   }, []);
+
+  // After loading user from localStorage
+  const role = user?.role || "user"; // <-- add here
+  const showDetailedAddress = role === "user"; // <-- add here
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -90,19 +103,32 @@ function Profile() {
       const payload = {
         firstName: formData.firstName,
         lastName: formData.lastName,
-        email: formData.email,
         phone: formData.phone,
-        address: formData.address,
-        detailedAddress: formData.detailedAddress,
       };
 
-        const { data } = await axios.put("/api/users/update-profile", payload, {
+      // Include userId in payload so backend can identify the user
+      if (user?._id) {
+        payload.userId = user._id;
+      }
+
+      if (showDetailedAddress) {
+        payload.address = formData.address;
+        payload.detailedAddress = formData.detailedAddress;
+      }
+
+      // Only send address info for normal users
+      if (user?.role === "user") {
+        payload.address = formData.address;
+        payload.detailedAddress = formData.detailedAddress;
+      }
+
+      const { data } = await axios.put("/api/users/update-profile", payload, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
 
-      toast.success(data.message || "Profile saved successfully");  
+      toast.success(data.message || "Profile saved successfully");
       setUser(data.user);
       localStorage.setItem("user", JSON.stringify(data.user));
     } catch (error) {
@@ -190,17 +216,6 @@ function Profile() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
-                  Email address
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
-                    required
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
                   Phone number
                   <input
                     type="tel"
@@ -213,96 +228,98 @@ function Profile() {
                 </label>
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-semibold txt-color-primary">
-                    Primary service location
-                  </h3>
-                  <p className="text-sm text-stone-500">
-                    Save your default address to speed up bookings
-                  </p>
+              {user && showDetailedAddress && (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-semibold txt-color-primary">
+                      Primary service location
+                    </h3>
+                    <p className="text-sm text-stone-500">
+                      Save your default address to speed up bookings
+                    </p>
+                  </div>
+
+                  <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
+                    Address line
+                    <input
+                      type="text"
+                      name="address"
+                      value={formData.address}
+                      onChange={handleInputChange}
+                      className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
+                      placeholder="e.g. Lazimpat, Kathmandu"
+                      required
+                    />
+                  </label>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
+                      House / apartment
+                      <input
+                        type="text"
+                        name="houseNumber"
+                        value={formData.detailedAddress.houseNumber}
+                        onChange={handleDetailedChange}
+                        className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
+                      Street
+                      <input
+                        type="text"
+                        name="street"
+                        value={formData.detailedAddress.street}
+                        onChange={handleDetailedChange}
+                        className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
+                      Ward
+                      <input
+                        type="text"
+                        name="ward"
+                        value={formData.detailedAddress.ward}
+                        onChange={handleDetailedChange}
+                        className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
+                      District
+                      <input
+                        type="text"
+                        name="district"
+                        value={formData.detailedAddress.district}
+                        onChange={handleDetailedChange}
+                        className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
+                      Province
+                      <input
+                        type="text"
+                        name="province"
+                        value={formData.detailedAddress.province}
+                        onChange={handleDetailedChange}
+                        className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
+                      />
+                    </label>
+                  </div>
+
+                  <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
+                    Country
+                    <input
+                      type="text"
+                      name="country"
+                      value={formData.detailedAddress.country}
+                      onChange={handleDetailedChange}
+                      className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    />
+                  </label>
                 </div>
-
-                <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
-                  Address line
-                  <input
-                    type="text"
-                    name="address"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
-                    placeholder="e.g. Lazimpat, Kathmandu"
-                    required
-                  />
-                </label>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
-                    House / apartment
-                    <input
-                      type="text"
-                      name="houseNumber"
-                      value={formData.detailedAddress.houseNumber}
-                      onChange={handleDetailedChange}
-                      className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
-                    />
-                  </label>
-                  <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
-                    Street
-                    <input
-                      type="text"
-                      name="street"
-                      value={formData.detailedAddress.street}
-                      onChange={handleDetailedChange}
-                      className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
-                    />
-                  </label>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
-                    Ward
-                    <input
-                      type="text"
-                      name="ward"
-                      value={formData.detailedAddress.ward}
-                      onChange={handleDetailedChange}
-                      className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
-                    />
-                  </label>
-                  <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
-                    District
-                    <input
-                      type="text"
-                      name="district"
-                      value={formData.detailedAddress.district}
-                      onChange={handleDetailedChange}
-                      className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
-                    />
-                  </label>
-                  <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
-                    Province
-                    <input
-                      type="text"
-                      name="province"
-                      value={formData.detailedAddress.province}
-                      onChange={handleDetailedChange}
-                      className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
-                    />
-                  </label>
-                </div>
-
-                <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
-                  Country
-                  <input
-                    type="text"
-                    name="country"
-                    value={formData.detailedAddress.country}
-                    onChange={handleDetailedChange}
-                    className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
-                  />
-                </label>
-              </div>
+              )}
 
               <div className="flex items-center justify-end gap-4">
                 {user && (
@@ -335,21 +352,50 @@ function Profile() {
                 rewards.
               </p>
               <div className="flex flex-col gap-3 text-sm">
+                {/* Email verification (always shown) */}
                 <div className="flex items-center justify-between">
                   <span>Email verification</span>
                   <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold">
                     {user?.isEmailVerified ? "Verified" : "Pending"}
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span>House verification</span>
-                  <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold">
-                    {user?.isHouseVerified ? "Submitted" : "Upload proof"}
-                  </span>
-                </div>
-                <button className="text-color-main font-semibold text-left hover:underline">
-                  Upload ownership documents
-                </button>
+
+                {/* Conditional: House verification for users only */}
+                {user?.role === "user" && (
+                  <div className="flex items-center justify-between">
+                    <span>House verification</span>
+                    <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold">
+                      {user?.isHouseVerified ? "Submitted" : "Upload proof"}
+                    </span>
+                  </div>
+                )}
+
+                {/* Conditional: Certificate verification for technicians only */}
+                {user?.role === "technician" && (
+                  <div className="flex flex-col gap-3 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span>Certificate verification</span>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          user?.isVerifiedTechnician
+                            ? "bg-emerald-100 text-emerald-700" // verified
+                            : "bg-amber-100 text-amber-700" // not verified
+                        }`}
+                      >
+                        {user?.isVerifiedTechnician
+                          ? "Verified"
+                          : "Not verified"}
+                      </span>
+                    </div>
+
+                    {/* Upload certificate button only if not verified */}
+                    {!user?.isVerifiedTechnician && (
+                      <button className="text-color-main font-semibold text-left hover:underline">
+                        Upload certificate
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 

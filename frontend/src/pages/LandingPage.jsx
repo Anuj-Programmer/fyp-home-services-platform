@@ -4,6 +4,7 @@ import heroicon from "../assets/HeroIcon.png";
 import qualiticon from "../assets/QualityPageIcon.png";
 import welcomeicon from "../assets/Welcome.png";
 import TechnicianCard from "@/blocks/TechnicianCard";
+import { Link } from "react-router-dom";
 import "../css/landingPage.css";
 import {
   Wrench,
@@ -121,9 +122,9 @@ function LandingPage() {
 
             {/* Buttons */}
             <div className="flex gap-4 mt-6">
-              <button className="bg-color-main text-white px-6 py-3 rounded-md font-semibold btn-filled-slide">
+              <Link to="/register-technician" className="bg-color-main text-white px-6 py-3 rounded-md font-semibold btn-filled-slide">
                 Become a Professional
-              </button>
+              </Link>
               <button
                 onClick={scrollToServices}
                 className="border border-color-main text-color-main btn-transparent-slide px-6 py-3 rounded-md font-semibold"

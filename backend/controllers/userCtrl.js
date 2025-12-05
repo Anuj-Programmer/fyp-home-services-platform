@@ -2,7 +2,7 @@ const OTP = require("../models/otpModel.js");
 const User = require("../models/userModel.js");
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
-
+const Technician = require("../models/technicianModel.js");
 // Configure email transporter
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -81,12 +81,12 @@ const registerUser = async (req, res) => {
       firstName,
       lastName,
       email,
-      isEmailVerified: true, // must be true after OTP verified
+      isEmailVerified: true, 
       address
     });
     const token = jwt.sign({ userId: newUser._id, isAdmin: false }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
-    res.status(201).json({ message: "User registered successfully", user: newUser, token});
+    res.status(201).json({ message: "User registered successfully", user: newUser, token, role:"user" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error during registration" });
@@ -98,20 +98,123 @@ const updateProfile = async (req, res) => {
     const {
       firstName,
       lastName,
-      email,
       address,
       phone,
       detailedAddress,
+      userId,
+      technicianId,
     } = req.body;
-    const user = await User.findOneAndUpdate({ email }, { firstName, lastName, address, phone, detailedAddress }, { new: true });
-    res.json({ message: "Profile updated successfully", user });
+
+    // Get ID from auth middleware
+    const id = userId || technicianId;
+    if (!id) {
+      return res.status(401).json({ message: "Unauthorized: No user ID found" });
+    }
+
+    let user;
+    let role = "user";
+
+    // Try finding in User collection first
+    user = await User.findById(id);
+    
+    // If not found and we have technicianId, search in Technician collection
+    if (!user && technicianId) {
+      user = await Technician.findById(technicianId);
+      if (user) role = "technician";
+    }
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Update common fields for all roles
+    user.firstName = firstName || user.firstName;
+    user.lastName = lastName || user.lastName;
+    user.phone = phone || user.phone;
+
+    // Update address only for normal users (not technicians or admins)
+    if (!user.isAdmin && role === "user") {
+      user.address = address || user.address;
+      if (detailedAddress) {
+        user.detailedAddress = {
+          ...user.detailedAddress,
+          ...detailedAddress,
+        };
+      }
+    }
+
+    await user.save();
+
+    // Return updated user with role included
+    const userObj = user.toObject ? user.toObject() : user;
+    
+    res.json({
+      message: "Profile updated successfully",
+      user: { ...userObj, role: user.isAdmin ? "admin" : role },
+      role: user.isAdmin ? "admin" : role,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error updating profile" });
   }
 };
+
+
+
+const markAllNotification = async (req, res) => {
+  try {
+    const user = await User.findOne({ _id: req.body.userId });
+    const seenNotifications = user.seenNotications;
+    const notification = user.notification;
+    
+    seenNotifications.push(...notification);
+    user.notification = [];
+    user.seenNotifications = seenNotifications;
+
+    const updatedUser = await user.save();
+    
+    res.status(200).send({
+        success: true,
+        message: "All notifications marked as read",
+        data: updatedUser,
+    });
+} catch (error) {
+    console.log(error);
+    res.status(500).send({
+        message: "Error in notification",
+        success: false,
+        error,
+    });
+}
+}
+
+const deleteAllNotifications = async (req, res) => {
+  try {
+      const user = await User.findOne({ _id: req.body.userId });
+      user.notification = [];
+      user.seenNotifications = [];
+      
+      const updatedUser = await user.save();
+      
+      res.status(200).send({
+          success: true,
+          message: "All notifications deleted",
+          data: updatedUser,
+      });
+  } catch (error) {
+      console.log(error);
+      res.status(500).send({
+          message: "Error in notification",
+          success: false,
+          error,
+      });
+  }
+}; 
+
 module.exports = {
   createProfile,
   registerUser,
-  updateProfile 
+  updateProfile,
+  deleteAllNotifications,
+  markAllNotification,
 };
