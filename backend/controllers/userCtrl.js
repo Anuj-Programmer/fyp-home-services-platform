@@ -163,20 +163,47 @@ const updateProfile = async (req, res) => {
 
 const markAllNotification = async (req, res) => {
   try {
-    const user = await User.findOne({ _id: req.body.userId });
-    const seenNotifications = user.seenNotications;
-    const notification = user.notification;
+    const userId = req.body.userId;
     
-    seenNotifications.push(...notification);
-    user.notification = [];
-    user.seenNotifications = seenNotifications;
-
-    const updatedUser = await user.save();
-    
-    res.status(200).send({
+    // Try finding in User collection first
+    let user = await User.findOne({ _id: userId });
+    if (user) {
+      const seenNotifications = user.seenNotications || [];
+      const notification = user.notification || [];
+      seenNotifications.push(...notification);
+      user.notification = [];
+      user.seenNotifications = seenNotifications;
+      const updatedUser = await user.save();
+      const role = updatedUser.isAdmin ? "admin" : "user";
+      const userObj = updatedUser.toObject ? updatedUser.toObject() : updatedUser;
+      return res.status(200).send({
         success: true,
         message: "All notifications marked as read",
-        data: updatedUser,
+        data: { ...userObj, role },
+      });
+    }
+    
+    // If not found in User, try Technician collection
+    let technician = await Technician.findOne({ _id: userId });
+    if (technician) {
+      const seenNotifications = technician.seenNotifications || [];
+      const notification = technician.notification || [];
+      seenNotifications.push(...notification);
+      technician.notification = [];
+      technician.seenNotifications = seenNotifications;
+      const updatedTechnician = await technician.save();
+      const userObj = updatedTechnician.toObject ? updatedTechnician.toObject() : updatedTechnician;
+      return res.status(200).send({
+        success: true,
+        message: "All notifications marked as read",
+        data: { ...userObj, role: "technician" },
+      });
+    }
+    
+    // User not found in either collection
+    return res.status(404).send({
+        success: false,
+        message: "User not found",
     });
 } catch (error) {
     console.log(error);
@@ -190,16 +217,41 @@ const markAllNotification = async (req, res) => {
 
 const deleteAllNotifications = async (req, res) => {
   try {
-      const user = await User.findOne({ _id: req.body.userId });
-      user.notification = [];
-      user.seenNotifications = [];
+      const userId = req.body.userId;
       
-      const updatedUser = await user.save();
-      
-      res.status(200).send({
+      // Try finding in User collection first
+      let user = await User.findOne({ _id: userId });
+        if (user) {
+          user.notification = [];
+          user.seenNotifications = [];
+          const updatedUser = await user.save();
+          const role = updatedUser.isAdmin ? "admin" : "user";
+          const userObj = updatedUser.toObject ? updatedUser.toObject() : updatedUser;
+          return res.status(200).send({
           success: true,
           message: "All notifications deleted",
-          data: updatedUser,
+          data: { ...userObj, role },
+          });
+        }
+      
+      // If not found in User, try Technician collection
+      let technician = await Technician.findOne({ _id: userId });
+        if (technician) {
+          technician.notification = [];
+          technician.seenNotifications = [];
+          const updatedTechnician = await technician.save();
+          const userObj = updatedTechnician.toObject ? updatedTechnician.toObject() : updatedTechnician;
+          return res.status(200).send({
+          success: true,
+          message: "All notifications deleted",
+          data: { ...userObj, role: "technician" },
+          });
+        }
+      
+      // User not found in either collection
+      return res.status(404).send({
+          success: false,
+          message: "User not found",
       });
   } catch (error) {
       console.log(error);
@@ -211,10 +263,62 @@ const deleteAllNotifications = async (req, res) => {
   }
 }; 
 
+const getCurrentUser = async (req, res) => {
+  try {
+    const userId = req.body.userId || req.body.technicianId;
+    const isTechnician = req.body.isTechnician || false;
+
+    if (!userId) return res.status(401).json({ message: "Unauthorized: No user ID found" });
+
+    let user;
+    let role = "user";
+
+    if (isTechnician) {
+      // Try Technician collection first
+      user = await Technician.findById(userId);
+      //console.log("Technician fetched:", user);
+      if (user) role = "technician";
+      else {
+        // Fallback to User collection if not found in Technician
+        user = await User.findById(userId);
+        //console.log("User fetched:", user);
+        if (user?.isAdmin) role = "admin";
+      }
+    } else {
+      // Regular user/admin
+      user = await User.findById(userId);
+      //console.log("User fetched:", user);
+      if (user?.isAdmin) role = "admin";
+      else {
+        // Fallback to Technician collection if not found in User
+        user = await Technician.findById(userId);
+        if (user) role = "technician";
+      }
+    }
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const userObj = user?.toObject ? user.toObject() : user;
+
+    // Return user info with safe role
+    res.json({ 
+      ...userObj, 
+      role: role 
+    });
+
+  } catch (error) {
+    console.error("Error in getCurrentUser:", error);
+    res.status(500).json({ message: "Server error fetching user" });
+  }
+};
+
+
+
 module.exports = {
   createProfile,
   registerUser,
   updateProfile,
   deleteAllNotifications,
   markAllNotification,
+  getCurrentUser
 };

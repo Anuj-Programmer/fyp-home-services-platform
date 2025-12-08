@@ -25,6 +25,8 @@ function TechnicianRegisterInfo() {
     certificateUrl: "",
   });
   const [loading, setLoading] = useState(false);
+  const [uploadingIdentity, setUploadingIdentity] = useState(false);
+  const [uploadingCertificate, setUploadingCertificate] = useState(false);
   const [email, setEmail] = useState("");
   const navigate = useNavigate();
 
@@ -48,6 +50,13 @@ function TechnicianRegisterInfo() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Check if any upload is in progress
+    if (uploadingIdentity || uploadingCertificate) {
+      toast.error("Please wait for all uploads to complete before submitting.");
+      return;
+    }
+
     const {
       firstName,
       lastName,
@@ -59,11 +68,11 @@ function TechnicianRegisterInfo() {
     } = formData;
 
     if (
-      !firstName ||
-      !lastName ||
-      !phone ||
+      !firstName.trim() ||
+      !lastName.trim() ||
+      !phone.trim ||
       !identityDocumentUrl ||
-      !experienceYears ||
+      !experienceYears === "" ||
       !serviceType
     ) {
       return toast.error("Please fill in all required fields");
@@ -106,6 +115,8 @@ function TechnicianRegisterInfo() {
     try {
       const file = e.target.files[0];
       if (!file) return;
+      
+      setUploadingIdentity(true);
       const response = await uploadToCloudinary(file);
       setFormData((prev) => ({
         ...prev,
@@ -115,6 +126,8 @@ function TechnicianRegisterInfo() {
     } catch (error) {
       console.error(error);
       toast.error("Identity document upload failed");
+    } finally {
+      setUploadingIdentity(false);
     }
   };
 
@@ -122,12 +135,16 @@ function TechnicianRegisterInfo() {
     try {
       const file = e.target.files[0];
       if (!file) return;
+      
+      setUploadingCertificate(true);
       const response = await uploadToCloudinary(file);
       setFormData((prev) => ({ ...prev, certificateUrl: response.secure_url }));
       toast.success("Certificate uploaded successfully");
     } catch (error) {
       console.error(error);
       toast.error("Certificate upload failed");
+    } finally {
+      setUploadingCertificate(false);
     }
   };
 
@@ -213,7 +230,7 @@ function TechnicianRegisterInfo() {
               />
               {formData.identityDocumentUrl && (
                 <p className="text-sm text-green-600 mt-1">
-                  Uploaded: {formData.identityDocumentUrl}
+                  Uploaded: Document
                 </p>
               )}
             </div>
@@ -230,7 +247,7 @@ function TechnicianRegisterInfo() {
               />
               {formData.certificateUrl && (
                 <p className="text-sm text-green-600 mt-1">
-                  Uploaded: {formData.certificateUrl}
+                  Uploaded: Certificate
                 </p>
               )}
             </div>
@@ -238,11 +255,15 @@ function TechnicianRegisterInfo() {
             <button
               type="submit"
               className={`w-full bg-color-main hover:txt-color-hover text-white btn-filled-slide font-semibold py-2 px-4 rounded-lg transition ${
-                loading ? "opacity-70 cursor-not-allowed" : ""
+                loading || uploadingIdentity || uploadingCertificate ? "opacity-70 cursor-not-allowed" : ""
               }`}
-              disabled={loading}
+              disabled={loading || uploadingIdentity || uploadingCertificate}
             >
-              {loading ? "Submitting..." : "Submit Application"}
+              {uploadingIdentity || uploadingCertificate
+                ? "Uploading…"
+                : loading
+                ? "Submitting..."
+                : "Submit Application"}
             </button>
           </form>
         </div>

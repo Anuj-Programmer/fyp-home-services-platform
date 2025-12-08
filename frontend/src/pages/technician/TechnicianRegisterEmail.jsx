@@ -50,7 +50,7 @@ function TechnicianRegisterEmail() {
     <>
       <Navbar />
       <Toaster position="top-center" reverseOrder={false} />
-      <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-4">
+      <div className="lg:min-h-[calc(100vh-64px)] flex items-center justify-center px-4 mt-16 lg:mt-0">
         <div className="w-full max-w-md bg-white rounded-lg p-6 sm:p-8">
           <img src={Logo} alt="Logo" className="mx-auto mb-6" />
           <h2 className="text-2xl font-bold txt-color-primary mb-12 text-center">

@@ -51,14 +51,14 @@ function LoginPage() {
     <>
       <Toaster position="top-center" reverseOrder={false} />
       <Navbar/>
-      <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-4">
-        <div className="w-full max-w-md bg-white rounded-lg p-6 sm:p-8">
+      <div className="lg:min-h-[calc(100vh-64px)] flex items-center justify-center px-4 py-8 sm:py-0 mt-16 lg:mt-0">
+        <div className="w-full max-w-md bg-white rounded-lg p-6 sm:p-8 ">
           <img src={Logo} alt="Logo" className="mx-auto mb-6" />
           <h2 className="text-2xl font-bold txt-color-primary mb-12 text-center">
             Login with Email
           </h2>
 
-          {message && (
+          {message && ( 
             <div className="bg-blue-100 text-blue-700 p-2 rounded mb-4 text-center">
               {message}
             </div>

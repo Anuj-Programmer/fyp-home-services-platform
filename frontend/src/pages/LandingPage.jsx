@@ -121,13 +121,13 @@ function LandingPage() {
             </p>
 
             {/* Buttons */}
-            <div className="flex gap-4 mt-6">
-              <Link to="/register-technician" className="bg-color-main text-white px-6 py-3 rounded-md font-semibold btn-filled-slide">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-6">
+              <Link to="/register-technician" className="bg-color-main text-white px-4 sm:px-6 py-2 sm:py-3 rounded-md text-sm sm:text-base font-semibold btn-filled-slide text-center sm:text-left">
                 Become a Professional
               </Link>
               <button
                 onClick={scrollToServices}
-                className="border border-color-main text-color-main btn-transparent-slide px-6 py-3 rounded-md font-semibold"
+                className="border border-color-main text-color-main btn-transparent-slide px-4 sm:px-6 py-2 sm:py-3 rounded-md text-sm sm:text-base font-semibold text-center sm:text-left"
               >
                 View All Services
               </button>

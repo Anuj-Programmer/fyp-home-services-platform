@@ -89,7 +89,7 @@ function TechnicianOtpPage() {
     <>
       <Toaster position="top-center" reverseOrder={false} />
       <Navbar />
-      <div className="flex items-center justify-center min-h-[calc(100vh-64px)] px-4">
+      <div className="flex items-center justify-center lg:min-h-[calc(100vh-64px)] px-4 mt-16 lg:mt-0">
         <div className="bg-white rounded-2xl w-full max-w-md p-8">
           <h2 className="text-2xl font-bold text-center text-gray-800 mb-4">
             Verify Technician OTP

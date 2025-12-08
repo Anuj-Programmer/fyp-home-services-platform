@@ -72,7 +72,7 @@
   height: 100%;
   background-color: #142257;   /* fill color */
   z-index: -1;
-  transition: left 0.5s ease-in-out;
+  transition: left 0.3s ease-in-out;
   /* border-radius: 6px; */
 }
 
@@ -82,6 +82,17 @@
 
 .btn-transparent-slide:hover::after {
   left: 0;                     /* slides in to fill button */
+}
+
+/* Disable hover effects on mobile/tablet */
+@media (max-width: 639px) {
+  .btn-transparent-slide:hover {
+    color: #142257;
+  }
+
+  .btn-transparent-slide:hover::after {
+    left: -100%;
+  }
 }
 
 
@@ -113,7 +124,7 @@
   background-color: #142257;  /* initial filled color */
   z-index: -1;
   transform: translateX(0);   /* starts fully covering button */
-  transition: transform 0.5s ease-in-out;
+  transition: transform 0.3s ease-in-out;
   /* border-radius: 6px; */
 }
 
@@ -123,6 +134,17 @@
 
 .btn-filled-slide:hover::after {
   transform: translateX(100%); /* slide out on hover */
+}
+
+/* Disable hover effects on mobile/tablet */
+@media (max-width: 639px) {
+  .btn-filled-slide:hover {
+    color: white;
+  }
+
+  .btn-filled-slide:hover::after {
+    transform: translateX(0);
+  }
 }
 
 

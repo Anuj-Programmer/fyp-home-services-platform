@@ -67,14 +67,14 @@ function TechnicianDashboard() {
               >
                 Manage profile
               </button>
-              <button 
+              {/* <button 
                 onClick={() => navigate('/manage-timing')}
                 className="px-4 py-3 rounded-xl border text-left text-sm font-semibold hover:bg-stone-50 btn-transparent-slide"
               >
                 Manage timing
-              </button>
-              <button className="px-4 py-3 rounded-xl border text-left text-sm font-semibold hover:bg-stone-50 btn-transparent-slide">
-                View earnings
+              </button> */}
+              <button onClick={() => navigate('/bookings')} className="px-4 py-3 rounded-xl border text-left text-sm font-semibold hover:bg-stone-50 btn-transparent-slide">
+                View Bookings
               </button>
             </div>
           </div>

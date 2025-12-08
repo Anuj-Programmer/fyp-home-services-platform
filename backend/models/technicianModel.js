@@ -27,7 +27,7 @@ const TechnicianSchema = new mongoose.Schema({
 
   identityDocumentUrl: {
     type: String,
-    //required: true 
+    required: true,
     default: null
   },
 
