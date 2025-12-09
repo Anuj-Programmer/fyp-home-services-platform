@@ -28,7 +28,7 @@ const transporter = nodemailer.createTransport({
 
 // verify transporter on startup (async)
 transporter.verify().then(() => {
-  console.log("Mailer configured and verified");
+  //console.log("Mailer configured and verified");
 }).catch((err) => {
   console.error("Mailer verification failed:", err);
 });
