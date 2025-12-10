@@ -20,6 +20,8 @@ import TechnicianRegisterInfo from './pages/technician/TechnicianRegisterInfo.js
 import TechnicianDashboard from './pages/technician/TechnicianDashboard.jsx'
 import ManageTiming from './pages/technician/ManageTiming.jsx'
 import TechnicianProfile from './pages/technician/TechnicianProfile.jsx'
+import BookTechnicianPage from './pages/BookTechnicianPage.jsx'
+import BookTechnicianFrontend from './pages/BookTechnicianFrontend.jsx'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -96,15 +98,17 @@ function App() {
          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
          <Route path="/services" element={<ProtectedRoute><Services /></ProtectedRoute>} />
          <Route path="/technician-dashboard" element={<ProtectedRoute requireTechnician><TechnicianDashboard/></ProtectedRoute>} />
+         
          <Route path="/manage-timing" element={<ProtectedRoute requireTechnician><ManageTiming /></ProtectedRoute>} />
          <Route path="/technician-profile" element={<ProtectedRoute requireTechnician><TechnicianProfile /></ProtectedRoute>} />
+         <Route path="/booktechnician" element={<BookTechnicianPage/>}/>
          <Route
            path="/register-technician"
            element={
              <PublicRoute>
                <TechnicianRegisterEmail />
              </PublicRoute>
-           }
+           }  
          />
          <Route
            path="/verify-otp-technician"
@@ -122,6 +126,7 @@ function App() {
              </PublicRoute>
            }
          />
+         <Route path="/BookTechnicianPage" element={<BookTechnicianFrontend />} />
        </Routes>
 
      </BrowserRouter>
