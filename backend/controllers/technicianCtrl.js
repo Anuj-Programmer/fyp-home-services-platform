@@ -103,6 +103,9 @@ const registerTechnician = async (req, res) => {
         return res.status(404).json({ message: "Technician not found" });
       }
 
+      // Store previous status to track if it changes to active
+      const previousStatus = technician.status;
+
       // Update allowed fields only
       if (firstName) technician.firstName = firstName;
       if (lastName) technician.lastName = lastName;
@@ -132,6 +135,46 @@ const registerTechnician = async (req, res) => {
         } else if (Array.isArray(availability)) {
           technician.availability = availability;
         }
+      }
+
+      // Helper to check for non-empty string
+      const notEmpty = (val) => typeof val === 'string' ? val.trim().length > 0 : !!val;
+      // Helper to check for valid number
+      const validNumber = (val) => typeof val === 'number' && !isNaN(val) && val !== null && val !== undefined;
+
+      const isProfileComplete = 
+        notEmpty(technician.firstName) &&
+        notEmpty(technician.lastName) &&
+        notEmpty(technician.phone) &&
+        validNumber(technician.experienceYears) && technician.experienceYears > 0 &&
+        validNumber(technician.fee) && technician.fee > 0 &&
+        notEmpty(technician.location) &&
+        notEmpty(technician.photoUrl) &&
+        notEmpty(technician.description) &&
+        technician.availability &&
+        Array.isArray(technician.availability) &&
+        technician.availability.length > 0;
+
+
+      // If profile is complete and status was not active before, set to active
+      if (isProfileComplete) {
+        if (previousStatus !== "active") {
+          technician.status = "active";
+          // Push notification about profile activation
+          technician.notification.push({
+            message: "🎉 Your profile setup is complete! Your technician account is now active.",
+            createdAt: new Date(),
+            type: "system"
+          });
+        }
+      } else {
+        // If any required field is missing, set status to inactive
+        technician.status = "inactive";
+      }
+
+      // If status is 'approved', treat as 'inactive' for profile
+      if (technician.status === "approved") {
+        technician.status = "inactive";
       }
 
       await technician.save();

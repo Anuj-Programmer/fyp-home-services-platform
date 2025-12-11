@@ -174,11 +174,18 @@ function TechnicianProfile() {
         }
       );
 
-      toast.success(data.message || "Profile saved successfully");
       const updatedTechnician = {
         ...data.technician,
         role: "technician" // Ensure role is preserved
       };
+
+      // Check if status changed to active and show appropriate toast
+      if (user?.status !== "active" && updatedTechnician.status === "active") {
+        toast.success("🎉 Your profile setup is complete! Your account is now active!");
+      } else {
+        toast.success(data.message || "Profile saved successfully");
+      }
+
       setUser(updatedTechnician);
       setFormData(hydrateFormFromUser(updatedTechnician));
       setAvailability(hydrateAvailabilityFromUser(updatedTechnician));
@@ -455,6 +462,20 @@ function TechnicianProfile() {
                 visibility.
               </p>
               <div className="flex flex-col gap-3 text-sm">
+                {/* Account Status */}
+                <div className="flex items-center justify-between">
+                  <span>Account status</span>
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                      user?.status === "active"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
+                  >
+                    {user?.status === "active" ? "Active" : "Inactive"}
+                  </span>
+                </div>
+
                 {/* Email verification */}
                 <div className="flex items-center justify-between">
                   <span>Email verification</span>
