@@ -195,10 +195,25 @@ const registerTechnician = async (req, res) => {
     }
   };
 
+  const getActiveTechnicians = async (req, res) => {
+    try {
+      const technicians = await Technician.find({ status: "active" });
+      res.json({ technicians });
+    } catch (error) {
+      console.error("Error fetching active technicians:", error);
+      res.status(500).json({
+        success: false,
+        message: "Server error fetching active technicians",
+        error: error.message
+      });
+    }
+  };
+
   
 
 module.exports = {
   registerTechnician,
-  updateTechnicianProfile
+  updateTechnicianProfile,
+  getActiveTechnicians
 }
   

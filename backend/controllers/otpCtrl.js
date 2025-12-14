@@ -147,12 +147,13 @@ const sendLoginOtp = async (req, res) => {
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Only allow login if technician is approved
-      if (user.status !== "approved") {
+      // Deny login only if technician is 'pending' or 'rejected'
+      if (user.status === "pending" || user.status === "rejected") {
         return res.status(403).json({
           message: `Technician account is ${user.status}. Cannot login yet.`,
         });
       }
+      // Allow login for 'approved', 'active', 'inactive'
       role = "technician";
     }
 
