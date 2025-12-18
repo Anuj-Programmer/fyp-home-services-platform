@@ -1,28 +1,69 @@
-import { CheckCircle, Star, Clock } from "phosphor-react";
+import { MapPin, Calendar, Star } from "phosphor-react";
+import { Link } from "react-router-dom";
 
-const TechnicianCard = ({ pro }) => {
+const TechnicianCard = ({ pro, onBookClick }) => {
   return (
-    <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition p-4 flex flex-col">
-      <img
-        src={pro.image}
-        alt={pro.name}
-        className="h-48 w-full object-cover rounded-xl mb-4"
-      />
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">{pro.name}</h3>
-        {pro.verified && (
-          <CheckCircle size={22} weight="fill" className="text-[#14B8A6]" />
-        )}
+    <div className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-shadow overflow-hidden border border-gray-100 flex flex-col h-full min-w-0 w-[270px]">
+      {/* TOP SECTION - IMAGE AREA */}
+      <div className="relative w-full h-48 overflow-hidden bg-gray-200">
+        <img
+          src={pro.photoUrl || "https://via.placeholder.com/400x300"}
+          alt={`${pro.firstName} ${pro.lastName}`}
+          className="w-full h-full object-cover"
+        />
+        
+        {/* RATING BADGE - Top Left (always show) */}
+        <div className="absolute top-3 left-3 z-10 bg-color-main text-white rounded-lg px-2.5 py-1 flex items-center gap-1 shadow-md">
+          <Star size={14} weight="fill" className="text-white" />
+          <span className="text-[12px]">{(typeof pro.averageRating === 'number' ? pro.averageRating.toFixed(1) : '0.0')}</span>
+        </div>
+
       </div>
-      <p className="text-gray-500">{pro.service}</p>
-      <div className="flex items-center text-yellow-500 mt-2">
-        <Star size={20} weight="fill" />
-        <span className="ml-1 text-gray-700">{pro.rating}</span>
-      </div>
-      <div className="flex justify-between items-center mt-3">
-        <span className="txt-color-primary font-semibold">{pro.price}</span>
-        <div className="flex items-center text-gray-500 text-sm">
-          <Clock size={18} className="mr-1" /> Available
+
+      {/* CONTENT SECTION WITH BLUE ACCENT BAR */}
+      <div className="flex flex-1 flex-col">
+        {/* Top Content - Specialty & Availability */}
+        <div className="px-4 pt-4 pb-2 border-l-4 border-blue-950">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <p className="text-[12px] font-medium text-blue-600">{pro.serviceType}</p>
+            <div className="flex items-center gap-1 bg-gray-100 px-2.5 py-0.5 rounded-full">
+              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+              <span className="text-xs font-semibold text-gray-700">Available</span>
+            </div>
+          </div>
+
+          {/* TECHNICIAN NAME */}
+          <h3 className="text-[17px] font-bold text-gray-900 mb-1">
+           {pro.firstName} {pro.lastName}
+          </h3>
+
+          {/* LOCATION & DURATION */}
+          <div className="flex items-center gap-1 text-xs text-gray-600">
+            <MapPin size={14} weight="fill" className="text-gray-600 shrink-0" />
+            <span>{pro.location || "Location not specified"}</span>
+          </div>
+        </div>
+
+        {/* DIVIDER */}
+        <div className="mx-4 my-3 border-t border-gray-200"></div>
+
+        {/* FEES & BUTTON SECTION - HORIZONTAL LAYOUT */}
+        <div className="px-4 pb-4 flex flex-row justify-between items-center gap-3">
+          {/* CONSULTATION FEES */}
+          <div>
+            <p className="text-xs text-gray-600 font-medium mb-0.5">Fees</p>
+            <p className="text-xl font-bold text-orange-500">${pro.fee || 0}</p>
+          </div>
+
+          {/* BOOK NOW BUTTON */}
+          <Link
+            to={`/booktechnician/${pro._id || pro.id}`}
+            className="bg-blue-950 hover:bg-blue-900 text-white font-semibold py-2 px-4 rounded-full transition-colors flex items-center justify-center gap-1.5 shadow-md text-sm whitespace-nowrap shrink-0"
+            onClick={onBookClick}
+          >
+            <Calendar size={14} weight="fill" />
+            Book Now
+          </Link>
         </div>
       </div>
     </div>

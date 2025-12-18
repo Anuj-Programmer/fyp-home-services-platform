@@ -8,7 +8,7 @@ import Navbar from '@/blocks/Navbar';
 import Footer from '@/blocks/Footer';
 
 function BookTechnicianPage() {
-  const { technicianId } = useParams();
+  const { id } = useParams();
   const navigate = useNavigate();
   const token = Cookies.get('token') || localStorage.getItem('token');
 
@@ -23,8 +23,8 @@ function BookTechnicianPage() {
   useEffect(() => {
     const fetchTechnician = async () => {
       try {
-        const { data } = await axios.get(`/api/technicians/${technicianId}`);
-        setTechnician(data);
+        const { data } = await axios.get(`/api/technicians/get-technician/${id}`);
+        setTechnician(data.technician);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching technician:', error);
@@ -33,10 +33,10 @@ function BookTechnicianPage() {
       }
     };
 
-    if (technicianId) {
+    if (id) {
       fetchTechnician();
     }
-  }, [technicianId]);
+  }, [id]);
 
   // Get available time slots based on selected date
   useEffect(() => {
@@ -89,7 +89,7 @@ function BookTechnicianPage() {
     try {
       setBookingLoading(true);
       const bookingData = {
-        technician: technicianId,
+        technician: id,
         serviceDate: selectedDate,
         serviceTime: selectedTime,
         fee: technician.fee,

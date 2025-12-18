@@ -1,3 +1,4 @@
+
 const OTP = require("../models/otpModel.js");
 const User = require("../models/userModel.js");
 const nodemailer = require("nodemailer");
@@ -195,25 +196,52 @@ const registerTechnician = async (req, res) => {
     }
   };
 
-  const getActiveTechnicians = async (req, res) => {
-    try {
-      const technicians = await Technician.find({ status: "active" });
-      res.json({ technicians });
-    } catch (error) {
-      console.error("Error fetching active technicians:", error);
-      res.status(500).json({
-        success: false,
-        message: "Server error fetching active technicians",
-        error: error.message
-      });
+const getActiveTechnicians = async (req, res) => {
+  try {
+    const technicians = await Technician.find({ status: "active" });
+    res.json({ 
+      success: true,
+      technicians 
+    });
+  } catch (error) {
+    console.error("Error fetching active technicians:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error fetching active technicians",
+      error: error.message
+    });
+  }
+};
+
+// Get technician by ID
+const getTechnicianById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ success: false, message: "Technician ID is required" });
     }
-  };
+    const technician = await Technician.findById(id);
+    if (!technician) {
+      return res.status(404).json({ success: false, message: "Technician not found" });
+    }
+    res.json({ success: true, technician });
+  } catch (error) {
+    console.error("Error fetching technician by ID:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error fetching technician by ID",
+      error: error.message
+    });
+  }
+};
+
 
   
 
 module.exports = {
   registerTechnician,
   updateTechnicianProfile,
-  getActiveTechnicians
+  getActiveTechnicians,
+  getTechnicianById
 }
   

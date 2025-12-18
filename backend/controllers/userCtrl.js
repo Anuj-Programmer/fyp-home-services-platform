@@ -265,8 +265,20 @@ const deleteAllNotifications = async (req, res) => {
 
 const getCurrentUser = async (req, res) => {
   try {
-    const userId = req.body.userId || req.body.technicianId;
+    // Try to get userId from request body first (for backward compatibility)
+    let userId = req.body.userId || req.body.technicianId;
     const isTechnician = req.body.isTechnician || false;
+
+    // If no userId in body, extract from JWT token
+    if (!userId && req.headers.authorization) {
+      try {
+        const token = req.headers.authorization.split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        userId = decoded.userId || decoded.technicianId;
+      } catch (tokenError) {
+        console.log("Token decode error:", tokenError.message);
+      }
+    }
 
     if (!userId) return res.status(401).json({ message: "Unauthorized: No user ID found" });
 
@@ -276,20 +288,18 @@ const getCurrentUser = async (req, res) => {
     if (isTechnician) {
       // Try Technician collection first
       user = await Technician.findById(userId);
-      //console.log("Technician fetched:", user);
       if (user) role = "technician";
       else {
         // Fallback to User collection if not found in Technician
         user = await User.findById(userId);
-        //console.log("User fetched:", user);
         if (user?.isAdmin) role = "admin";
       }
     } else {
-      // Regular user/admin
+      // Regular user/admin - try User collection first
       user = await User.findById(userId);
-      //console.log("User fetched:", user);
-      if (user?.isAdmin) role = "admin";
-      else {
+      if (user) {
+        role = user.isAdmin ? "admin" : "user";
+      } else {
         // Fallback to Technician collection if not found in User
         user = await Technician.findById(userId);
         if (user) role = "technician";

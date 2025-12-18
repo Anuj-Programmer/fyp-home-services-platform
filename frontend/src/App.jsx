@@ -101,7 +101,7 @@ function App() {
          
          <Route path="/manage-timing" element={<ProtectedRoute requireTechnician><ManageTiming /></ProtectedRoute>} />
          <Route path="/technician-profile" element={<ProtectedRoute requireTechnician><TechnicianProfile /></ProtectedRoute>} />
-         <Route path="/booktechnician/:id" element={<BookTechnicianPage/>}/>
+         <Route path="/booktechnician/:id" element={<ProtectedRoute><BookTechnicianPage/></ProtectedRoute>} />
          <Route
            path="/register-technician"
            element={

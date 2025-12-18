@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/blocks/Navbar";
 import Footer from "@/blocks/Footer";
@@ -17,9 +17,33 @@ import {
 } from "phosphor-react";
 import "../css/landingPage.css";
 import { Link } from "react-router-dom";
+import axios from "axios";
 
 function HomePage() {
   const navigate = useNavigate();
+  const [recommendedPros, setRecommendedPros] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch active technicians for recommended section
+  useEffect(() => {
+    const fetchActiveTechnicians = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get("/api/technicians/get-active-technicians");
+        if (response.data && response.data.success) {
+          // Limit to 3 professionals for the recommended section
+          setRecommendedPros(response.data.technicians.slice(0, 3));
+        }
+      } catch (error) {
+        console.error("Error fetching active technicians:", error);
+        setRecommendedPros([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchActiveTechnicians();
+  }, []);
 
   const handleLogout = () => {
     localStorage.clear();
@@ -61,39 +85,6 @@ function HomePage() {
       date: "Wed, 26 Nov • 3:30 PM",
       pro: "Rachin Verma",
       status: "Pending",
-    },
-  ];
-
-  const recommendedPros = [
-    {
-      id: 1,
-      name: "Amit Sharma",
-      service: "Home Cleaning",
-      price: "$25/hr",
-      rating: 4.8,
-      verified: true,
-      image:
-        "https://images.unsplash.com/photo-1607746882042-944635dfe10e?auto=format&fit=crop&w=600&q=80",
-    },
-    {
-      id: 2,
-      name: "Ramesh Patel",
-      service: "Electrician",
-      price: "$28/hr",
-      rating: 4.9,
-      verified: true,
-      image:
-        "https://images.unsplash.com/photo-1595152772835-219674b2a8a6?auto=format&fit=crop&w=600&q=80",
-    },
-    {
-      id: 3,
-      name: "Dib Rai",
-      service: "Gardening",
-      price: "$20/hr",
-      rating: 4.5,
-      verified: false,
-      image:
-        "https://images.unsplash.com/photo-1599058917212-d750089bc07e?auto=format&fit=crop&w=600&q=80",
     },
   ];
 
@@ -320,9 +311,9 @@ function HomePage() {
             </Link>
           </div>
 
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto">
-            {recommendedPros.map((pro) => (
-              <TechnicianCard key={pro.id} pro={pro} />
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto">
+            {recommendedPros.slice(0, 4).map((pro) => (
+              <TechnicianCard key={pro._id || pro.id} pro={pro} />
             ))}
           </div>
         </section>

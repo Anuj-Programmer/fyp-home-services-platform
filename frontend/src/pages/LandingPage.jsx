@@ -1,9 +1,10 @@
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import Navbar from "@/blocks/Navbar";
 import heroicon from "../assets/HeroIcon.png";
 import qualiticon from "../assets/QualityPageIcon.png";
 import welcomeicon from "../assets/Welcome.png";
 import TechnicianCard from "@/blocks/TechnicianCard";
+import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import "../css/landingPage.css";
 import {
@@ -26,7 +27,31 @@ import { toast, Toaster } from "react-hot-toast";
 
 
 function LandingPage() {
+  const navigate = useNavigate();
   const servicesRef = useRef(null);
+  const [professionals, setProfessionals] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch active technicians
+  useEffect(() => {
+    const fetchActiveTechnicians = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get("/api/technicians/get-active-technicians");
+        if (response.data && response.data.success) {
+          setProfessionals(response.data.technicians);
+        }
+      } catch (error) {
+        console.error("Error fetching active technicians:", error);
+        // Fallback to empty array if fetch fails
+        setProfessionals([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchActiveTechnicians();
+  }, []);
 
   const scrollToServices = () => {
     if (servicesRef.current) {
@@ -36,7 +61,6 @@ function LandingPage() {
 
   const handleContactSubmit = async (e) => {
     e.preventDefault();
-    // Handle contact form submission logic here
     const formData = {
       name: e.target.name.value,
       email: e.target.email.value,
@@ -54,48 +78,6 @@ function LandingPage() {
     }
   };
 
-  const professionals = [
-    {
-      id: 1,
-      name: "Amit Sharma",
-      service: "Home Cleaning",
-      price: "$25/hr",
-      rating: 4.8,
-      verified: true,
-      image:
-        "https://images.unsplash.com/photo-1607746882042-944635dfe10e?auto=format&fit=crop&w=600&q=80",
-    },
-    {
-      id: 2,
-      name: "Rachin Verma",
-      service: "Plumbing Repair",
-      price: "$30/hr",
-      rating: 4.6,
-      verified: false,
-      image:
-        "https://images.unsplash.com/photo-1595152772835-219674b2a8a6?auto=format&fit=crop&w=600&q=80",
-    },
-    {
-      id: 3,
-      name: "Ramesh Patel",
-      service: "Electrician",
-      price: "$28/hr",
-      rating: 4.9,
-      verified: true,
-      image:
-        "https://images.unsplash.com/photo-1595152772835-219674b2a8a6?auto=format&fit=crop&w=600&q=80",
-    },
-    {
-      id: 4,
-      name: "Dib Rai",
-      service: "Gardening",
-      price: "$20/hr",
-      rating: 4.5,
-      verified: false,
-      image:
-        "https://images.unsplash.com/photo-1599058917212-d750089bc07e?auto=format&fit=crop&w=600&q=80",
-    },
-  ];
   return (
     <>
       <Toaster position="top-center" reverseOrder={false} />
@@ -270,8 +252,15 @@ function LandingPage() {
           {/* Divider */}
           <div className="w-full border-b border-neutral-300"></div>
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto">
-            {professionals.map((pro) => (
-              <TechnicianCard key={pro.id} pro={pro} />
+            {professionals.slice(0, 4).map((pro) => (
+              <TechnicianCard
+                key={pro._id || pro.id}
+                pro={pro}
+                onBookClick={() => {
+                  toast.error("Please login first");
+                  setTimeout(() => navigate("/login"), 1200);
+                }}
+              />
             ))}
           </div>
         </section>
