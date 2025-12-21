@@ -102,8 +102,13 @@ function TechnicianProfile() {
   }, []);
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type } = e.target;
+    // For number inputs, store as number immediately, or empty string if blank
+    const finalValue = type === "number" ? (value === "" ? "" : Number(value)) : value;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: finalValue
+    }));
   };
 
   const handlePhotoUpload = async (e) => {
@@ -152,8 +157,8 @@ function TechnicianProfile() {
         lastName: formData.lastName,
         phone: formData.phone,
         location: formData.location,
-        experienceYears: parseInt(formData.experienceYears) || 0,
-        fee: parseInt(formData.fee) || 0,
+        experienceYears: formData.experienceYears === "" ? 0 : Number(formData.experienceYears),
+        fee: formData.fee === "" ? 0 : Number(formData.fee),
         photoUrl: formData.photoUrl,
         description: formData.description,
         availability: availability,
@@ -314,25 +319,37 @@ function TechnicianProfile() {
                   <label className="flex flex-col gap-1 text-xs sm:text-sm font-medium text-stone-600">
                     Years of experience
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
                       name="experienceYears"
                       value={formData.experienceYears}
-                      onChange={handleInputChange}
+                      onChange={(e) => {
+                        setFormData(prev => ({ ...prev, experienceYears: e.target.value }));
+                      }}
+                      onBlur={(e) => {
+                        const numVal = e.target.value === "" ? "" : parseInt(e.target.value, 10);
+                        setFormData(prev => ({ ...prev, experienceYears: numVal }));
+                      }}
                       className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
                       placeholder="e.g. 5"
-                      min="0"
                     />
                   </label>
                   <label className="flex flex-col gap-1 text-xs sm:text-sm font-medium text-stone-600">
                     Service fee (₹)
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
                       name="fee"
                       value={formData.fee}
-                      onChange={handleInputChange}
+                      onChange={(e) => {
+                        setFormData(prev => ({ ...prev, fee: e.target.value }));
+                      }}
+                      onBlur={(e) => {
+                        const numVal = e.target.value === "" ? "" : parseInt(e.target.value, 10);
+                        setFormData(prev => ({ ...prev, fee: numVal }));
+                      }}
                       className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
                       placeholder="e.g. 500"
-                      min="0"
                     />
                   </label>
                 </div>

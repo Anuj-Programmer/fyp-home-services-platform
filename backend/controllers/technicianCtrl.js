@@ -108,14 +108,14 @@ const registerTechnician = async (req, res) => {
       const previousStatus = technician.status;
 
       // Update allowed fields only
-      if (firstName) technician.firstName = firstName;
-      if (lastName) technician.lastName = lastName;
-      if (phone) technician.phone = phone;
-      if (experienceYears !== undefined) technician.experienceYears = experienceYears;
-      if (fee !== undefined) technician.fee = fee;
-      if (location) technician.location = location;
-      if (photoUrl) technician.photoUrl = photoUrl;
-      if (description) technician.description = description;
+      if (firstName !== undefined) technician.firstName = firstName;
+      if (lastName !== undefined) technician.lastName = lastName;
+      if (phone !== undefined) technician.phone = phone;
+      if (experienceYears !== undefined) technician.experienceYears = Number(experienceYears);
+      if (fee !== undefined) technician.fee = Number(fee);
+      if (location !== undefined) technician.location = location;
+      if (photoUrl !== undefined) technician.photoUrl = photoUrl;
+      if (description !== undefined) technician.description = description;
       
       // Update availability if provided
       if (availability) {
