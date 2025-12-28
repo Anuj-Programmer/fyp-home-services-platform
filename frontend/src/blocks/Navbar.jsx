@@ -183,6 +183,25 @@ const Navbar = () => {
     }
   };
 
+  const handleSearchSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!searchTerm.trim()) {
+      toast.error("Please enter a search term");
+      return;
+    }
+
+    try {
+      // Navigate to search results page with search query
+      navigate(`/search-results?search=${encodeURIComponent(searchTerm)}`);
+      setSearchTerm("");
+      setMobileModal(null);
+    } catch (err) {
+      console.error("Error navigating to search:", err);
+      toast.error("Error performing search");
+    }
+  };
+
   return (
     <>
       <Toaster position="top-center" reverseOrder={false} />
@@ -212,7 +231,7 @@ const Navbar = () => {
                 {/* Search bar */}
                 {isAuthenticated && user?.role !== "technician" && !isAdmin && (
                   <form
-                    onSubmit={(e) => e.preventDefault()}
+                    onSubmit={handleSearchSubmit}
                     className="hidden lg:flex items-center bg-white border rounded-full px-3 py-1.5 min-w-[220px]"
                   >
                     <input
@@ -477,14 +496,22 @@ const Navbar = () => {
             <div className="px-4 py-4">
               {mobileModal === "search" && (
                 <div>
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Search services"
-                    className="w-full px-3 py-2 border rounded-lg text-sm"
-                    autoFocus
-                  />
+                  <form onSubmit={handleSearchSubmit} className="space-y-3">
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Search services"
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                      autoFocus
+                    />
+                    <button
+                      type="submit"
+                      className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
+                    >
+                      Search
+                    </button>
+                  </form>
                 </div>
               )}
 

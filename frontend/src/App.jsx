@@ -14,6 +14,7 @@ import "./App.css";
 import Booking from './pages/Booking.jsx';
 import Profile from './pages/Profile.jsx';
 import Services from './pages/Services.jsx';
+import SearchResults from './pages/SearchResults.jsx';
 import TechnicianRegisterEmail from './pages/technician/TechnicianRegisterEmail.jsx';
 import TechnicianOtpPage from './pages/technician/TechnicianOtpPage.jsx';
 import TechnicianRegisterInfo from './pages/technician/TechnicianRegisterInfo.jsx';
@@ -97,6 +98,7 @@ function App() {
          <Route path="/bookings" element={<ProtectedRoute><Booking /></ProtectedRoute>} />
          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
          <Route path="/services" element={<ProtectedRoute><Services /></ProtectedRoute>} />
+         <Route path="/search-results" element={<ProtectedRoute><SearchResults /></ProtectedRoute>} />
          <Route path="/technician-dashboard" element={<ProtectedRoute requireTechnician><TechnicianDashboard/></ProtectedRoute>} />
          
          <Route path="/manage-timing" element={<ProtectedRoute requireTechnician><ManageTiming /></ProtectedRoute>} />

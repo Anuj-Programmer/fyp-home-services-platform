@@ -268,17 +268,17 @@ function HomePage() {
 
           <div className="flex flex-wrap gap-6 py-2 px-2 items-center justify-center mt-4">
             {[
-                { title: "Plumbing", icon: <Wrench weight="fill" /> },
-                { title: "Electrical", icon: <Lightning weight="fill" /> },
-                { title: "Carpentry", icon: <Wrench weight="fill" /> },
-                { title: "Appliance Repair", icon: <GearSix weight="fill" /> },
-                { title: "Bathroom Remodeling", icon: <Bathtub weight="fill" /> },
-                { title: "Locksmith", icon: <Key weight="fill" /> },
-            ].map((service, i) => (
+                { id: "plumbing", title: "Plumbing", icon: <Wrench weight="fill" /> },
+                { id: "electrical", title: "Electrical", icon: <Lightning weight="fill" /> },
+                { id: "carpentry", title: "Carpentry", icon: <Wrench weight="fill" /> },
+                { id: "repairs", title: "Appliance Repair", icon: <GearSix weight="fill" /> },
+                { id: "bathroom_remodeling", title: "Bathroom Remodeling", icon: <Bathtub weight="fill" /> },
+                { id: "locksmith", title: "Locksmith", icon: <Key weight="fill" /> },
+            ].map((service) => (
               <div
-                key={i}
+                key={service.id}
                 className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 p-4 rounded-2xl shadow-md hover:shadow-lg transition flex flex-col items-center justify-center gap-2 bg-white cursor-pointer"
-                onClick={() => navigate("/services")}
+                onClick={() => navigate(`/services?category=${service.id}`)}
               >
                 <div className="w-10 h-10 flex items-center justify-center text-white rounded-full icon-bg mb-2">
                   {service.icon}

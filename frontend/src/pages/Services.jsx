@@ -1,83 +1,80 @@
-import React, { useRef } from "react";
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import Navbar from "@/blocks/Navbar";
 import Footer from "@/blocks/Footer";
 import TechnicianCard from "@/blocks/TechnicianCard";
 import { FunnelSimple, MagnifyingGlass, MapPin } from "phosphor-react";
 import "../css/landingPage.css";
+import axios from "axios";
 
 const categories = [
   { id: "all", label: "All services" },
-  { id: "cleaning", label: "Cleaning" },
+  { id: "carpentry", label: "Carpentry" },
   { id: "plumbing", label: "Plumbing" },
   { id: "electrical", label: "Electrical" },
-  { id: "gardening", label: "Gardening" },
-  { id: "repairs", label: "Repairs" },
-];
-
-const technicians = [
-  {
-    id: 1,
-    name: "Amit Sharma",
-    service: "Deep Cleaning • Carpets, kitchens, appliances",
-    price: "$25/hr",
-    rating: 4.8,
-    verified: true,
-    image:
-      "https://images.unsplash.com/photo-1607746882042-944635dfe10e?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: 2,
-    name: "Rachin Verma",
-    service: "Licensed Plumber • Fixtures, leaks, heaters",
-    price: "$30/hr",
-    rating: 4.6,
-    verified: false,
-    image:
-      "https://images.unsplash.com/photo-1595152772835-219674b2a8a6?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: 3,
-    name: "Ramesh Patel",
-    service: "Certified Electrician • Panels, rewiring, smart home",
-    price: "$28/hr",
-    rating: 4.9,
-    verified: true,
-    image:
-      "https://images.unsplash.com/photo-1595152772835-219674b2a8a6?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: 4,
-    name: "Dib Rai",
-    service: "Garden Care • Pruning, lawn, irrigation",
-    price: "$20/hr",
-    rating: 4.5,
-    verified: false,
-    image:
-      "https://images.unsplash.com/photo-1599058917212-d750089bc07e?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: 5,
-    name: "Tashi Gurung",
-    service: "Handyman • Fixtures, mounting, repairs",
-    price: "$22/hr",
-    rating: 4.7,
-    verified: true,
-    image:
-      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: 6,
-    name: "Pratima Khadka",
-    service: "Move-out Cleaning • Deep clean, disinfect, organize",
-    price: "$26/hr",
-    rating: 4.8,
-    verified: true,
-    image:
-      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=600&q=80",
-  },
+  { id: "bathroom_remodeling", label: "Bathroom Remodeling" },
+  { id: "repairs", label: "Appliance Repair" },
+  { id: "locksmith", label: "Locksmith" },
 ];
 
 function Services() {
+  const [searchParams] = useSearchParams();
+  const categoryFromUrl = searchParams.get("category");
+  
+  const [technicians, setTechnicians] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState(categoryFromUrl || "all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [locationQuery, setLocationQuery] = useState("");
+
+  // Mapping of category IDs to service types
+  const categoryMapping = {
+    all: null,
+    carpentry: "Carpentry",
+    plumbing: "Plumbing",
+    electrical: "Electrical",
+    bathroom_remodeling: "Bathroom Remodeling",
+    repairs: "Appliance Repair",
+    locksmith: "Locksmith"
+  };
+
+  // Fetch active technicians
+  useEffect(() => {
+    const fetchActiveTechnicians = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get("/api/technicians/get-active-technicians");
+        if (response.data && response.data.success) {
+          setTechnicians(response.data.technicians);
+        }
+      } catch (error) {
+        console.error("Error fetching active technicians:", error);
+        setTechnicians([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchActiveTechnicians();
+  }, []);
+
+  // Filter technicians based on selected category, search query, and location
+  const filteredTechnicians = technicians.filter((tech) => {
+    const serviceTypeMatch =
+      selectedCategory === "all" || tech.serviceType === categoryMapping[selectedCategory];
+    
+    const searchMatch =
+      !searchQuery ||
+      tech.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tech.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tech.description.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const locationMatch =
+      !locationQuery ||
+      (tech.location && tech.location.toLowerCase().includes(locationQuery.toLowerCase()));
+
+    return serviceTypeMatch && searchMatch && locationMatch;
+  });
   return (
     <>
       <Navbar />
@@ -97,7 +94,7 @@ function Services() {
             </p>
           </div>
 
-          <div className="bg-white rounded-3xl shadow-sm border p-5 space-y-4 w-full lg:w-[380px]">
+          {/* <div className="bg-white rounded-3xl shadow-sm border p-5 space-y-4 w-full lg:w-[380px]">
             <div className="text-sm font-semibold text-stone-500 uppercase tracking-wide">
               Quick search
             </div>
@@ -107,6 +104,8 @@ function Services() {
                 type="text"
                 className="flex-1 text-sm focus:outline-none"
                 placeholder="Try “water heater repair”"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
             <div className="flex items-center gap-3 px-4 py-3 border rounded-xl bg-white">
@@ -115,12 +114,14 @@ function Services() {
                 type="text"
                 className="flex-1 text-sm focus:outline-none"
                 placeholder="Kathmandu • Change location"
+                value={locationQuery}
+                onChange={(e) => setLocationQuery(e.target.value)}
               />
             </div>
             <button className="w-full px-4 py-3 bg-color-main text-white rounded-xl font-semibold btn-filled-slide">
               Search technicians
             </button>
-          </div>
+          </div> */}
         </section>
 
         {/* Filters */}
@@ -134,20 +135,18 @@ function Services() {
                 Tap to filter the technician list
               </p>
             </div>
-            <button className="flex items-center gap-2 px-4 py-2 border rounded-full text-sm">
-              <FunnelSimple size={16} />
-              More filters
-            </button>
+            
           </div>
 
           <div className="flex flex-wrap gap-3">
-            {categories.map((category, idx) => (
+            {categories.map((category) => (
               <button
                 key={category.id}
-                className={`px-4 py-2 rounded-full text-sm font-semibold border ${
-                  idx === 0
+                onClick={() => setSelectedCategory(category.id)}
+                className={`px-4 py-2 rounded-full text-sm font-semibold border transition ${
+                  selectedCategory === category.id
                     ? "bg-color-main text-white border-color-main"
-                    : "text-stone-600 hover:border-color-main"
+                    : "text-stone-600 border-stone-300 hover:border-color-main"
                 }`}
               >
                 {category.label}
@@ -162,15 +161,26 @@ function Services() {
             <h2 className="text-2xl font-semibold txt-color-primary">
               Recommended professionals
             </h2>
-            <button className="text-sm text-color-main hover:underline">
-              See all 120+
-            </button>
+            {/* <button className="text-sm text-color-main hover:underline">
+              See all {technicians.length}
+            </button> */}
           </div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {technicians.map((pro) => (
-              <TechnicianCard key={pro.id} pro={pro} />
-            ))}
-          </div>
+          
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <p className="text-stone-500">Loading technicians...</p>
+            </div>
+          ) : filteredTechnicians.length > 0 ? (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {filteredTechnicians.map((pro) => (
+                <TechnicianCard key={pro._id || pro.id} pro={pro} />
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center py-12">
+              <p className="text-stone-500">No technicians available at the moment</p>
+            </div>
+          )}
         </section>
       </main>
       <Footer />

@@ -235,13 +235,127 @@ const getTechnicianById = async (req, res) => {
   }
 };
 
+// Search technicians with filters, pagination, and sorting
+const searchTechnician = async (req, res) => {
+  try {
+    const {
+      serviceType,
+      location,
+      minRating,
+      maxFee,
+      availabilityDay,
+      availabilityStartTime,
+      availabilityEndTime,
+      page = 1,
+      pageSize = 10,
+      sortBy,
+      sortOrder = "desc"
+    } = req.query;
 
-  
+    // Build dynamic filter object
+    const filter = { status: "active" }; // Only search active technicians
+
+    // Filter by serviceType (exact match)
+    if (serviceType) {
+      filter.serviceType = serviceType;
+    }
+
+    // Filter by location (case-insensitive partial match)
+    if (location) {
+      filter.location = { $regex: location, $options: "i" };
+    }
+
+    // Filter by minimum average rating
+    if (minRating) {
+      const ratingValue = parseFloat(minRating);
+      if (!isNaN(ratingValue)) {
+        filter.averageRating = { $gte: ratingValue };
+      }
+    }
+
+    // Filter by maximum fee
+    if (maxFee) {
+      const feeValue = parseFloat(maxFee);
+      if (!isNaN(feeValue)) {
+        filter.fee = { $lte: feeValue };
+      }
+    }
+
+    // Filter by availability (day and optional time range)
+    if (availabilityDay) {
+      filter["availability.day"] = availabilityDay;
+
+      // If both start and end times are provided, add time range filter
+      if (availabilityStartTime && availabilityEndTime) {
+        filter.$expr = {
+          $anyElementTrue: {
+            $map: {
+              input: "$availability",
+              as: "avail",
+              in: {
+                $and: [
+                  { $eq: ["$$avail.day", availabilityDay] },
+                  { $lte: ["$$avail.startTime", availabilityStartTime] },
+                  { $gte: ["$$avail.endTime", availabilityEndTime] }
+                ]
+              }
+            }
+          }
+        };
+      }
+    }
+
+    // Calculate pagination
+    const pageNumber = Math.max(1, parseInt(page) || 1);
+    const pageSizeNumber = Math.max(1, Math.min(100, parseInt(pageSize) || 10)); // Max 100 per page
+    const skip = (pageNumber - 1) * pageSizeNumber;
+
+    // Build sort object
+    const sortObj = {};
+    if (sortBy && ["averageRating", "fee"].includes(sortBy)) {
+      sortObj[sortBy] = sortOrder === "asc" ? 1 : -1;
+    } else {
+      // Default sort by creation date (newest first)
+      sortObj.createdAt = -1;
+    }
+
+    // Execute query with pagination and sorting
+    const technicians = await Technician.find(filter)
+      .select("firstName lastName serviceType location averageRating fee availability photoUrl description experienceYears isVerifiedTechnician")
+      .sort(sortObj)
+      .skip(skip)
+      .limit(pageSizeNumber)
+      .lean();
+
+    // Get total count for pagination metadata
+    const totalCount = await Technician.countDocuments(filter);
+    const totalPages = Math.ceil(totalCount / pageSizeNumber);
+
+    res.json({
+      success: true,
+      data: technicians,
+      pagination: {
+        currentPage: pageNumber,
+        pageSize: pageSizeNumber,
+        totalCount,
+        totalPages
+      }
+    });
+  } catch (error) {
+    console.error("Error searching technicians:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error searching technicians",
+      error: error.message
+    });
+  }
+};
 
 module.exports = {
   registerTechnician,
   updateTechnicianProfile,
   getActiveTechnicians,
-  getTechnicianById
+  getTechnicianById,
+  searchTechnician
 }
   

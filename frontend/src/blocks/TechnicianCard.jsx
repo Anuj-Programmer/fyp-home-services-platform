@@ -1,4 +1,4 @@
-import { MapPin, Calendar, Star } from "phosphor-react";
+import { MapPin, Calendar, Star, CheckCircle } from "phosphor-react";
 import { Link } from "react-router-dom";
 
 const TechnicianCard = ({ pro, onBookClick }) => {
@@ -32,10 +32,15 @@ const TechnicianCard = ({ pro, onBookClick }) => {
             </div>
           </div>
 
-          {/* TECHNICIAN NAME */}
-          <h3 className="text-[17px] font-bold text-gray-900 mb-1">
-           {pro.firstName} {pro.lastName}
-          </h3>
+          {/* TECHNICIAN NAME WITH VERIFIED BADGE */}
+          <div className="flex items-center gap-2">
+            <h3 className="text-[17px] font-bold text-gray-900">
+              {pro.firstName} {pro.lastName}
+            </h3>
+            {pro.isVerifiedTechnician && (
+              <CheckCircle size={18} weight="fill" className="text-blue-600 shrink-0" title="Verified Technician" />
+            )}
+          </div>
 
           {/* LOCATION & DURATION */}
           <div className="flex items-center gap-1 text-xs text-gray-600">
