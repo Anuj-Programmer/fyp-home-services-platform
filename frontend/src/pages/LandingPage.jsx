@@ -158,8 +158,8 @@ function LandingPage() {
 
               {/* Desktop description */}
               <p className="hidden lg:block text-stone-500 text-base leading-6">
-                While we can customize your cleaning plan to suit your needs,
-                most clients schedule regular cleaning services:
+                While we can customize your home plan to suit your needs,
+                most clients schedule regular home services:
               </p>
 
               {/* Mobile description removed completely */}
@@ -197,7 +197,7 @@ function LandingPage() {
             {/* Heading Block */}
             <div className="flex flex-col gap-6">
               <p className="text-base text-neutral-900 font-normal font-Lato text-center lg:text-left">
-                Affordable cleaning solutions
+                Affordable Home solutions
               </p>
 
               <h2 className="text-2xl sm:text-4xl lg:text-5xl font-semibold font-Outfit txt-color-primary leading-tight">
@@ -209,8 +209,8 @@ function LandingPage() {
 
             {/* Description */}
             <p className="text-xl text-stone-500 leading-8 max-w-lg">
-              We provide comprehensive cleaning services tailored to your needs.
-              From residential cleaning services
+              We provide comprehensive Home services tailored to your needs.
+              From residential Home services
             </p>
           </div>
 
@@ -218,7 +218,7 @@ function LandingPage() {
           <div className="hidden lg:flex gap-6">
             <img
               src={qualiticon}
-              alt="Cleaning Service 1"
+              alt="Home Service 1"
               className="w-110 h-96 rounded-2xl  object-cover"
             />
           </div>
@@ -296,7 +296,7 @@ function LandingPage() {
               {[
                 "Vetted professionals",
                 "Next day availability",
-                "Standard cleaning tasks",
+                "Standard home tasks",
                 "Affordable Prices",
                 "Best Quality",
                 "Satisfaction Guaranteed",
