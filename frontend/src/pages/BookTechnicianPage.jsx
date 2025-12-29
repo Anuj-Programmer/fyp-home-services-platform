@@ -124,6 +124,24 @@ function BookTechnicianPage() {
     return today.toISOString().split('T')[0];
   };
 
+  // Generate next 7 days for calendar selector
+  const getNext7Days = () => {
+    const days = [];
+    const today = new Date();
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      days.push({
+        dayName: date.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase(),
+        dayNumber: date.getDate(),
+        fullDate: date.toISOString().split('T')[0],
+      });
+    }
+    return days;
+  };
+
+  const next7Days = getNext7Days();
+
   if (loading) {
     return (
       <>
@@ -184,14 +202,14 @@ function BookTechnicianPage() {
                 ))}
               </ul>
               {/* Expertise/Experience Headings */}
-              <div className="mt-6">
+              {/* <div className="mt-6">
                 <h3 className="font-semibold text-gray-800 mb-1">Expertise</h3>
                 <p className="text-gray-600">{technician.serviceType}</p>
               </div>
               <div className="mt-4">
                 <h3 className="font-semibold text-gray-800 mb-1">Experience</h3>
                 <p className="text-gray-600">{technician.experienceYears} years in the field</p>
-              </div>
+              </div> */}
             </div>
             {/* Reviews Section */}
             <div className="w-full mt-8 bg-white rounded-xl shadow p-6">
@@ -218,31 +236,47 @@ function BookTechnicianPage() {
           {/* Right: Booking Panel */}
           <div className="md:w-1/2 w-full flex flex-col gap-8">
             <div className="bg-white rounded-xl shadow p-8 flex flex-col gap-6 sticky top-24">
-              <h2 className="text-2xl font-bold txt-color-primary mb-2">Book Appointment</h2>
-              {/* Info Row in Booking Panel */}
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
-                <div className="flex items-center gap-2 bg-blue-50 rounded-lg p-3 w-full sm:w-auto">
-                  <CurrencyCircleDollar size={22} className="text-color-main" />
-                  <span className="font-semibold text-gray-700">Rs. {technician.fee}</span>
+              {/* Technician Header */}
+              <div className="border-b border-gray-200 pb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    {technician.firstName} {technician.lastName}
+                  </h2>
+                  {technician.isVerifiedTechnician && (
+                    <CheckCircle size={24} weight="fill" className="text-blue-600" />
+                  )}
+                  <span className="text-gray-400 mx-1">•</span>
+                  <span className="text-lg text-gray-600">{technician.serviceType}</span>
                 </div>
-                <div className="flex items-center gap-2 bg-blue-50 rounded-lg p-3 w-full sm:w-auto">
-                  <Wrench size={22} className="text-color-main" />
-                  <span className="font-semibold text-gray-700">{technician.experienceYears} years</span>
+                <div className="flex flex-wrap items-center gap-4 text-gray-600 mb-3">
+                  <span className="text-sm">
+                    {technician.experienceYears} {technician.experienceYears === 1 ? 'year' : 'years'} experience
+                  </span>
+                  <span className="text-gray-400">•</span>
+                  <span className="text-sm">{technician.location}</span>
                 </div>
-                <div className="flex items-center gap-2 bg-blue-50 rounded-lg p-3 w-full sm:w-auto">
-                  <MapPin size={22} className="text-color-main" />
-                  <span className="font-semibold text-gray-700">{technician.location}</span>
+                <div className="text-[16px] font-semibold text-gray-800">
+                  Booking Fee: <span className="text-color-main">Rs. {technician.fee}</span>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Select Date</label>
-                <input
-                  type="date"
-                  min={getMinDate()}
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-color-main"
-                />
+                <label className="block text-sm font-semibold text-gray-700 mb-3">Booking slots</label>
+                <div className="flex overflow-x-auto gap-2 mb-4 pb-2 -mx-2 px-2 sm:grid sm:grid-cols-7 sm:overflow-visible">
+                  {next7Days.map((day) => (
+                    <button
+                      key={day.fullDate}
+                      onClick={() => setSelectedDate(day.fullDate)}
+                      className={`flex flex-col items-center justify-center py-3 px-3 sm:py-4 sm:px-2 rounded-3xl border-2 font-medium transition min-w-[70px] sm:min-w-0 ${
+                        selectedDate === day.fullDate
+                          ? 'border-color-main bg-color-main text-white shadow-lg'
+                          : 'border-gray-300 bg-white text-gray-700 hover:border-color-main'
+                      }`}
+                    >
+                      <span className="text-xs mb-1 font-semibold whitespace-nowrap">{day.dayName}</span>
+                      <span className="text-lg sm:text-xl font-bold">{day.dayNumber}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-3">Select Time Slot</label>

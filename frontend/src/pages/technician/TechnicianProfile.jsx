@@ -13,6 +13,9 @@ function TechnicianProfile() {
   const [saving, setSaving] = useState(false);
   const [showCertificateModal, setShowCertificateModal] = useState(false);
   const [uploadingCertificate, setUploadingCertificate] = useState(false);
+  const [showTimeModal, setShowTimeModal] = useState(false);
+  const [editingDay, setEditingDay] = useState(null);
+  const [timeError, setTimeError] = useState("");
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -147,6 +150,51 @@ function TechnicianProfile() {
         [type]: value
       }
     }))
+  };
+
+  const openTimeModal = (day) => {
+    setEditingDay(day);
+    setShowTimeModal(true);
+    setTimeError(""); // Clear error when opening modal
+  };
+
+  const closeTimeModal = () => {
+    setShowTimeModal(false);
+    setEditingDay(null);
+    setTimeError("");
+  };
+
+  const validateTimeRange = (day) => {
+    const { startTime, endTime } = availability[day];
+    
+    // Convert time strings to minutes for comparison
+    const [startHour, startMin] = startTime.split(':').map(Number);
+    const [endHour, endMin] = endTime.split(':').map(Number);
+    
+    const startTotalMin = startHour * 60 + startMin;
+    const endTotalMin = endHour * 60 + endMin;
+    
+    // Check if end time is after start time
+    if (endTotalMin <= startTotalMin) {
+      return "End time must be after start time.";
+    }
+    
+    // Check if time range doesn't cross midnight or exceed 24 hours
+    const durationMins = endTotalMin - startTotalMin;
+    if (durationMins > 24 * 60) {
+      return "Time range cannot exceed 24 hours.";
+    }
+    
+    return ""; // No error
+  };
+
+  const handleTimeChangeWithValidation = (day, type, value) => {
+    handleTimeChange(day, type, value);
+    // Validate after state updates
+    setTimeout(() => {
+      const error = validateTimeRange(day);
+      setTimeError(error);
+    }, 0);
   };
 
   const handleSaveProfile = async (e) => {
@@ -451,57 +499,36 @@ function TechnicianProfile() {
                     Your availability
                   </h3>
                   <p className="text-sm text-stone-500">
-                    Set your working hours for each day of the week
+                    Set your working hours for each day of the week. Click on available days to set times.
                   </p>
                 </div>
 
-                <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
                   {DAYS.map((day) => (
                     <div
                       key={day}
-                      className="p-3 sm:p-4 rounded-lg sm:rounded-xl bg-stone-50 border space-y-2 sm:space-y-3"
+                      onClick={() => openTimeModal(day)}
+                      className={`p-4 rounded-xl border-2 transition cursor-pointer ${
+                        availability[day].isAvailable
+                          ? 'bg-green-50 border-green-300 hover:border-green-400 hover:shadow-md'
+                          : 'bg-gray-50 border-gray-300 hover:border-gray-400'
+                      }`}
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <h4 className="font-semibold text-xs sm:text-sm text-stone-700">{day}</h4>
-                        <button
-                          type="button"
-                          onClick={() => handleToggleDay(day)}
-                          className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-xs font-medium transition whitespace-nowrap ${
-                            availability[day].isAvailable
-                              ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                          }`}
-                        >
+                      <div className="flex flex-col items-center gap-2 text-center">
+                        <h4 className="font-bold text-sm text-stone-700">{day.substring(0, 3)}</h4>
+                        <span className={`text-xs font-semibold ${
+                          availability[day].isAvailable 
+                            ? 'text-green-700' 
+                            : 'text-gray-600'
+                        }`}>
                           {availability[day].isAvailable ? 'Available' : 'Off'}
-                        </button>
+                        </span>
+                        {availability[day].isAvailable && (
+                          <span className="text-xs text-stone-500 mt-1">
+                            {availability[day].startTime} - {availability[day].endTime}
+                          </span>
+                        )}
                       </div>
-
-                      {availability[day].isAvailable && (
-                        <div className="space-y-1.5 sm:space-y-2 pt-2 border-t">
-                          <div className="flex gap-1 sm:gap-2 items-center flex-wrap sm:flex-nowrap">
-                            <label className="text-xs font-medium text-stone-600 whitespace-nowrap">
-                              From
-                            </label>
-                            <input
-                              type="time"
-                              value={availability[day].startTime}
-                              onChange={(e) => handleTimeChange(day, 'startTime', e.target.value)}
-                              className="flex-1 px-2 py-1 sm:py-1.5 border rounded text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
-                            />
-                          </div>
-                          <div className="flex gap-1 sm:gap-2 items-center flex-wrap sm:flex-nowrap">
-                            <label className="text-xs font-medium text-stone-600 whitespace-nowrap">
-                              To
-                            </label>
-                            <input
-                              type="time"
-                              value={availability[day].endTime}
-                              onChange={(e) => handleTimeChange(day, 'endTime', e.target.value)}
-                              className="flex-1 px-2 py-1 sm:py-1.5 border rounded text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
-                            />
-                          </div>
-                        </div>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -684,8 +711,125 @@ function TechnicianProfile() {
           </div>
         </div>
       )}
+
+      {/* Time Setting Modal */}
+      {showTimeModal && editingDay && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl sm:text-2xl font-bold txt-color-primary">
+                {editingDay} Schedule
+              </h3>
+              <button
+                type="button"
+                onClick={closeTimeModal}
+                className="text-gray-400 hover:text-gray-600 transition"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Availability Toggle */}
+              <div className="flex items-center justify-between p-4 bg-stone-50 rounded-xl">
+                <span className="font-medium text-stone-700">Available on this day</span>
+                <button
+                  type="button"
+                  onClick={() => handleToggleDay(editingDay)}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                    availability[editingDay].isAvailable
+                      ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {availability[editingDay].isAvailable ? 'Available' : 'Off'}
+                </button>
+              </div>
+
+              {/* Time Inputs */}
+              {availability[editingDay].isAvailable && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-stone-700 mb-2">
+                      Start Time
+                    </label>
+                    <input
+                      type="time"
+                      value={availability[editingDay].startTime}
+                      onChange={(e) => handleTimeChangeWithValidation(editingDay, 'startTime', e.target.value)}
+                      className="w-full px-4 py-3 border-2 border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-stone-700 mb-2">
+                      End Time
+                    </label>
+                    <input
+                      type="time"
+                      value={availability[editingDay].endTime}
+                      onChange={(e) => handleTimeChangeWithValidation(editingDay, 'endTime', e.target.value)}
+                      className="w-full px-4 py-3 border-2 border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* Error Message */}
+                  {timeError && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-xs text-red-700 font-medium">
+                        ⚠️ {timeError}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Success Message */}
+                  {!timeError && availability[editingDay].isAvailable && (
+                    <div className="p-3 bg-green-50 rounded-lg">
+                      <p className="text-xs text-green-700">
+                        ✓ Valid time range: {availability[editingDay].startTime} - {availability[editingDay].endTime}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="p-3 bg-blue-50 rounded-lg">
+                    <p className="text-xs text-blue-700">
+                      💡 Set realistic working hours to manage customer expectations
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={closeTimeModal}
+                  className="flex-1 px-4 py-3 bg-stone-100 text-stone-700 rounded-xl font-semibold hover:bg-stone-200 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={closeTimeModal}
+                  disabled={timeError ? true : false}
+                  className={`flex-1 px-4 py-3 rounded-xl font-semibold transition ${
+                    timeError
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-color-main text-white hover:bg-blue-700'
+                  }`}
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
 
 export default TechnicianProfile;
+
+     
