@@ -2,10 +2,22 @@ const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authmiddleware'); 
 
-const {changeTechnicianStatus} = require('../controllers/adminCtrl');
+const {
+	changeTechnicianStatus,
+	changeTechnicianCertificateStatus,
+	changeHouseVerificationStatus
+} = require('../controllers/adminCtrl');
 
-//api/admin/:technicianId/status
+
+// Technician account status
 router.patch("/:technicianId/status", changeTechnicianStatus);
+
+// Technician certificate status
+//api/admin/technician/:technicianId/certificate-status
+router.patch("/technician/:technicianId/certificate-status", authMiddleware, changeTechnicianCertificateStatus);
+
+// User house certificate status
+router.patch("/user/:userId/house-certificate-status", authMiddleware, changeHouseVerificationStatus);
 
 module.exports = router;
 

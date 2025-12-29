@@ -351,11 +351,62 @@ const searchTechnician = async (req, res) => {
   }
 };
 
+const uploadTechnicianCertificate = async (req, res) => {
+  try {
+    const { technicianId, certificateUrl } = req.body;
+
+    if (!technicianId || !certificateUrl) {
+      return res.status(400).json({ message: "Technician ID and certificate URL are required" });
+    }
+
+    // Find the technician
+    const technician = await Technician.findById(technicianId);
+    if (!technician) {
+      return res.status(404).json({ message: "Technician not found" });
+    }
+
+    // Update technician with certificate
+    technician.certificateUrl = certificateUrl;
+    technician.certificateStatus = 'pending';
+    await technician.save();
+
+    // Find all admins and send notification
+    const admins = await User.find({ isAdmin: true });
+    
+    const notificationMessage = {
+      type: 'technician-certificate-upload',
+      message: `${technician.firstName} ${technician.lastName} has uploaded a certificate for verification`,
+      technicianId: technician._id,
+      onClickPath: '/admin/technicians',
+      timestamp: new Date(),
+    };
+
+    // Push notification to all admins
+    for (const admin of admins) {
+      admin.notification = admin.notification || [];
+      admin.notification.push(notificationMessage);
+      await admin.save();
+    }
+
+    res.status(200).json({
+      message: "Certificate uploaded successfully. Awaiting admin approval.",
+      technician: {
+        ...technician.toObject(),
+        role: "technician",
+      },
+    });
+  } catch (error) {
+    console.error("Error uploading certificate:", error);
+    res.status(500).json({ message: "Server error uploading certificate" });
+  }
+};
+
 module.exports = {
   registerTechnician,
   updateTechnicianProfile,
   getActiveTechnicians,
   getTechnicianById,
-  searchTechnician
+  searchTechnician,
+  uploadTechnicianCertificate
 }
   

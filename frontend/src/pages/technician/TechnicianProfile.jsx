@@ -11,6 +11,8 @@ const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
 function TechnicianProfile() {
   const [user, setUser] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [showCertificateModal, setShowCertificateModal] = useState(false);
+  const [uploadingCertificate, setUploadingCertificate] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -203,6 +205,66 @@ function TechnicianProfile() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleCertificateUpload = async (e) => {
+    try {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      setUploadingCertificate(true);
+      const response = await uploadToCloudinary(file);
+
+      // Send certificate URL to backend
+      const { data } = await axios.post(
+        "/api/technicians/upload-certificate",
+        {
+          technicianId: user._id,
+          certificateUrl: response.secure_url,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      toast.success(data.message || "Certificate uploaded successfully");
+      
+      // Update user state with new certificate info
+      const updatedUser = {
+        ...user,
+        certificateUrl: response.secure_url,
+        certificateStatus: 'pending',
+      };
+      setUser(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      
+      setShowCertificateModal(false);
+    } catch (error) {
+      console.error(error);
+      toast.error(
+        error.response?.data?.message || "Certificate upload failed"
+      );
+    } finally {
+      setUploadingCertificate(false);
+    }
+  };
+
+  const getCertificateStatusText = () => {
+    if (!user?.certificateUrl) return "Upload proof";
+    if (user?.certificateStatus === "pending") return "Approval Pending";
+    if (user?.certificateStatus === "approved") return "Approved";
+    if (user?.certificateStatus === "rejected") return "Rejected - Re-upload";
+    return "Upload proof";
+  };
+
+  const getCertificateStatusColor = () => {
+    if (!user?.certificateUrl) return "bg-amber-100 text-amber-700";
+    if (user?.certificateStatus === "pending") return "bg-blue-100 text-blue-700";
+    if (user?.certificateStatus === "approved") return "bg-emerald-100 text-emerald-700";
+    if (user?.certificateStatus === "rejected") return "bg-red-100 text-red-700";
+    return "bg-amber-100 text-amber-700";
   };
 
   return (
@@ -505,18 +567,32 @@ function TechnicianProfile() {
                 <div className="flex flex-col gap-3 text-sm">
                   <div className="flex items-center justify-between">
                     <span>Certificate verification</span>
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        user?.isVerifiedTechnician
-                          ? "bg-emerald-100 text-emerald-700"
-                          : "bg-amber-100 text-amber-700"
-                      }`}
+                    <button
+                      type="button"
+                      className={`px-3 py-1 rounded-full text-xs font-semibold cursor-pointer hover:opacity-80 transition-opacity ${getCertificateStatusColor()}`}
+                      onClick={() => {
+                        if (user?.certificateStatus !== 'approved') {
+                          setShowCertificateModal(true);
+                        }
+                      }}
                     >
-                      {user?.isVerifiedTechnician ? "Verified" : "Not verified"}
-                    </span>
+                      {getCertificateStatusText()}
+                    </button>
                   </div>
 
-                  {!user?.isVerifiedTechnician && (
+                  {user?.certificateStatus === 'pending' && (
+                    <p className="text-xs text-blue-600">
+                      Your certificate is under review. You can upload a new one to replace it.
+                    </p>
+                  )}
+
+                  {user?.certificateStatus === 'rejected' && (
+                    <p className="text-xs text-red-600">
+                      Your certificate was rejected. Please upload a valid certificate.
+                    </p>
+                  )}
+
+                  {!user?.certificateUrl && (
                     <p className="text-xs text-stone-500">
                       Upload a valid certificate to get verified and increase
                       customer trust.
@@ -553,6 +629,61 @@ function TechnicianProfile() {
         </section>
       </main>
       <Footer />
+
+      {/* Certificate Upload Modal */}
+      {showCertificateModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/30">
+          <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full mx-4">
+            <h3 className="text-xl font-bold mb-4">Upload Technician Certificate</h3>
+            
+            {user?.certificateStatus === 'pending' && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-sm text-blue-800">
+                  Your certificate is currently under review. You can upload a new certificate if needed.
+                </p>
+              </div>
+            )}
+
+            {user?.certificateStatus === 'rejected' && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-800">
+                  Your previous certificate was rejected. Please upload a valid certificate.
+                </p>
+              </div>
+            )}
+            
+            <div className="mb-4">
+              <input
+                type="file"
+                accept="image/*,.pdf"
+                onChange={handleCertificateUpload}
+                disabled={uploadingCertificate}
+                className="block w-full text-sm text-gray-500
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-full file:border-0
+                  file:text-sm file:font-semibold
+                  file:bg-blue-50 file:text-blue-700
+                  hover:file:bg-blue-100
+                  disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+            </div>
+
+            {uploadingCertificate && (
+              <p className="text-sm text-gray-600 mb-4">
+                Uploading certificate...
+              </p>
+            )}
+
+            <button
+              onClick={() => setShowCertificateModal(false)}
+              disabled={uploadingCertificate}
+              className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

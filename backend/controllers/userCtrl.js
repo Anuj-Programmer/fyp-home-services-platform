@@ -322,6 +322,56 @@ const getCurrentUser = async (req, res) => {
   }
 };
 
+const uploadHouseCertificate = async (req, res) => {
+  try {
+    const { userId, certificateUrl } = req.body;
+
+    if (!userId || !certificateUrl) {
+      return res.status(400).json({ message: "User ID and certificate URL are required" });
+    }
+
+    // Find the user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Update user with certificate
+    user.houseCertificateUrl = certificateUrl;
+    user.houseCertificateStatus = 'pending';
+    await user.save();
+
+    // Find all admins and send notification
+    const admins = await User.find({ isAdmin: true });
+    
+    const notificationMessage = {
+      type: 'certificate-upload',
+      message: `${user.firstName} ${user.lastName} has uploaded a house certificate for verification`,
+      userId: user._id,
+      onClickPath: '/admin/users',
+      timestamp: new Date(),
+    };
+
+    // Push notification to all admins
+    for (const admin of admins) {
+      admin.notification = admin.notification || [];
+      admin.notification.push(notificationMessage);
+      await admin.save();
+    }
+
+    res.status(200).json({
+      message: "Certificate uploaded successfully. Awaiting admin approval.",
+      user: {
+        ...user.toObject(),
+        role: user.isAdmin ? "admin" : "user",
+      },
+    });
+  } catch (error) {
+    console.error("Error uploading certificate:", error);
+    res.status(500).json({ message: "Server error uploading certificate" });
+  }
+};
+
 
 
 module.exports = {
@@ -330,5 +380,6 @@ module.exports = {
   updateProfile,
   deleteAllNotifications,
   markAllNotification,
-  getCurrentUser
+  getCurrentUser,
+  uploadHouseCertificate
 };

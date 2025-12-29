@@ -3,11 +3,14 @@ import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import Navbar from "@/blocks/Navbar";
 import Footer from "@/blocks/Footer";
+import { uploadToCloudinary } from "@/lib/uploadToCloudinary";
 import "../css/landingPage.css";
 
 function Profile() {
   const [user, setUser] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [showCertificateModal, setShowCertificateModal] = useState(false);
+  const [uploadingCertificate, setUploadingCertificate] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -139,6 +142,66 @@ function Profile() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleCertificateUpload = async (e) => {
+    try {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      setUploadingCertificate(true);
+      const response = await uploadToCloudinary(file);
+
+      // Send certificate URL to backend
+      const { data } = await axios.post(
+        "/api/users/upload-certificate",
+        {
+          userId: user._id,
+          certificateUrl: response.secure_url,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      toast.success(data.message || "Certificate uploaded successfully");
+      
+      // Update user state with new certificate info
+      const updatedUser = {
+        ...user,
+        houseCertificateUrl: response.secure_url,
+        houseCertificateStatus: 'pending',
+      };
+      setUser(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      
+      setShowCertificateModal(false);
+    } catch (error) {
+      console.error(error);
+      toast.error(
+        error.response?.data?.message || "Certificate upload failed"
+      );
+    } finally {
+      setUploadingCertificate(false);
+    }
+  };
+
+  const getCertificateStatusText = () => {
+    if (!user?.houseCertificateUrl) return "Upload proof";
+    if (user?.houseCertificateStatus === "pending") return "Approval Pending";
+    if (user?.houseCertificateStatus === "approved") return "Approved";
+    if (user?.houseCertificateStatus === "rejected") return "Rejected - Re-upload";
+    return "Upload proof";
+  };
+
+  const getCertificateStatusColor = () => {
+    if (!user?.houseCertificateUrl) return "bg-amber-100 text-amber-700";
+    if (user?.houseCertificateStatus === "pending") return "bg-blue-100 text-blue-700";
+    if (user?.houseCertificateStatus === "approved") return "bg-emerald-100 text-emerald-700";
+    if (user?.houseCertificateStatus === "rejected") return "bg-red-100 text-red-700";
+    return "bg-amber-100 text-amber-700";
   };
 
   return (
@@ -362,39 +425,22 @@ function Profile() {
 
                 {/* Conditional: House verification for users only */}
                 {user?.role === "user" && (
-                  <div className="flex items-center justify-between">
-                    <span>House verification</span>
-                    <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold">
-                      {user?.isHouseVerified ? "Submitted" : "Upload proof"}
-                    </span>
-                  </div>
-                )}
-
-                {/* Conditional: Certificate verification for technicians only */}
-                {user?.role === "technician" && (
-                  <div className="flex flex-col gap-3 text-sm">
+                  <>
                     <div className="flex items-center justify-between">
-                      <span>Certificate verification</span>
+                      <span>House verification</span>
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          user?.isVerifiedTechnician
-                            ? "bg-emerald-100 text-emerald-700" // verified
-                            : "bg-amber-100 text-amber-700" // not verified
-                        }`}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold cursor-pointer ${getCertificateStatusColor()}`}
+                        onClick={() => {
+                          // Allow upload if no certificate or if rejected
+                          if (!user?.houseCertificateUrl || user?.houseCertificateStatus === 'rejected' || user?.houseCertificateStatus === 'pending') {
+                            setShowCertificateModal(true);
+                          }
+                        }}
                       >
-                        {user?.isVerifiedTechnician
-                          ? "Verified"
-                          : "Not verified"}
+                        {getCertificateStatusText()}
                       </span>
                     </div>
-
-                    {/* Upload certificate button only if not verified */}
-                    {!user?.isVerifiedTechnician && (
-                      <button className="text-color-main font-semibold text-left hover:underline">
-                        Upload certificate
-                      </button>
-                    )}
-                  </div>
+                  </>
                 )}
               </div>
             </div>
@@ -419,6 +465,74 @@ function Profile() {
         </section>
       </main>
       <Footer />
+
+      {/* Certificate Upload Modal */}
+      {showCertificateModal && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-semibold txt-color-primary">
+                Upload House Certificate
+              </h3>
+              <button
+                onClick={() => setShowCertificateModal(false)}
+                className="text-stone-400 hover:text-stone-600 text-2xl"
+                disabled={uploadingCertificate}
+              >
+                ×
+              </button>
+            </div>
+            
+            <p className="text-sm text-stone-600">
+              Please upload a document that verifies your house ownership or residency 
+              (e.g., utility bill, property deed, rental agreement).
+            </p>
+
+            <div className="space-y-3">
+              <label className="block">
+                <span className="text-sm font-medium text-stone-600 mb-2 block">
+                  Select Certificate File
+                </span>
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={handleCertificateUpload}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={uploadingCertificate}
+                />
+              </label>
+
+              {uploadingCertificate && (
+                <p className="text-sm text-blue-600 text-center">
+                  Uploading certificate...
+                </p>
+              )}
+
+              {user?.houseCertificateStatus === 'pending' && (
+                <p className="text-sm text-blue-600">
+                  Your previous certificate is pending approval. You can upload a new one to replace it.
+                </p>
+              )}
+
+              {user?.houseCertificateStatus === 'rejected' && (
+                <p className="text-sm text-red-600">
+                  Your previous certificate was rejected. Please upload a new one.
+                </p>
+              )}
+            </div>
+
+            <div className="flex gap-3 justify-end mt-6">
+              <button
+                onClick={() => setShowCertificateModal(false)}
+                className="px-4 py-2 text-sm font-semibold text-stone-600 hover:text-stone-800"
+                disabled={uploadingCertificate}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

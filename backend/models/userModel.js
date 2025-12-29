@@ -30,6 +30,8 @@ const userSchema = new mongoose.Schema({
   // House verification
   houseDocuments: [{ type: String }], // uploaded proof
   isHouseVerified: { type: Boolean, default: false },
+  houseCertificateUrl: { type: String }, // latest certificate upload
+  houseCertificateStatus: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
 
   // Admin flag
   isAdmin: { type: Boolean, default: false },

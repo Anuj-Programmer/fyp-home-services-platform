@@ -54,6 +54,12 @@ const TechnicianSchema = new mongoose.Schema({
     default: null   // optional certificate
   },
 
+  certificateStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending'
+  },
+
   isVerifiedTechnician: {
     type: Boolean,
     default: false   // becomes true ONLY if certificate is provided

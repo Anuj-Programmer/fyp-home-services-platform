@@ -1,3 +1,58 @@
+// Admin changes house verification status for a user
+const changeHouseVerificationStatus = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { status } = req.body; // "approved" or "rejected"
+
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status. Must be 'approved' or 'rejected'."
+      });
+    }
+
+    // Find user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    // Update status
+    user.houseCertificateStatus = status;
+    user.isHouseVerified = (status === 'approved');
+    await user.save();
+
+    // Notify user
+    user.notification = user.notification || [];
+    user.notification.push({
+      message:
+        status === 'approved'
+          ? 'Your house certificate has been approved. Your address is now verified.'
+          : 'Your house certificate was rejected. Please upload a valid document.',
+      createdAt: new Date(),
+      type: 'house_certificate_' + status
+    });
+    await user.save();
+
+    // Optionally, send email (not required, but can be added)
+
+    return res.status(200).json({
+      success: true,
+      message: `House certificate status updated to ${status}.`,
+      user
+    });
+  } catch (error) {
+    console.error('Error changing house verification status:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
 const OTP = require("../models/otpModel.js");
 const User = require("../models/userModel.js");
 const nodemailer = require("nodemailer");
@@ -106,6 +161,64 @@ const transporter = nodemailer.createTransport({
     }
   };
 
+  
+
+// Admin changes technician certificate status
+const changeTechnicianCertificateStatus = async (req, res) => {
+  try {
+    const { technicianId } = req.params;
+    const { status } = req.body; // "approved" or "rejected"
+
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status. Must be 'approved' or 'rejected'."
+      });
+    }
+
+    // Find technician
+    const technician = await Technician.findById(technicianId);
+    if (!technician) {
+      return res.status(404).json({
+        success: false,
+        message: "Technician not found"
+      });
+    }
+
+    // Update status
+    technician.certificateStatus = status;
+    technician.isVerifiedTechnician = (status === 'approved');
+    await technician.save();
+
+    // Notify technician
+    technician.notification = technician.notification || [];
+    technician.notification.push({
+      message:
+        status === 'approved'
+          ? 'Your certificate has been approved. You are now a verified technician.'
+          : 'Your certificate was rejected. Please upload a valid certificate.',
+      createdAt: new Date(),
+      type: 'certificate_' + status
+    });
+    await technician.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `Technician certificate status updated to ${status}.`,
+      technician
+    });
+  } catch (error) {
+    console.error('Error changing technician certificate status:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
   module.exports = {
-    changeTechnicianStatus
+    changeTechnicianStatus,
+    changeHouseVerificationStatus,
+    changeTechnicianCertificateStatus
   };
