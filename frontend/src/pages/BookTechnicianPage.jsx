@@ -452,7 +452,7 @@ function BookTechnicianPage() {
                         }`}
                       >
                         <div className="flex items-start gap-3">
-                          <div className="w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center flex-shrink-0" style={{
+                          <div className="w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0" style={{
                             borderColor: selectedAddress?._id === address._id ? '#003d82' : '#d1d5db'
                           }}>
                             {selectedAddress?._id === address._id && (
