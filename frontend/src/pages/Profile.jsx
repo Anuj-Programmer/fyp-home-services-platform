@@ -19,7 +19,7 @@ function Profile() {
     address: "",
     detailedAddress: {
       houseNumber: "",
-      street: "",
+      landMark: "",
       ward: "",
       district: "",
       province: "",
@@ -55,7 +55,7 @@ function Profile() {
       data?.role === "user"
         ? {
             houseNumber: data?.detailedAddress?.houseNumber || "",
-            street: data?.detailedAddress?.street || "",
+            landMark: data?.detailedAddress?.landMark || "",
             ward: data?.detailedAddress?.ward || "",
             district: data?.detailedAddress?.district || "",
             province: data?.detailedAddress?.province || "",
@@ -63,7 +63,7 @@ function Profile() {
           }
         : {
             houseNumber: "",
-            street: "",
+            landMark: "",
             ward: "",
             district: "",
             province: "",
@@ -330,11 +330,11 @@ function Profile() {
                       />
                     </label>
                     <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
-                      Street
+                      Land Mark
                       <input
                         type="text"
-                        name="street"
-                        value={formData.detailedAddress.street}
+                        name="landMark"
+                        value={formData.detailedAddress.landMark}
                         onChange={handleDetailedChange}
                         className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
                       />

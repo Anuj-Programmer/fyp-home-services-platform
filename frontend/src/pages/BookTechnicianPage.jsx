@@ -18,6 +18,25 @@ function BookTechnicianPage() {
   const [selectedTime, setSelectedTime] = useState('');
   const [availableSlots, setAvailableSlots] = useState([]);
   const [bookingLoading, setBookingLoading] = useState(false);
+  const [user, setUser] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [orderNote, setOrderNote] = useState('');
+
+  // Fetch current user data
+  useEffect(() => {
+    const fetchUser = async () => {
+      if (!token) return;
+      try {
+        const { data } = await axios.get('/api/users/current-user', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setUser(data);
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      }
+    };
+    fetchUser();
+  }, [token]);
 
   // Fetch technician details
   useEffect(() => {
@@ -75,8 +94,30 @@ function BookTechnicianPage() {
     return slots;
   };
 
-  // Handle booking
-  const handleBookNow = async () => {
+  // Validate address fields
+  const validateAddress = () => {
+    if (!user) return false;
+    const { address, detailedAddress } = user;
+    
+    // Check if basic address exists
+    if (!address || address.trim() === '') return false;
+    
+    // Check if detailedAddress exists and all required fields are filled
+    if (!detailedAddress) return false;
+    
+    const requiredFields = ['landMark', 'houseNumber', 'ward', 'district', 'province'];
+    
+    for (const field of requiredFields) {
+      if (!detailedAddress[field] || detailedAddress[field].trim() === '') {
+        return false;
+      }
+    }
+    
+    return true;
+  };
+
+  // Handle booking - validate and open modal
+  const handleBookNow = () => {
     if (!selectedDate || !selectedTime) {
       toast.error('Please select both date and time');
       return;
@@ -86,6 +127,23 @@ function BookTechnicianPage() {
       navigate('/login');
       return;
     }
+    if (!user) {
+      toast.error('Loading user data...');
+      return;
+    }
+    
+    // Validate address
+    if (!validateAddress()) {
+      toast.error('You need to fill your primary service location first.');
+      return;
+    }
+    
+    // Open modal
+    setShowModal(true);
+  };
+
+  // Handle confirm booking from modal
+  const handleConfirmBooking = async () => {
     try {
       setBookingLoading(true);
       const bookingData = {
@@ -93,6 +151,7 @@ function BookTechnicianPage() {
         serviceDate: selectedDate,
         serviceTime: selectedTime,
         fee: technician.fee,
+        orderNote: orderNote,
         technicianInfo: {
           firstname: technician.firstName,
           lastname: technician.lastName,
@@ -109,6 +168,7 @@ function BookTechnicianPage() {
         },
       });
       toast.success('Booking confirmed! Check your bookings for details.');
+      setShowModal(false);
       navigate('/bookings');
     } catch (error) {
       console.error('Error creating booking:', error);
@@ -338,6 +398,96 @@ function BookTechnicianPage() {
         </div>
       </div>
       <Footer />
+
+      {/* Booking Modal */}
+      {showModal && user && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4 overflow-hidden">
+          <div className="bg-white rounded-2xl max-w-lg w-full h-[90dvh] sm:h-auto sm:max-h-[90dvh] flex flex-col">
+            {/* Fixed Header */}
+            <div className="px-3 py-4 sm:px-6 sm:py-6 border-b border-gray-200 shrink-0">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Book Service</h2>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl leading-none shrink-0"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-6">
+              {/* Booking Time */}
+              <div className="mb-4 sm:mb-6">
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">Booking Time</h3>
+                <p className="text-gray-800 text-sm sm:text-base">
+                  {new Date(selectedDate).toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                  })}, {selectedTime}
+                </p>
+              </div>
+
+              {/* Service Address */}
+              <div className="mb-4 sm:mb-6">
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">Address</h3>
+                <div className="bg-gray-100 rounded-lg p-3 sm:p-4">
+                  <div className="flex flex-col gap-1 sm:gap-2">
+                    <h4 className="font-semibold text-gray-800 text-sm sm:text-base">
+                      {user.firstName} {user.lastName}
+                    </h4>
+                    <p className="text-xs sm:text-sm text-gray-600">
+                      {user.detailedAddress?.landMark && `${user.detailedAddress.landMark}, `}
+                      {user.address}
+                    </p>
+                    <p className="text-xs sm:text-sm text-gray-600">
+                      {user.detailedAddress?.district}
+                    </p>
+                    <p className="text-xs sm:text-sm text-gray-600">{user.phone}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Email Address */}
+              <div className="mb-4 sm:mb-6">
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">Email Address</h3>
+                <div className="bg-gray-50 rounded-lg p-2 sm:p-3 border border-gray-200">
+                  <p className="text-gray-700 text-xs sm:text-sm break-all">{user.email}</p>
+                </div>
+              </div>
+
+              {/* Order Note */}
+              <div className="mb-4 sm:mb-6">
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">Order Note</h3>
+                <textarea
+                  value={orderNote}
+                  onChange={(e) => setOrderNote(e.target.value)}
+                  placeholder="eg: Please bring extra batteries."
+                  className="w-full border border-gray-300 rounded-lg p-2 sm:p-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-color-main resize-none"
+                  rows="2"
+                />
+              </div>
+            </div>
+
+            {/* Fixed Footer with Button */}
+            <div className="px-3 py-4 sm:px-6 sm:py-6 border-t border-gray-200 bg-white flex-shrink-0">
+              <button
+                onClick={handleConfirmBooking}
+                disabled={bookingLoading || !selectedDate || !selectedTime}
+                className={`w-full py-3 sm:py-4 px-4 sm:px-6 rounded-lg font-bold text-base sm:text-lg text-white transition ${
+                  bookingLoading || !selectedDate || !selectedTime
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-color-main hover:bg-blue-700 btn-filled-slide'
+                }`}
+              >
+                {bookingLoading ? 'Processing...' : 'Confirm Booking'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

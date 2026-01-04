@@ -21,6 +21,7 @@ const bookingSchema = new mongoose.Schema({
         lastname: String,
         email: String,
     },
+    note: { type: String },
     // Review and rating for this booking
     review: {
       rating: { type: Number, min: 1, max: 5 },

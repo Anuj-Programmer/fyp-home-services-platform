@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 // Optional detailed address schema for profile section
 const detailedAddressSchema = new mongoose.Schema({
-  street: { type: String },
+  landMark: { type: String },
   houseNumber: { type: String },
   ward: { type: String },
   colonyName: { type: String },
