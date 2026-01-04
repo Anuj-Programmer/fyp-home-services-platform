@@ -218,8 +218,54 @@ const changeHouseVerificationStatus = async (req, res) => {
   }
 };
 
+const changeAddressVerificationStatus = async (req, res) => {
+  try {
+    const { userId, addressId } = req.params;
+    const { status } = req.body; // "approved" or "rejected"
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status. Must be 'approved' or 'rejected'."
+      });
+    }
+    // Find user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    } 
+    // Find address
+    const address = user.addressBook.id(addressId);
+    if (!address) {
+      return res.status(404).json({
+        success: false,
+        message: "Address not found"
+      });
+    }
+    // Update address verification status
+    address.houseCertificateStatus = status;
+    address.isHouseVerified = (status === 'approved');
+    await user.save();
+    return res.status(200).json({
+      success: true,
+      message: `Address verification status updated to ${status}.`,
+      address
+    });
+  } catch (error) {
+    console.error('Error changing address verification status:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
   module.exports = {
     changeTechnicianStatus,
     changeHouseVerificationStatus,
-    changeTechnicianCertificateStatus
+    changeTechnicianCertificateStatus,
+    changeAddressVerificationStatus
   };

@@ -21,6 +21,7 @@ function BookTechnicianPage() {
   const [user, setUser] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [orderNote, setOrderNote] = useState('');
+  const [selectedAddress, setSelectedAddress] = useState(null);
 
   // Fetch current user data
   useEffect(() => {
@@ -132,12 +133,14 @@ function BookTechnicianPage() {
       return;
     }
     
-    // Validate address
-    if (!validateAddress()) {
-      toast.error('You need to fill your primary service location first.');
+    // Check if user has any addresses in address book
+    if (!user.addressBook || user.addressBook.length === 0) {
+      toast.error('Please add an address in your address book first.');
       return;
     }
     
+    // Set default selected address to first one
+    setSelectedAddress(user.addressBook[0]);
     // Open modal
     setShowModal(true);
   };
@@ -430,32 +433,60 @@ function BookTechnicianPage() {
                 </p>
               </div>
 
-              {/* Service Address */}
+              {/* Select Address */}
               <div className="mb-4 sm:mb-6">
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">Address</h3>
-                <div className="bg-gray-100 rounded-lg p-3 sm:p-4">
-                  <div className="flex flex-col gap-1 sm:gap-2">
-                    <h4 className="font-semibold text-gray-800 text-sm sm:text-base">
-                      {user.firstName} {user.lastName}
-                    </h4>
-                    <p className="text-xs sm:text-sm text-gray-600">
-                      {user.detailedAddress?.landMark && `${user.detailedAddress.landMark}, `}
-                      {user.address}
-                    </p>
-                    <p className="text-xs sm:text-sm text-gray-600">
-                      {user.detailedAddress?.district}
-                    </p>
-                    <p className="text-xs sm:text-sm text-gray-600">{user.phone}</p>
-                  </div>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-semibold text-gray-700">Select Address</h3>
+                  <a href="/profile" className="text-xs font-semibold text-color-main hover:underline">Add Address</a>
+                </div>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {user.addressBook && user.addressBook.length > 0 ? (
+                    user.addressBook.map((address) => (
+                      <div
+                        key={address._id}
+                        onClick={() => setSelectedAddress(address)}
+                        className={`p-3 rounded-lg border-2 cursor-pointer transition ${
+                          selectedAddress?._id === address._id
+                            ? 'border-color-main bg-blue-50'
+                            : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center flex-shrink-0" style={{
+                            borderColor: selectedAddress?._id === address._id ? '#003d82' : '#d1d5db'
+                          }}>
+                            {selectedAddress?._id === address._id && (
+                              <div className="w-2.5 h-2.5 rounded-full" style={{backgroundColor: '#003d82'}}></div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-gray-800 text-sm capitalize">
+                              {address.contactName} ({address.addressType})
+                            </h4>
+                            <p className="text-xs text-gray-600 mt-1">{address.address}</p>
+                            {address.landMark && (
+                              <p className="text-xs text-gray-500">Landmark: {address.landMark}</p>
+                            )}
+                            <p className="text-xs text-gray-600 mt-1">{address.phone}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-gray-500">No addresses found</p>
+                  )}
                 </div>
               </div>
 
-              {/* Email Address */}
+              {/* Email Address (Read-only) */}
               <div className="mb-4 sm:mb-6">
                 <h3 className="text-sm font-semibold text-gray-700 mb-2">Email Address</h3>
-                <div className="bg-gray-50 rounded-lg p-2 sm:p-3 border border-gray-200">
-                  <p className="text-gray-700 text-xs sm:text-sm break-all">{user.email}</p>
-                </div>
+                <input
+                  type="email"
+                  value={user.email}
+                  readOnly
+                  className="w-full border border-gray-300 rounded-lg p-2 sm:p-3 text-xs sm:text-sm text-gray-700 bg-gray-50 cursor-not-allowed"
+                />
               </div>
 
               {/* Order Note */}
@@ -472,7 +503,7 @@ function BookTechnicianPage() {
             </div>
 
             {/* Fixed Footer with Button */}
-            <div className="px-3 py-4 sm:px-6 sm:py-6 border-t border-gray-200 bg-white flex-shrink-0">
+            <div className="px-3 py-4 sm:px-6 sm:py-6 border-t border-gray-200 bg-white shrink-0">
               <button
                 onClick={handleConfirmBooking}
                 disabled={bookingLoading || !selectedDate || !selectedTime}

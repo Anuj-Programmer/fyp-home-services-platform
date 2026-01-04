@@ -65,10 +65,10 @@ const createProfile = async (req, res) => {
 // ------------------- Register User -------------------
 const registerUser = async (req, res) => {
   try {
-    const { firstName, lastName, email, address } = req.body;
+    const { firstName, lastName, email, address, phone } = req.body;
 
     // All fields required
-    if (!firstName || !lastName || !email || !address) {
+    if (!firstName || !lastName || !email || !address || !phone) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
@@ -82,7 +82,8 @@ const registerUser = async (req, res) => {
       lastName,
       email,
       isEmailVerified: true, 
-      address
+      address,
+      phone
     });
     const token = jwt.sign({ userId: newUser._id, isAdmin: false }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
@@ -372,6 +373,171 @@ const uploadHouseCertificate = async (req, res) => {
   }
 };
 
+// ------------------- Address Book Management -------------------
+
+// Add new address to address book
+const addAddress = async (req, res) => {
+  try {
+    const { userId, address } = req.body;
+
+    if (!userId || !address) {
+      return res.status(400).json({ message: "User ID and address are required" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Initialize addressBook if it doesn't exist
+    if (!user.addressBook) {
+      user.addressBook = [];
+    }
+
+    // Add new address
+    user.addressBook.push({
+      ...address,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    await user.save();
+
+    res.status(200).json({
+      message: "Address added successfully",
+      user: {
+        ...user.toObject(),
+        role: user.isAdmin ? "admin" : "user",
+      },
+    });
+  } catch (error) {
+    console.error("Error adding address:", error);
+    res.status(500).json({ message: "Server error adding address" });
+  }
+};
+
+// Update existing address
+const updateAddress = async (req, res) => {
+  try {
+    const { userId, addressId, updates } = req.body;
+
+    if (!userId || !addressId || !updates) {
+      return res.status(400).json({ message: "User ID, address ID, and updates are required" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const addressIndex = user.addressBook.findIndex(
+      addr => addr._id.toString() === addressId
+    );
+
+    if (addressIndex === -1) {
+      return res.status(404).json({ message: "Address not found" });
+    }
+
+    // Update address fields
+    user.addressBook[addressIndex] = {
+      ...user.addressBook[addressIndex].toObject(),
+      ...updates,
+      updatedAt: new Date()
+    };
+
+    await user.save();
+
+    res.status(200).json({
+      message: "Address updated successfully",
+      user: {
+        ...user.toObject(),
+        role: user.isAdmin ? "admin" : "user",
+      },
+    });
+  } catch (error) {
+    console.error("Error updating address:", error);
+    res.status(500).json({ message: "Server error updating address" });
+  }
+};
+
+// Delete address
+const deleteAddress = async (req, res) => {
+  try {
+    const { userId, addressId } = req.body;
+
+    if (!userId || !addressId) {
+      return res.status(400).json({ message: "User ID and address ID are required" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.addressBook = user.addressBook.filter(
+      addr => addr._id.toString() !== addressId
+    );
+
+    await user.save();
+
+    res.status(200).json({
+      message: "Address deleted successfully",
+      user: {
+        ...user.toObject(),
+        role: user.isAdmin ? "admin" : "user",
+      },
+    });
+  } catch (error) {
+    console.error("Error deleting address:", error);
+    res.status(500).json({ message: "Server error deleting address" });
+  }
+};
+
+const uploadAddressCertificate = async (req, res) => {
+  try {
+    const { userId, addressId, certificateUrl } = req.body;
+    if (!userId || !addressId || !certificateUrl) {
+      return res.status(400).json({ message: "User ID, address ID, and certificate URL are required" });
+    }
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    } 
+    const addressIndex = user.addressBook.findIndex(
+      addr => addr._id.toString() === addressId
+    );
+    if (addressIndex === -1) {
+      return res.status(404).json({ message: "Address not found" });
+    }
+    user.addressBook[addressIndex].houseCertificateUrl = certificateUrl;
+    user.addressBook[addressIndex].houseCertificateStatus = 'pending';
+    await user.save();  
+
+    const admin = await User.findOne({ isAdmin: true });
+    if (admin) {
+      admin.notification = admin.notification || [];
+      admin.notification.push({
+        type: 'address-certificate-upload',
+        message: `${user.firstName} ${user.lastName} has uploaded an address certificate for verification`,
+        userId: user._id,
+        onClickPath: '/admin/users',
+        timestamp: new Date(),
+      });
+      await admin.save();
+    }
+    res.status(200).json({
+      message: "Address certificate uploaded successfully. Awaiting admin approval.",
+      user: {
+        ...user.toObject(),
+        role: user.isAdmin ? "admin" : "user",
+      },
+    });
+  } catch (error) {
+    console.error("Error uploading address certificate:", error);
+    res.status(500).json({ message: "Server error uploading address certificate" });
+  }
+};
+
 
 
 module.exports = {
@@ -381,5 +547,9 @@ module.exports = {
   deleteAllNotifications,
   markAllNotification,
   getCurrentUser,
-  uploadHouseCertificate
+  uploadHouseCertificate,
+  addAddress,
+  updateAddress,
+  deleteAddress,
+  uploadAddressCertificate
 };

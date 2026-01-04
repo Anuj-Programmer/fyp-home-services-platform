@@ -5,7 +5,8 @@ const authMiddleware = require('../middleware/authmiddleware');
 const {
 	changeTechnicianStatus,
 	changeTechnicianCertificateStatus,
-	changeHouseVerificationStatus
+	changeHouseVerificationStatus,
+	changeAddressVerificationStatus
 } = require('../controllers/adminCtrl');
 
 
@@ -18,6 +19,9 @@ router.patch("/technician/:technicianId/certificate-status", authMiddleware, cha
 
 // User house certificate status
 router.patch("/user/:userId/house-certificate-status", authMiddleware, changeHouseVerificationStatus);
+
+// User address certificate status
+router.patch("/user/:userId/address/:addressId/verification-status", authMiddleware, changeAddressVerificationStatus);
 
 module.exports = router;
 
