@@ -4,6 +4,7 @@ import { useState } from 'react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import '../../css/landingPage.css'
+import Cookies from 'js-cookie'
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
@@ -40,7 +41,7 @@ function ManageTiming() {
 
   const handleSaveAvailability = async () => {
     try {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem('token') || Cookies.get('token')
       const user = JSON.parse(localStorage.getItem('user'))
       
       if (!token) {

@@ -168,7 +168,7 @@ const markAllNotification = async (req, res) => {
     // Try finding in User collection first
     let user = await User.findOne({ _id: userId });
     if (user) {
-      const seenNotifications = user.seenNotications || [];
+      const seenNotifications = user.seenNotifications || [];
       const notification = user.notification || [];
       seenNotifications.push(...notification);
       user.notification = [];

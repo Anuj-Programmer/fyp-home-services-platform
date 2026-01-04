@@ -169,7 +169,7 @@ const Navbar = () => {
           },
         }
       );
-      toast.success(data.message || "All notifications deleted");
+      //toast.success(data.message || "All notifications deleted");
       
       // Update state with backend response
       setUser(data.data);
@@ -288,9 +288,12 @@ const Navbar = () => {
                           <div className="px-4 py-2 border-b font-semibold flex justify-between items-center">
                             <span>Notifications</span>
                             {notifications.length > 0 && (
-                              <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">
-                                {notifications.length}
-                              </span>
+                              <button
+                                onClick={handleDeleteAllNotifications}
+                                className="text-xs text-blue-600 hover:text-blue-800 font-semibold cursor-pointer"
+                              >
+                                Mark as read
+                              </button>
                             )}
                           </div>
                           <div className="max-h-64 overflow-y-auto">
@@ -345,23 +348,6 @@ const Navbar = () => {
                               </div>
                             )}
                           </div>
-
-                          {notifications.length > 0 && (
-                            <div className="border-t px-4 py-2 flex gap-2 bg-gray-50">
-                              <button
-                                onClick={handleMarkAllAsRead}
-                                className="flex-1 px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition"
-                              >
-                                Mark as Read
-                              </button>
-                              <button
-                                onClick={handleDeleteAllNotifications}
-                                className="flex-1 px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 transition"
-                              >
-                                Delete All
-                              </button>
-                            </div>
-                          )}
                         </div>
                       )}
                     </div>
@@ -485,12 +471,22 @@ const Navbar = () => {
                 {mobileModal === "notifications" && "Notifications"}
                 {mobileModal === "profile" && "Profile"}
               </h2>
-              <button
-                onClick={() => setMobileModal(null)}
-                className="p-1 hover:bg-gray-100 rounded"
-              >
-                <X size={24} />
-              </button>
+              <div className="flex items-center gap-4">
+                {mobileModal === "notifications" && notifications.length > 0 && (
+                  <button
+                    onClick={handleDeleteAllNotifications}
+                    className="text-sm text-blue-600 hover:text-blue-800 font-semibold"
+                  >
+                    Mark as read
+                  </button>
+                )}
+                <button
+                  onClick={() => setMobileModal(null)}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <X size={24} />
+                </button>
+              </div>
             </div>
 
             <div className="px-4 py-4">
@@ -519,66 +515,50 @@ const Navbar = () => {
                 <div>
                   <div className="space-y-2">
                     {notifications.length > 0 ? (
-                      <>
-                        {notifications.map((notification, index) => (
-                          <div
-                            key={index}
-                            className="p-3 bg-white border rounded-lg"
-                          >
-                            <p className="font-medium text-gray-800">
-                              {notification.message ||
-                                `New notification from ${notification.name}`}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {new Date(
-                                notification.createdAt
-                              ).toLocaleString()}
-                            </p>
+                      notifications.map((notification, index) => (
+                        <div
+                          key={index}
+                          className="p-3 bg-white border rounded-lg"
+                        >
+                          <p className="font-medium text-gray-800">
+                            {notification.message ||
+                              `New notification from ${notification.name}`}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {new Date(
+                              notification.createdAt
+                            ).toLocaleString()}
+                          </p>
 
-                            {notification.action === "approve_or_reject" &&
-                              notification.technicianId && (
-                                <div className="mt-2 flex gap-2">
-                                  <button
-                                    className="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
-                                    onClick={() => {
-                                      handleTechnicianStatus(
-                                        notification.technicianId,
-                                        "approved"
-                                      );
-                                    }}
-                                  >
-                                    Approve
-                                  </button>
-                                  <button
-                                    className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
-                                    onClick={() => {
-                                      handleTechnicianStatus(
-                                        notification.technicianId,
-                                        "rejected"
-                                      );
-                                    }}
-                                  >
-                                    Decline
-                                  </button>
-                                </div>
-                              )}
-                          </div>
-                        ))}
-                        <div className="mt-4 flex gap-2">
-                          <button
-                            onClick={handleMarkAllAsRead}
-                            className="flex-1 px-2 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition"
-                          >
-                            Mark as Read
-                          </button>
-                          <button
-                            onClick={handleDeleteAllNotifications}
-                            className="flex-1 px-2 py-2 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition"
-                          >
-                            Delete All
-                          </button>
+                          {notification.action === "approve_or_reject" &&
+                            notification.technicianId && (
+                              <div className="mt-2 flex gap-2">
+                                <button
+                                  className="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+                                  onClick={() => {
+                                    handleTechnicianStatus(
+                                      notification.technicianId,
+                                      "approved"
+                                    );
+                                  }}
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
+                                  onClick={() => {
+                                    handleTechnicianStatus(
+                                      notification.technicianId,
+                                      "rejected"
+                                    );
+                                  }}
+                                >
+                                  Decline
+                                </button>
+                              </div>
+                            )}
                         </div>
-                      </>
+                      ))
                     ) : (
                       <p className="text-gray-500 text-center py-4">
                         No notifications

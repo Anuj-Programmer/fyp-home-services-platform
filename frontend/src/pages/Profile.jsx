@@ -5,6 +5,7 @@ import Navbar from "@/blocks/Navbar";
 import Footer from "@/blocks/Footer";
 import { uploadToCloudinary } from "@/lib/uploadToCloudinary";
 import "../css/landingPage.css";
+import Cookies from "js-cookie";
 
 function Profile() {
   const [user, setUser] = useState(null);
@@ -25,6 +26,8 @@ function Profile() {
       country: "Nepal",
     },
   });
+
+  const token = Cookies.get("token") || localStorage.getItem("token");
 
   const formatMemberSince = (isoDate) => {
     if (!isoDate) return "—";
@@ -127,7 +130,7 @@ function Profile() {
 
       const { data } = await axios.put("/api/users/update-profile", payload, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -161,7 +164,7 @@ function Profile() {
         },
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${token}`,
           },
         }
       );

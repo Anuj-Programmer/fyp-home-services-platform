@@ -5,6 +5,7 @@ import Navbar from "@/blocks/Navbar";
 import Footer from "@/blocks/Footer";
 import { uploadToCloudinary } from "@/lib/uploadToCloudinary";
 import "../../css/landingPage.css";
+import Cookies from "js-cookie";
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
@@ -26,6 +27,8 @@ function TechnicianProfile() {
     photoUrl: "",
     description: "",
   });
+
+  const token = Cookies.get("token") || localStorage.getItem("token");
 
   const [availability, setAvailability] = useState({
     Monday: { isAvailable: true, startTime: '09:00', endTime: '17:00' },
@@ -224,7 +227,7 @@ function TechnicianProfile() {
         payload,
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${token}`,
           },
         }
       );

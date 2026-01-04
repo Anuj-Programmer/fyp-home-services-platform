@@ -1,8 +1,9 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
+import Cookies from "js-cookie";
 
 function ProtectedRoute({ children, requireAdmin = false, requireTechnician = false }) {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("token") || Cookies.get("token");
 
   // Check if token exists
   if (!token) {

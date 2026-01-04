@@ -1,8 +1,9 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
+import Cookies from "js-cookie";
 
 function PublicRoute({ children }) {
-  const token = localStorage.getItem("token");
+  const token = Cookies.get("token") || localStorage.getItem("token");
   const user = localStorage.getItem("user");
 
   if (token) {

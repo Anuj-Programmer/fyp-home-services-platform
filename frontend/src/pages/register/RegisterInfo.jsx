@@ -3,6 +3,7 @@ import axios from "axios";
 import { toast, Toaster } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/blocks/Navbar";
+import Cookies from "js-cookie";
 
 function RegisterInfo() {
   const [firstName, setFirstName] = useState("");
@@ -49,7 +50,8 @@ function RegisterInfo() {
       // Clear localStorage flags after registration
       localStorage.removeItem("email");
       localStorage.removeItem("otpVerified");
-      localStorage.setItem("token", data.token);    
+      Cookies.set("token", data.token);
+      //localStorage.setItem("token", data.token);    
       // Cookies.set("token", data.token);
         // ⬇️ IMPORTANT: Store role together with user
     const userWithRole = {
