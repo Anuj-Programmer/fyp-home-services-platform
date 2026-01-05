@@ -247,6 +247,15 @@ const changeAddressVerificationStatus = async (req, res) => {
     // Update address verification status
     address.houseCertificateStatus = status;
     address.isHouseVerified = (status === 'approved');
+    user.notification = user.notification || [];
+    user.notification.push({
+      message:
+        status === 'approved'
+          ? 'Your address certificate has been approved. Your address is now verified.'
+          : 'Your address certificate was rejected. Please upload a valid document.',
+      createdAt: new Date(),
+      type: 'address_certificate_' + status
+    });
     await user.save();
     return res.status(200).json({
       success: true,
