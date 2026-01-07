@@ -22,6 +22,10 @@
   background-color: var(--hover-color);
 }
 
+.border-color-primary {
+  border-color: var(--primary-color);
+}
+
 .btn-smooth {
   background-color: #142257;
   color: white;

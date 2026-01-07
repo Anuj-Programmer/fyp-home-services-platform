@@ -292,7 +292,7 @@ const Navbar = () => {
                                 onClick={handleDeleteAllNotifications}
                                 className="text-xs text-blue-600 hover:text-blue-800 font-semibold cursor-pointer"
                               >
-                                Mark as read
+                                Clear All
                               </button>
                             )}
                           </div>
@@ -379,15 +379,19 @@ const Navbar = () => {
                           >
                             View Profile
                           </button>
-                          <button
+                          {!isAdmin && (<button
                             className="w-full text-left px-4 py-2 hover:bg-gray-50"
                             onClick={() => {
-                              navigate("/bookings");
+                              navigate(
+                                user?.role === "technician"
+                                  ? "/TechnicianBookings"
+                                  : "/bookings"
+                              );
                               setShowProfileMenu(false);
                             }}
                           >
                             Booking
-                          </button>
+                          </button>)}
                           <button
                             className="w-full text-left px-4 py-2 text-red-500 hover:bg-red-50"
                             onClick={handleLogout}
@@ -477,7 +481,7 @@ const Navbar = () => {
                     onClick={handleDeleteAllNotifications}
                     className="text-sm text-blue-600 hover:text-blue-800 font-semibold"
                   >
-                    Mark as read
+                    Clear All
                   </button>
                 )}
                 <button
@@ -583,15 +587,18 @@ const Navbar = () => {
                   >
                     View Profile
                   </button>
-                  <button
-                    className="w-full text-left px-4 py-3 bg-white border rounded-lg hover:bg-gray-50"
-                    onClick={() => {
-                      navigate("/bookings");
-                      setMobileModal(null);
-                    }}
-                  >
-                    Booking
-                  </button>
+                  {/* Hide Booking button if isAdmin */}
+                  {!isAdmin && (
+                    <button
+                      className="w-full text-left px-4 py-3 bg-white border rounded-lg hover:bg-gray-50"
+                      onClick={() => {
+                        navigate(user?.role === "technician" ? "/TechnicianBookings" : "/bookings");
+                        setMobileModal(null);
+                      }}
+                    >
+                      Booking
+                    </button>
+                  )}
                   <button
                     className="w-full text-left px-4 py-3 bg-white border rounded-lg text-red-500 hover:bg-red-50"
                     onClick={() => {

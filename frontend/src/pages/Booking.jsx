@@ -1,204 +1,423 @@
-import React from "react";
+import React, { useState } from "react";
+import { CheckCircle } from "phosphor-react";
 import Navbar from "@/blocks/Navbar";
 import Footer from "@/blocks/Footer";
 import "../css/landingPage.css";
 
-const activeBookings = [
+// Dummy data with various statuses
+const technicianBookings = [
+  // Pending
+  {
+    id: "BK-2052",
+    technicianName: "Sonal Mehra",
+    specialty: "Home Cleaning",
+    bookingDate: "05 Dec 2025",
+    time: "4:00 PM",
+    serviceType: "Home Cleaning",
+    email: "sonal.mehra@example.com",
+    phone: "+91 9876543219",
+    status: "Pending",
+    avatar: "https://i.pravatar.cc/150?img=10",
+  },
+  // Confirmed
+  {
+    id: "BK-2049",
+    technicianName: "Ramesh Patel",
+    specialty: "Electrical",
+    bookingDate: "30 Nov 2025",
+    time: "2:00 PM",
+    serviceType: "Electrical Inspection",
+    email: "ramesh.patel@example.com",
+    phone: "+91 9876543212",
+    status: "Confirmed",
+    avatar: "https://i.pravatar.cc/150?img=3",
+  },
+  {
+    id: "BK-2048",
+    technicianName: "Dib Rai",
+    specialty: "Gardening",
+    bookingDate: "01 Dec 2025",
+    time: "11:00 AM",
+    serviceType: "Gardening Maintenance",
+    email: "dib.rai@example.com",
+    phone: "+91 9876543213",
+    status: "Confirmed",
+    avatar: "https://i.pravatar.cc/150?img=4",
+  },
+  // Completed
+  {
+    id: "BK-2047",
+    technicianName: "Amit Sharma",
+    specialty: "Deep Cleaning",
+    bookingDate: "20 Nov 2025",
+    time: "9:00 AM",
+    serviceType: "Window Cleaning",
+    email: "amit.sharma@example.com",
+    phone: "+91 9876543210",
+    status: "Completed",
+    avatar: "https://i.pravatar.cc/150?img=1",
+  },
+  {
+    id: "BK-2046",
+    technicianName: "Ravi Kumar",
+    specialty: "AC Maintenance",
+    bookingDate: "18 Nov 2025",
+    time: "3:30 PM",
+    serviceType: "AC Maintenance",
+    email: "ravi.kumar@example.com",
+    phone: "+91 9876543214",
+    status: "Completed",
+    avatar: "https://i.pravatar.cc/150?img=5",
+  },
+  // Cancelled
   {
     id: "BK-2045",
-    service: "Deep Cleaning",
-    date: "Mon, 24 Nov • 10:00 AM",
-    technician: "Amit Sharma",
-    status: "Confirmed",
-    address: "Lazimpat, Kathmandu",
+    technicianName: "Priya Singh",
+    specialty: "Pest Control",
+    bookingDate: "15 Nov 2025",
+    time: "7:00 PM",
+    serviceType: "Pest Control",
+    email: "priya.singh@example.com",
+    phone: "+91 9876543215",
+    status: "Cancelled",
+    avatar: "https://i.pravatar.cc/150?img=6",
+  },
+  {
+    id: "BK-2044",
+    technicianName: "Arjun Desai",
+    specialty: "Carpentry",
+    bookingDate: "14 Nov 2025",
+    time: "1:00 PM",
+    serviceType: "Carpentry Work",
+    email: "arjun.desai@example.com",
+    phone: "+91 9876543216",
+    status: "Cancelled",
+    avatar: "https://i.pravatar.cc/150?img=7",
+  },
+  // Rescheduled
+  {
+    id: "BK-2043",
+    technicianName: "Neha Gupta",
+    specialty: "Painting",
+    bookingDate: "12 Nov 2025",
+    time: "5:00 PM",
+    serviceType: "Painting",
+    email: "neha.gupta@example.com",
+    phone: "+91 9876543217",
+    status: "Rescheduled",
+    avatar: "https://i.pravatar.cc/150?img=8",
   },
   {
     id: "BK-2042",
-    service: "Plumbing Check",
-    date: "Wed, 27 Nov • 8:30 AM",
-    technician: "Rachin Verma",
-    status: "Pending",
-    address: "Jawalakhel, Lalitpur",
+    technicianName: "Vikram Singh",
+    specialty: "Plumbing",
+    bookingDate: "10 Nov 2025",
+    time: "10:30 AM",
+    serviceType: "Plumbing Installation",
+    email: "vikram.singh@example.com",
+    phone: "+91 9876543218",
+    status: "Rescheduled",
+    avatar: "https://i.pravatar.cc/150?img=9",
   },
 ];
 
-const pastBookings = [
-  {
-    id: "BK-1988",
-    service: "Electrical Inspection",
-    date: "13 Nov 2025",
-    technician: "Ramesh Patel",
-    rating: 4.9,
-    amount: "$42.00",
-  },
-  {
-    id: "BK-1971",
-    service: "Gardening Maintenance",
-    date: "02 Nov 2025",
-    technician: "Dib Rai",
-    rating: 4.6,
-    amount: "$30.00",
-  },
-  {
-    id: "BK-1920",
-    service: "Window Cleaning",
-    date: "29 Oct 2025",
-    technician: "Amit Sharma",
-    rating: 5.0,
-    amount: "$55.00",
-  },
-];
+const TABS = ["All", "Upcoming", "Pending", "Cancelled", "Rescheduled", "Completed"];
 
 function Booking() {
+  const [activeTab, setActiveTab] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Filter bookings based on active tab and search query
+  let filteredBookings;
+  if (activeTab === "All") {
+    filteredBookings = technicianBookings;
+  } else if (activeTab === "Upcoming") {
+    filteredBookings = technicianBookings.filter(booking => booking.status === "Confirmed");
+  } else {
+    filteredBookings = technicianBookings.filter(booking => booking.status === activeTab);
+  }
+
+  // Apply search filter
+  if (searchQuery.trim()) {
+    filteredBookings = filteredBookings.filter(booking => 
+      booking.technicianName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      booking.serviceType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      booking.id.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }
+
+  // Get status badge color
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "Completed":
+      case "Confirmed":
+        return "bg-emerald-100 text-emerald-700";
+      case "Pending":
+        return "bg-blue-100 text-blue-700";
+      case "Cancelled":
+        return "bg-red-100 text-red-700";
+      case "Rescheduled":
+        return "bg-amber-100 text-amber-700";
+      default:
+        return "bg-stone-100 text-stone-700";
+    }
+  };
+
   return (
     <>
       <Navbar />
-      <main className="px-6 lg:px-32 pt-24 pb-16 min-h-screen bg-stone-50 space-y-12">
+      <main className="px-6 lg:px-32 pt-16 pb-16 min-h-screen bg-stone-50 space-y-8">
         {/* Header */}
-        <section className="flex flex-col lg:flex-row items-start justify-between gap-8">
-          <div className="space-y-4">
-            <p className="text-sm font-semibold text-color-main uppercase tracking-wide">
-              Booking Center
-            </p>
-            <h1 className="text-3xl sm:text-4xl font-bold txt-color-primary">
-              Track every home service in one place
-            </h1>
-            <p className="text-base text-stone-600 max-w-2xl">
-              See upcoming appointments, manage reschedules, and review your
-              past services with trusted professionals.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-4">
-            <button className="px-5 py-3 bg-color-main text-white rounded-xl font-semibold btn-filled-slide">
-              Book new service
-            </button>
-            {/* <button className="px-5 py-3 border border-color-main text-color-main rounded-xl font-semibold btn-transparent-slide">
-              Download history
-            </button> */}
-          </div>
+        <section className="space-y-4">
+          <p className="text-sm font-semibold text-color-main uppercase tracking-wide">
+            Management
+          </p>
+          <h1 className="text-3xl sm:text-4xl font-bold txt-color-primary">
+            Technician Bookings
+          </h1>
+          <p className="text-base text-stone-600 max-w-2xl">
+            View and manage all your technician bookings in one place
+          </p>
         </section>
 
-        {/* Active bookings */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-semibold txt-color-primary">
-                Upcoming & active bookings
-              </h2>
-              <p className="text-sm text-stone-500">
-                Manage confirmed and pending visits
-              </p>
-            </div>
-            <button className="text-sm text-color-main hover:underline">
-              Need help?
-            </button>
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-2">
-            {activeBookings.map((booking) => (
-              <article
-                key={booking.id}
-                className="bg-white rounded-2xl shadow-sm border p-6 flex flex-col gap-4"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-stone-500">
-                      {booking.id}
-                    </p>
-                    <h3 className="text-lg font-semibold txt-color-primary">
-                      {booking.service}
-                    </h3>
-                  </div>
-                  <span
-                    className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                      booking.status === "Confirmed"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-amber-100 text-amber-700"
-                    }`}
-                  >
-                    {booking.status}
-                  </span>
-                </div>
-
-                <p className="text-sm text-stone-600">{booking.date}</p>
-                <p className="text-sm text-stone-600">
-                  {booking.address}
-                </p>
-
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-semibold text-neutral-900">
-                    Technician: {booking.technician}
-                  </span>
-                  <div className="flex gap-2">
-                    <button className="text-color-main font-semibold hover:underline">
-                      Reschedule
-                    </button>
-                    <button className="text-stone-500 hover:text-red-500">
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        {/* Past bookings table */}
+        {/* Tab Filter Section with Search */}
         <section className="bg-white rounded-3xl shadow-sm border overflow-hidden">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-6 py-5 border-b">
-            <div>
-              <h2 className="text-xl font-semibold txt-color-primary">
-                Service history
-              </h2>
-              <p className="text-sm text-stone-500">
-                Ratings, invoices, and payment status
-              </p>
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-4 md:p-6 border-b">
+            <div className="flex flex-wrap gap-2">
+              {TABS.map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-4 md:px-5 py-2 rounded-full font-semibold transition-all duration-200 text-sm ${
+                    activeTab === tab
+                      ? "bg-color-main text-white shadow-md"
+                      : "bg-stone-100 text-stone-700 hover:bg-stone-200"
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
             </div>
-            <div className="flex gap-3 text-sm">
-              <button className="px-4 py-2 border rounded-lg hover:bg-stone-50">
-                This month
-              </button>
-              <button className="px-4 py-2 border rounded-lg hover:bg-stone-50">
-                Last 6 months
-              </button>
+
+            {/* Search Bar */}
+            <div className="w-full md:w-80">
+              <input
+                type="text"
+                placeholder="Search by name, service..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-2 rounded-lg border border-stone-300 text-stone-900 placeholder-stone-500 text-sm focus:outline-none focus:ring-2 focus:ring-color-main focus:border-transparent transition-all"
+              />
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="text-stone-500 uppercase text-xs tracking-wide border-b">
-                  <th className="px-6 py-4 font-semibold">Booking ID</th>
-                  <th className="px-6 py-4 font-semibold">Service</th>
-                  <th className="px-6 py-4 font-semibold">Technician</th>
-                  <th className="px-6 py-4 font-semibold">Date</th>
-                  <th className="px-6 py-4 font-semibold">Rating</th>
-                  <th className="px-6 py-4 font-semibold">Amount</th>
-                  <th className="px-6 py-4 font-semibold">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pastBookings.map((booking) => (
-                  <tr key={booking.id} className="border-b last:border-0">
-                    <td className="px-6 py-4 font-semibold text-neutral-900">
-                      {booking.id}
-                    </td>
-                    <td className="px-6 py-4">{booking.service}</td>
-                    <td className="px-6 py-4">{booking.technician}</td>
-                    <td className="px-6 py-4">{booking.date}</td>
-                    <td className="px-6 py-4 font-semibold text-emerald-600">
-                      {booking.rating}
-                    </td>
-                    <td className="px-6 py-4 font-semibold">{booking.amount}</td>
-                    <td className="px-6 py-4">
-                      <button className="text-color-main hover:underline">
-                        View invoice
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          {/* Booking Cards */}
+          <div className="p-4 md:p-6 space-y-3">
+            {filteredBookings.length > 0 ? (
+              filteredBookings.map((booking) => (
+                <div
+                  key={booking.id}
+                  className="bg-white border border-stone-200 rounded-xl hover:shadow-md hover:border-stone-300 transition-all duration-200"
+                >
+                  {/* Desktop Layout */}
+                  <div className="hidden md:flex md:items-center md:gap-6 p-5">
+                    {/* Technician Info - 200px */}
+                    <div className="w-48 shrink-0">
+                      <p className="text-xs font-semibold text-color-main uppercase tracking-wide mb-0.5">
+                        {booking.specialty}
+                      </p>
+                      <div className="flex items-center gap-1 min-w-0">
+                        <p className="text-base font-semibold text-neutral-900 truncate">
+                          {booking.technicianName}
+                        </p>
+                        <CheckCircle size={16} weight="fill" className="text-blue-600 shrink-0 ml-1" title="Verified Technician" />
+                      </div>
+                    </div>
+
+                    {/* Date & Time - 140px */}
+                    <div className="w-36 shrink-0">
+                      <div className="flex items-center gap-2 text-stone-600 text-sm mb-1">
+                        <svg className="w-4 h-4 text-color-main shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
+                        </svg>
+                        <span className="font-medium truncate">{booking.bookingDate}</span>
+                      </div>
+                      <p className="text-xs text-stone-600 ml-6">{booking.time}</p>
+                    </div>
+
+                    {/* Service Type - 160px */}
+                    <div className="w-40 shrink-0">
+                      <p className="text-sm font-medium text-neutral-900 truncate">
+                        {booking.serviceType}
+                      </p>
+                    </div>
+
+                    {/* Contact Info - 200px */}
+                    <div className="w-48 shrink-0">
+                      <div className="flex items-center gap-1.5 text-stone-600 text-xs mb-1 truncate">
+                        <svg className="w-3.5 h-3.5 text-color-main shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
+                        </svg>
+                        <span className="truncate">{booking.email}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-stone-600 text-xs truncate">
+                        <svg className="w-3.5 h-3.5 text-color-main shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
+                        </svg>
+                        <span className="truncate">{booking.phone}</span>
+                      </div>
+                    </div>
+
+                    {/* Status Badge - 100px */}
+                    <div className="w-24 shrink-0">
+                      <span className={`px-3 py-1.5 text-xs font-semibold rounded-full inline-block ${getStatusColor(booking.status)}`}>
+                        {booking.status}
+                      </span>
+                    </div>
+
+                    {/* Action Buttons - auto */}
+                    <div className="flex gap-2 shrink-0">
+                      {booking.status === "Completed" ? (
+                        <>
+                          <button className="px-3 py-1.5 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap">
+                            Pay
+                          </button>
+                          <button className="px-3 py-1.5 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap">
+                            Rate
+                          </button>
+                        </>
+                      ) : booking.status === "Confirmed" ? (
+                        <>
+                          <button className="px-3 py-1.5 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap">
+                            View Details
+                          </button>
+                          <button className="px-3 py-1.5 border border-blue-600 text-blue-600 text-xs font-semibold rounded-full hover:bg-blue-50 transition-colors whitespace-nowrap">
+                            Reschedule
+                          </button>
+                        </>
+                      ) : booking.status === "Cancelled" ? (
+                        <button className="px-3 py-1.5 bg-stone-200 text-stone-600 text-xs font-semibold rounded-full hover:bg-stone-300 transition-colors whitespace-nowrap">
+                          View Details
+                        </button>
+                      ) : (
+                        <>
+                          <button className="px-3 py-1.5 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap">
+                            Reschedule
+                          </button>
+                          <button className="px-3 py-1.5 border border-red-600 text-red-600 text-xs font-semibold rounded-full hover:bg-red-50 transition-colors whitespace-nowrap">
+                            Cancel
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Mobile Layout */}
+                  <div className="md:hidden p-4 space-y-3">
+                    {/* Top: Name and Status */}
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-color-main uppercase tracking-wide mb-1">
+                          {booking.specialty}
+                        </p>
+                        <p className="text-sm font-semibold text-neutral-900">
+                          {booking.technicianName}
+                        </p>
+                      </div>
+                      <span className={`px-2.5 py-1 text-xs font-semibold rounded-full shrink-0 ${getStatusColor(booking.status)}`}>
+                        {booking.status}
+                      </span>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="h-px bg-stone-100"></div>
+
+                    {/* Date & Service */}
+                    <div className="space-y-2">
+                      <div>
+                        <p className="text-xs text-stone-500 mb-0.5">Date & Time</p>
+                        <div className="flex items-center gap-1.5 text-stone-700 text-sm">
+                          <svg className="w-4 h-4 text-color-main shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
+                          </svg>
+                          <span className="font-medium">{booking.bookingDate} • {booking.time}</span>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs text-stone-500 mb-0.5">Service</p>
+                        <p className="text-sm font-medium text-neutral-900">
+                          {booking.serviceType}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="h-px bg-stone-100"></div>
+
+                    {/* Contact Info */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-1.5 text-stone-600 text-xs">
+                        <svg className="w-3.5 h-3.5 text-color-main shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
+                        </svg>
+                        <span className="truncate">{booking.email}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-stone-600 text-xs">
+                        <svg className="w-3.5 h-3.5 text-color-main shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
+                        </svg>
+                        <span className="truncate">{booking.phone}</span>
+                      </div>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="h-px bg-stone-100"></div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 pt-1">
+                      {booking.status === "Completed" ? (
+                        <>
+                          <button className="flex-1 px-3 py-2 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity">
+                            Pay
+                          </button>
+                          <button className="flex-1 px-3 py-2 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity">
+                            Rate
+                          </button>
+                        </>
+                      ) : booking.status === "Confirmed" ? (
+                        <>
+                          <button className="flex-1 px-3 py-2 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity">
+                            View Details
+                          </button>
+                          <button className="flex-1 px-3 py-2 border border-color-primary txt-color-primary text-xs font-semibold rounded-full hover:bg-blue-50 transition-colors">
+                            Reschedule
+                          </button>
+                        </>
+                      ) : booking.status === "Cancelled" ? (
+                        <button className="flex-1 px-3 py-2 bg-stone-200 text-stone-600 text-xs font-semibold rounded-full hover:bg-stone-300 transition-colors">
+                          View Details
+                        </button>
+                      ) : (
+                        <>
+                          <button className="flex-1 px-3 py-2 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity">
+                            Reschedule
+                          </button>
+                          <button className="flex-1 px-3 py-2 border border-red-600 text-red-600 text-xs font-semibold rounded-full hover:bg-red-50 transition-colors">
+                            Cancel
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="py-12 text-center">
+                <p className="text-stone-500 text-base">
+                  No bookings found for this status.
+                </p>
+              </div>
+            )}
           </div>
         </section>
       </main>

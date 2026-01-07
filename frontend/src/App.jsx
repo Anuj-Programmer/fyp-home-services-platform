@@ -23,6 +23,7 @@ import ManageTiming from './pages/technician/ManageTiming.jsx'
 import TechnicianProfile from './pages/technician/TechnicianProfile.jsx'
 import BookTechnicianPage from './pages/BookTechnicianPage.jsx'
 import BookTechnicianFrontend from './pages/BookTechnicianFrontend.jsx'
+import TechnicianBookings from './pages/technician/TechnicianBookings.jsx'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -129,6 +130,7 @@ function App() {
            }
          />
          <Route path="/BookTechnicianPage" element={<BookTechnicianFrontend />} />
+         <Route path="/TechnicianBookings" element={<TechnicianBookings />} />
        </Routes>
 
      </BrowserRouter>

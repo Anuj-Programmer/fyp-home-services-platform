@@ -73,7 +73,7 @@ function TechnicianDashboard() {
               >
                 Manage timing
               </button> */}
-              <button onClick={() => navigate('/bookings')} className="px-4 py-3 rounded-xl border text-left text-sm font-semibold hover:bg-stone-50 btn-transparent-slide">
+              <button onClick={() => navigate('/TechnicianBookings')} className="px-4 py-3 rounded-xl border text-left text-sm font-semibold hover:bg-stone-50 btn-transparent-slide">
                 View Bookings
               </button>
             </div>
