@@ -48,79 +48,82 @@ function SearchResults() {
 
   // Fetch search results from API
   useEffect(() => {
-    const fetchSearchResults = async () => {
-      if (!searchQueryFromUrl) {
-        setError("No search query provided");
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Start with basic pagination params - fetch all active technicians
-        // Then filter by search term and other criteria on the frontend
-        const params = {
-          page: 1,
-          pageSize: 100 // Get more results to filter through
-        };
-
-        // NOTE: We're NOT sending serviceType, location, minRating, maxFee to API
-        // because we want to search across ALL technicians first by name/description,
-        // then apply filters locally. This ensures users find what they're looking for.
-
-        console.log("Fetching technicians with params:", params);
-        console.log("Search query:", searchQueryFromUrl);
-
-        const response = await axios.get("/api/technicians/search-technician", {
-          params,
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-
-        console.log("API response:", response.data);
-
-        if (response.data && response.data.success) {
-          console.log("Sample technician data:", response.data.data[0]); // Log first technician to see fields
-          // Filter search results by the search query (name, description, location, service type)
-          const filtered = response.data.data.filter((tech) => {
-            const firstName = tech.firstName?.toLowerCase() || "";
-            const lastName = tech.lastName?.toLowerCase() || "";
-            const description = tech.description?.toLowerCase() || "";
-            const location = tech.location?.toLowerCase() || "";
-            const serviceType = tech.serviceType?.toLowerCase() || "";
-            const searchTerm = searchQueryFromUrl.toLowerCase();
-            
-            const matches = 
-              firstName.includes(searchTerm) ||
-              lastName.includes(searchTerm) ||
-              description.includes(searchTerm) ||
-              location.includes(searchTerm) ||
-              serviceType.includes(searchTerm) ||
-              `${firstName} ${lastName}`.includes(searchTerm); // Match full name
-            
-            console.log(`Checking ${firstName} ${lastName} (${serviceType}, ${location}): ${matches ? "✓ MATCH" : "✗ no match"}`);
-            return matches;
-          });
-          
-          console.log(`Filtered results: ${filtered.length} technicians match search query`);
-          setSearchResults(filtered);
-        } else {
-          setSearchResults([]);
+      const fetchSearchResults = async () => {
+        if (!searchQueryFromUrl) {
+          setError("No search query provided");
+          setLoading(false);
+          return;
         }
-      } catch (err) {
-        console.error("Error fetching search results:", err);
-        setError(err.response?.data?.message || "Failed to fetch search results");
-        setSearchResults([]);
-      } finally {
-        setLoading(false);
-      }
-    };
 
-    fetchSearchResults();
-  }, [searchQueryFromUrl, token]);
+        try {
+          setLoading(true);
+          setError(null);
+
+          // Get user from localStorage and extract address
+          const user = JSON.parse(localStorage.getItem("user") || "{}");
+          const userAddress = user.address;
+
+          // Start with basic pagination params - fetch all active technicians
+          // Then filter by search term and other criteria on the frontend
+          const params = {
+            page: 1,
+            pageSize: 100 // Get more results to filter through
+          };
+          if (userAddress && ["lalitpur", "bakhtapur", "kathmandu"].includes(userAddress)) {
+            params.userAddress = userAddress;
+          }
+
+          console.log("Fetching technicians with params:", params);
+          console.log("Search query:", searchQueryFromUrl);
+
+          const response = await axios.get("/api/technicians/search-technician", {
+            params,
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+
+          console.log("API response:", response.data);
+
+          if (response.data && response.data.success) {
+            console.log("Sample technician data:", response.data.data[0]); // Log first technician to see fields
+            // Filter search results by the search query (name, description, location, service type)
+            const filtered = response.data.data.filter((tech) => {
+              const firstName = tech.firstName?.toLowerCase() || "";
+              const lastName = tech.lastName?.toLowerCase() || "";
+              const description = tech.description?.toLowerCase() || "";
+              const location = tech.location?.toLowerCase() || "";
+              const serviceType = tech.serviceType?.toLowerCase() || "";
+              const searchTerm = searchQueryFromUrl.toLowerCase();
+            
+              const matches = 
+                firstName.includes(searchTerm) ||
+                lastName.includes(searchTerm) ||
+                description.includes(searchTerm) ||
+                location.includes(searchTerm) ||
+                serviceType.includes(searchTerm) ||
+                `${firstName} ${lastName}`.includes(searchTerm); // Match full name
+            
+              console.log(`Checking ${firstName} ${lastName} (${serviceType}, ${location}): ${matches ? "✓ MATCH" : "✗ no match"}`);
+              return matches;
+            });
+          
+            console.log(`Filtered results: ${filtered.length} technicians match search query`);
+            setSearchResults(filtered);
+          } else {
+            setSearchResults([]);
+          }
+        } catch (err) {
+          console.error("Error fetching search results:", err);
+          setError(err.response?.data?.message || "Failed to fetch search results");
+          setSearchResults([]);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchSearchResults();
+    }, [searchQueryFromUrl, token]);
 
   // Filter results based on refine search filters (NOT the initial search query)
   const filteredTechnicians = searchResults.filter((tech) => {

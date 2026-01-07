@@ -14,11 +14,14 @@ const serviceOptions = [
   "Locksmith",
 ];
 
+const locationOptions = ["lalitpur", "bhaktapur", "kathmandu"];
+
 function TechnicianRegisterInfo() {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     phone: "",
+    location: locationOptions[0],
     identityDocumentUrl: "",
     experienceYears: "",
     serviceType: serviceOptions[0],
@@ -57,10 +60,12 @@ function TechnicianRegisterInfo() {
       return;
     }
 
+
     const {
       firstName,
       lastName,
       phone,
+      location,
       identityDocumentUrl,
       experienceYears,
       serviceType,
@@ -70,9 +75,10 @@ function TechnicianRegisterInfo() {
     if (
       !firstName.trim() ||
       !lastName.trim() ||
-      !phone.trim ||
+      !phone.trim() ||
+      !location ||
       !identityDocumentUrl ||
-      !experienceYears === "" ||
+      experienceYears === "" ||
       !serviceType
     ) {
       return toast.error("Please fill in all required fields");
@@ -85,6 +91,7 @@ function TechnicianRegisterInfo() {
         firstName,
         lastName,
         phone,
+        location,
         identityDocumentUrl,
         experienceYears: Number(experienceYears),
         serviceType,
@@ -188,6 +195,21 @@ function TechnicianRegisterInfo() {
                 placeholder="Enter phone number"
                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+            </div>
+            <div>
+              <label className="block text-gray-700 mb-1">Location</label>
+              <select
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {locationOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option.charAt(0).toUpperCase() + option.slice(1)}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-gray-700 mb-1">Service Type</label>

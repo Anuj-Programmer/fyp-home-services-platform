@@ -26,24 +26,31 @@ function HomePage() {
 
   // Fetch active technicians for recommended section
   useEffect(() => {
-    const fetchActiveTechnicians = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get("/api/technicians/get-active-technicians");
-        if (response.data && response.data.success) {
-          // Limit to 3 professionals for the recommended section
-          setRecommendedPros(response.data.technicians.slice(0, 3));
+      const fetchActiveTechnicians = async () => {
+        try {
+          setLoading(true);
+          // Get user from localStorage and extract address
+          const user = JSON.parse(localStorage.getItem("user") || "{}");
+          const address = user.address;
+          let url = "/api/technicians/get-active-technicians";
+          if (address && ["lalitpur", "bakhtapur", "kathmandu"].includes(address)) {
+            url += `?address=${address}`;
+          }
+          const response = await axios.get(url);
+          if (response.data && response.data.success) {
+            // Limit to 3 professionals for the recommended section
+            setRecommendedPros(response.data.technicians.slice(0, 3));
+          }
+        } catch (error) {
+          console.error("Error fetching active technicians:", error);
+          setRecommendedPros([]);
+        } finally {
+          setLoading(false);
         }
-      } catch (error) {
-        console.error("Error fetching active technicians:", error);
-        setRecommendedPros([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+      };
 
-    fetchActiveTechnicians();
-  }, []);
+      fetchActiveTechnicians();
+    }, []);
 
   const handleLogout = () => {
     localStorage.clear();

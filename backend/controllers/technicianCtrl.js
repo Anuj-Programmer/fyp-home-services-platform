@@ -24,7 +24,8 @@ const registerTechnician = async (req, res) => {
         experienceYears,
         serviceType,
         certificateUrl,
-        email
+        email,
+        location
       } = req.body;
       
       // Create technician entry
@@ -37,7 +38,8 @@ const registerTechnician = async (req, res) => {
         identityDocumentUrl,
         experienceYears,
         serviceType,
-        certificateUrl
+        certificateUrl,
+        location
       });
   
       await technician.save();
@@ -198,6 +200,29 @@ const registerTechnician = async (req, res) => {
 
 const getActiveTechnicians = async (req, res) => {
   try {
+    // Get user's address from query or body
+    const userAddress = req.query.address || req.body.address;
+    let filter = { status: "active" };
+    if (userAddress && ["lalitpur", "bakhtapur", "kathmandu"].includes(userAddress)) {
+      filter.location = userAddress;
+    }
+    const technicians = await Technician.find(filter);
+    res.json({ 
+      success: true,
+      technicians 
+    });
+  } catch (error) {
+    console.error("Error fetching active technicians:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error fetching active technicians",
+      error: error.message
+    });
+  }
+};
+
+const allGetActiveTechnicians = async (req, res) => {
+  try {
     const technicians = await Technician.find({ status: "active" });
     res.json({ 
       success: true,
@@ -252,8 +277,15 @@ const searchTechnician = async (req, res) => {
       sortOrder = "desc"
     } = req.query;
 
+
     // Build dynamic filter object
     const filter = { status: "active" }; // Only search active technicians
+
+    // Filter by user's address (exact match)
+    const userAddress = req.query.userAddress || req.body.userAddress;
+    if (userAddress && ["lalitpur", "bakhtapur", "kathmandu"].includes(userAddress)) {
+      filter.location = userAddress;
+    }
 
     // Filter by serviceType (exact match)
     if (serviceType) {
@@ -407,6 +439,7 @@ module.exports = {
   getActiveTechnicians,
   getTechnicianById,
   searchTechnician,
-  uploadTechnicianCertificate
+  uploadTechnicianCertificate,
+  allGetActiveTechnicians
 }
   

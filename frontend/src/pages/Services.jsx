@@ -40,23 +40,30 @@ function Services() {
 
   // Fetch active technicians
   useEffect(() => {
-    const fetchActiveTechnicians = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get("/api/technicians/get-active-technicians");
-        if (response.data && response.data.success) {
-          setTechnicians(response.data.technicians);
+      const fetchActiveTechnicians = async () => {
+        try {
+          setLoading(true);
+          // Get user from localStorage and extract address
+          const user = JSON.parse(localStorage.getItem("user") || "{}");
+          const address = user.address;
+          let url = "/api/technicians/get-active-technicians";
+          if (address && ["lalitpur", "bakhtapur", "kathmandu"].includes(address)) {
+            url += `?address=${address}`;
+          }
+          const response = await axios.get(url);
+          if (response.data && response.data.success) {
+            setTechnicians(response.data.technicians);
+          }
+        } catch (error) {
+          console.error("Error fetching active technicians:", error);
+          setTechnicians([]);
+        } finally {
+          setLoading(false);
         }
-      } catch (error) {
-        console.error("Error fetching active technicians:", error);
-        setTechnicians([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+      };
 
-    fetchActiveTechnicians();
-  }, []);
+      fetchActiveTechnicians();
+    }, []);
 
   // Filter technicians based on selected category, search query, and location
   const filteredTechnicians = technicians.filter((tech) => {

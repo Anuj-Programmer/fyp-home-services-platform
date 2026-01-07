@@ -30,6 +30,7 @@ function Profile() {
     firstName: "",
     lastName: "",
     phone: "",
+    address: "",
   });
 
   const token = Cookies.get("token") || localStorage.getItem("token");
@@ -55,6 +56,7 @@ function Profile() {
     firstName: data?.firstName || "",
     lastName: data?.lastName || "",
     phone: data?.phone || "",
+    address: data?.address || "",
     role: data?.role || "user",
   });
 
@@ -109,6 +111,7 @@ function Profile() {
           firstName: formData.firstName,
           lastName: formData.lastName,
           phone: formData.phone,
+          address: formData.address,
         },
         {
           headers: {
@@ -417,6 +420,21 @@ function Profile() {
                     className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
                     placeholder="+977-"
                   />
+                </label>
+                <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
+                  Location
+                  <select
+                    name="address"
+                    value={formData.address || ""}
+                    onChange={handleInputChange}
+                    className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    required
+                  >
+                    <option value="">Select Location</option>
+                    <option value="lalitpur">Lalitpur</option>
+                    <option value="bhaktapur">Bhaktapur</option>
+                    <option value="kathmandu">Kathmandu</option>
+                  </select>
                 </label>
               </div>
 

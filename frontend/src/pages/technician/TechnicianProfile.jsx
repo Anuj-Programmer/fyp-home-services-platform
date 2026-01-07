@@ -275,7 +275,7 @@ function TechnicianProfile() {
         },
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -406,14 +406,18 @@ function TechnicianProfile() {
                 </label>
                 <label className="flex flex-col gap-1 text-xs sm:text-sm font-medium text-stone-600">
                   Location / Service area
-                  <input
-                    type="text"
+                  <select
                     name="location"
                     value={formData.location}
                     onChange={handleInputChange}
                     className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
-                    placeholder="e.g. Kathmandu, Bhaktapur"
-                  />
+                    required
+                  >
+                    <option value="">Select location</option>
+                    <option value="lalitpur">Lalitpur</option>
+                    <option value="bhaktapur">Bhaktapur</option>
+                    <option value="kathmandu">Kathmandu</option>
+                  </select>
                 </label>
               </div>
 

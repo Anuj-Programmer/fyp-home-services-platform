@@ -290,7 +290,7 @@ function TechnicianBookings() {
                                 View Details
                               </button>
                               <button
-                                className="px-3 py-1.5 border border-blue-600 text-blue-600 text-xs font-semibold rounded-full hover:bg-blue-50 transition-colors whitespace-nowrap"
+                                className="px-3 py-1.5 border border-color-primary text-color-primary text-xs font-semibold rounded-full hover:bg-blue-50 transition-colors whitespace-nowrap"
                               >
                                 Reschedule
                               </button>

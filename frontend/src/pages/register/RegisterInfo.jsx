@@ -119,13 +119,17 @@ function RegisterInfo() {
 
           <div className="mb-6">
             <label className="block text-gray-700 mb-1">Address</label>
-            <input
-              type="text"
+            <select
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              placeholder="Enter your address"
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+              required
+            >
+              <option value="">Select Location</option>
+              <option value="lalitpur">Lalitpur</option>
+              <option value="bhaktapur">Bhaktapur</option>
+              <option value="kathmandu">Kathmandu</option>
+            </select>
           </div>
 
           <button

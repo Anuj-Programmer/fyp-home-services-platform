@@ -39,7 +39,7 @@ const userSchema = new mongoose.Schema({
   isEmailVerified: { type: Boolean, default: false },
 
   // Simple address (required at signup) - deprecated, kept for backward compatibility
-  address: { type: String, required: true },
+  address: { type: String, enum: ["lalitpur", "bhaktapur", "kathmandu"], required: true },
 
   // Optional detailed address (added later in profile) - deprecated
   detailedAddress: detailedAddressSchema,

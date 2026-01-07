@@ -22,7 +22,8 @@ const TechnicianSchema = new mongoose.Schema({
 
   location: {
     type: String,
-    default: null
+    enum: ["lalitpur", "bhaktapur", "kathmandu"],
+    required: true
   },
 
   identityDocumentUrl: {

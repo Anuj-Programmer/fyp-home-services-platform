@@ -280,18 +280,18 @@ function Booking() {
                       {booking.status === "Completed" ? (
                         <>
                           <button className="px-3 py-1.5 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap">
-                            Pay
+                            Payment
                           </button>
-                          <button className="px-3 py-1.5 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap">
+                          <button className="px-3 py-1.5 border border-color-primary text-color-primary text-xs font-semibold rounded-full hover:bg-blue-50 transition-colors whitespace-nowrap">
                             Rate
                           </button>
                         </>
                       ) : booking.status === "Confirmed" ? (
                         <>
                           <button className="px-3 py-1.5 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap">
-                            View Details
+                            Details
                           </button>
-                          <button className="px-3 py-1.5 border border-blue-600 text-blue-600 text-xs font-semibold rounded-full hover:bg-blue-50 transition-colors whitespace-nowrap">
+                          <button className="px-3 py-1.5 border border-color-primary text-color-primary text-xs font-semibold rounded-full hover:bg-blue-50 transition-colors whitespace-nowrap">
                             Reschedule
                           </button>
                         </>
@@ -378,16 +378,16 @@ function Booking() {
                       {booking.status === "Completed" ? (
                         <>
                           <button className="flex-1 px-3 py-2 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity">
-                            Pay
+                            Payment
                           </button>
-                          <button className="flex-1 px-3 py-2 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity">
+                          <button className="flex-1 px-3 py-2 border border-color-primary txt-color-primary text-xs font-semibold rounded-full hover:bg-blue-50 transition-colors">
                             Rate
                           </button>
                         </>
                       ) : booking.status === "Confirmed" ? (
                         <>
                           <button className="flex-1 px-3 py-2 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity">
-                            View Details
+                            Details
                           </button>
                           <button className="flex-1 px-3 py-2 border border-color-primary txt-color-primary text-xs font-semibold rounded-full hover:bg-blue-50 transition-colors">
                             Reschedule
@@ -395,7 +395,7 @@ function Booking() {
                         </>
                       ) : booking.status === "Cancelled" ? (
                         <button className="flex-1 px-3 py-2 bg-stone-200 text-stone-600 text-xs font-semibold rounded-full hover:bg-stone-300 transition-colors">
-                          View Details
+                          Details
                         </button>
                       ) : (
                         <>
