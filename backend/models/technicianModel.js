@@ -22,7 +22,7 @@ const TechnicianSchema = new mongoose.Schema({
 
   location: {
     type: String,
-    enum: ["lalitpur", "bhaktapur", "kathmandu"],
+    enum: ["pokhara", "chitwan", "kathmandu"],
     required: true
   },
 

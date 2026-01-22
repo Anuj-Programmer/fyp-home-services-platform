@@ -33,7 +33,7 @@ function HomePage() {
           const user = JSON.parse(localStorage.getItem("user") || "{}");
           const address = user.address;
           let url = "/api/technicians/get-active-technicians";
-          if (address && ["lalitpur", "bakhtapur", "kathmandu"].includes(address)) {
+          if (address && ["chitwan", "pokhara", "kathmandu"].includes(address)) {
             url += `?address=${address}`;
           }
           const response = await axios.get(url);
@@ -119,7 +119,7 @@ function HomePage() {
             </div> */}
 
             <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold leading-tight txt-color-primary">
-            Specialized, efficient, and thorough Home services
+            Specialized, efficient, and thorough <br/> Home Services
             </h1>
             <p className="text-lg leading-relaxed max-w-lg txt-color-primary">
               We provide performing Home services using the least amount of
@@ -128,29 +128,17 @@ function HomePage() {
 
             {/* Quick stats */}
             <div className="flex flex-wrap gap-6 mt-4">
-              <div className="flex flex-col">
-                <span className="text-2xl font-semibold txt-color-primary">
-                  4.9
-                </span>
-                <span className="text-xs text-stone-500">
-                  Average service rating
-                </span>
+              <div className="flex flex-col items-center bg-white/80 border border-neutral-200 rounded-xl shadow-md px-6 py-4 min-w-[120px]">
+                <span className="text-2xl font-bold txt-color-primary mb-1">4.9</span>
+                <span className="text-xs text-stone-500 text-center">Average rating</span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-2xl font-semibold txt-color-primary">
-                  12+
-                </span>
-                <span className="text-xs text-stone-500">
-                  Services completed
-                </span>
+              <div className="flex flex-col items-center bg-white/80 border border-neutral-200 rounded-xl shadow-md px-6 py-4 min-w-[120px]">
+                <span className="text-2xl font-bold txt-color-primary mb-1">12+</span>
+                <span className="text-xs text-stone-500 text-center">Services completed</span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-2xl font-semibold txt-color-primary">
-                  3
-                </span>
-                <span className="text-xs text-stone-500">
-                  Active bookings
-                </span>
+              <div className="flex flex-col items-center bg-white/80 border border-neutral-200 rounded-xl shadow-md px-6 py-4 min-w-[120px]">
+                <span className="text-2xl font-bold txt-color-primary mb-1">3</span>
+                <span className="text-xs text-stone-500 text-center">Active bookings</span>
               </div>
             </div>
           </div>

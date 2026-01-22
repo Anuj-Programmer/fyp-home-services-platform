@@ -203,7 +203,7 @@ const getActiveTechnicians = async (req, res) => {
     // Get user's address from query or body
     const userAddress = req.query.address || req.body.address;
     let filter = { status: "active" };
-    if (userAddress && ["lalitpur", "bakhtapur", "kathmandu"].includes(userAddress)) {
+    if (userAddress && ["chitwan", "pokhara", "kathmandu"].includes(userAddress)) {
       filter.location = userAddress;
     }
     const technicians = await Technician.find(filter);
@@ -283,7 +283,7 @@ const searchTechnician = async (req, res) => {
 
     // Filter by user's address (exact match)
     const userAddress = req.query.userAddress || req.body.userAddress;
-    if (userAddress && ["lalitpur", "bakhtapur", "kathmandu"].includes(userAddress)) {
+    if (userAddress && ["chitwan", "pokhara", "kathmandu"].includes(userAddress)) {
       filter.location = userAddress;
     }
 

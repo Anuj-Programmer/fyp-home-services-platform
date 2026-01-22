@@ -2,12 +2,15 @@
 
 
 :root {
-  --primary-color: #142257;
+  /* --primary-color: #142257; */
+  --primary-color: #1F367F;
+  
   --hover-color: #1A2D6F;
 }
 
 .txt-color-primary {
   color: var(--primary-color);
+  /* color: black; */
 }
 
 .txt-color-hover {
@@ -27,7 +30,7 @@
 }
 
 .btn-smooth {
-  background-color: #142257;
+  background-color: var(--primary-color);
   color: white;
   border: 2px solid transparent;
   cursor: pointer;
@@ -36,20 +39,20 @@
 
 .btn-smooth:hover {
   background-color: transparent;
-  color: #142257;
-  border-color: #142257;
+  color: var(--primary-color);
+  border-color: var(--primary-color);
 }
 
 .btn-smooth-outline {
   background-color: transparent;
-  color: #142257;
+  color: var(--primary-color);
   /* border: 2px solid #142257; */
   cursor: pointer;
   transition: all 0.3s ease-in-out;
 }
 
 .btn-smooth-outline:hover {
-  background-color: #142257;
+  background-color: var(--primary-color);
   color: white;
 }
 
@@ -57,9 +60,9 @@
   position: relative;
   overflow: hidden;
   /* padding: 12px 28px; */
-  border: 2px solid #142257;
+  border: 2px solid var(--primary-color);
   background-color: transparent;
-  color: #142257;               /* text blue */
+  color: var(--primary-color);               /* text blue */
   /* border-radius: 6px; */
   cursor: pointer;
   z-index: 1;
@@ -74,7 +77,7 @@
   left: -100%;                 /* hidden to the left initially */
   width: 100%;
   height: 100%;
-  background-color: #142257;   /* fill color */
+  background-color: var(--primary-color);   /* fill color */
   z-index: -1;
   transition: left 0.3s ease-in-out;
   /* border-radius: 6px; */
@@ -108,7 +111,7 @@
   position: relative;
   overflow: hidden;
   /* padding: 12px 28px; */
-  border: 2px solid #142257;
+  border: 2px solid var(--primary-color);
   background-color: transparent; /* base transparent, pseudo-element does fill */
   color: white;
   /* border-radius: 6px; */
@@ -125,7 +128,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: #142257;  /* initial filled color */
+  background-color: var(--primary-color);  /* initial filled color */
   z-index: -1;
   transform: translateX(0);   /* starts fully covering button */
   transition: transform 0.3s ease-in-out;
@@ -133,7 +136,7 @@
 }
 
 .btn-filled-slide:hover {
-  color: #142257;             /* text changes to blue */
+  color: var(--primary-color);             /* text changes to blue */
 }
 
 .btn-filled-slide:hover::after {

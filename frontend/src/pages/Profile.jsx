@@ -6,7 +6,13 @@ import Footer from "@/blocks/Footer";
 import { uploadToCloudinary } from "@/lib/uploadToCloudinary";
 import "../css/landingPage.css";
 import Cookies from "js-cookie";
-import { Trash, PencilSimple, Plus, MapPin, DotsThreeVertical } from 'phosphor-react';
+import {
+  Trash,
+  PencilSimple,
+  Plus,
+  MapPin,
+  DotsThreeVertical,
+} from "phosphor-react";
 
 function Profile() {
   const [user, setUser] = useState(null);
@@ -16,7 +22,8 @@ function Profile() {
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [editingAddress, setEditingAddress] = useState(null);
   const [addressMenuOpen, setAddressMenuOpen] = useState(null);
-  const [uploadingAddressCertificate, setUploadingAddressCertificate] = useState(false);
+  const [uploadingAddressCertificate, setUploadingAddressCertificate] =
+    useState(false);
   const [addressFormData, setAddressFormData] = useState({
     contactName: "",
     phone: "",
@@ -49,7 +56,6 @@ function Profile() {
   const badgeData = [
     { label: "Completed bookings", value: "-" },
     { label: "Member since", value: formatMemberSince(user?.createdAt) },
-
   ];
 
   const hydrateFormFromUser = (data) => ({
@@ -63,8 +69,8 @@ function Profile() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const { data } = await axios.get('/api/users/current-user', {
-          headers: { Authorization: `Bearer ${token}` }
+        const { data } = await axios.get("/api/users/current-user", {
+          headers: { Authorization: `Bearer ${token}` },
         });
         setUser(data);
         setFormData(hydrateFormFromUser(data));
@@ -79,7 +85,7 @@ function Profile() {
         }
       }
     };
-    
+
     if (token) {
       fetchUser();
     }
@@ -162,7 +168,7 @@ function Profile() {
 
   const handleSaveAddress = async (e) => {
     e.preventDefault();
-    
+
     try {
       if (editingAddress) {
         // Update existing address
@@ -252,22 +258,20 @@ function Profile() {
       );
 
       toast.success(data.message || "Certificate uploaded successfully");
-      
+
       // Update user state with new certificate info
       const updatedUser = {
         ...user,
         houseCertificateUrl: response.secure_url,
-        houseCertificateStatus: 'pending',
+        houseCertificateStatus: "pending",
       };
       setUser(updatedUser);
       localStorage.setItem("user", JSON.stringify(updatedUser));
-      
+
       setShowCertificateModal(false);
     } catch (error) {
       console.error(error);
-      toast.error(
-        error.response?.data?.message || "Certificate upload failed"
-      );
+      toast.error(error.response?.data?.message || "Certificate upload failed");
     } finally {
       setUploadingCertificate(false);
     }
@@ -285,7 +289,7 @@ function Profile() {
       setAddressFormData((prev) => ({
         ...prev,
         houseCertificateUrl: response.secure_url,
-        houseCertificateStatus: 'pending',
+        houseCertificateStatus: "pending",
       }));
 
       // If editing existing address, immediately save to backend
@@ -304,8 +308,8 @@ function Profile() {
           }
         );
         // Refresh user data to get updated address
-        const { data } = await axios.get('/api/users/current-user', {
-          headers: { Authorization: `Bearer ${token}` }
+        const { data } = await axios.get("/api/users/current-user", {
+          headers: { Authorization: `Bearer ${token}` },
         });
         setUser(data);
         localStorage.setItem("user", JSON.stringify(data));
@@ -324,15 +328,19 @@ function Profile() {
     if (!user?.houseCertificateUrl) return "Upload proof";
     if (user?.houseCertificateStatus === "pending") return "Approval Pending";
     if (user?.houseCertificateStatus === "approved") return "Approved";
-    if (user?.houseCertificateStatus === "rejected") return "Rejected - Re-upload";
+    if (user?.houseCertificateStatus === "rejected")
+      return "Rejected - Re-upload";
     return "Upload proof";
   };
 
   const getCertificateStatusColor = () => {
     if (!user?.houseCertificateUrl) return "bg-amber-100 text-amber-700";
-    if (user?.houseCertificateStatus === "pending") return "bg-blue-100 text-blue-700";
-    if (user?.houseCertificateStatus === "approved") return "bg-emerald-100 text-emerald-700";
-    if (user?.houseCertificateStatus === "rejected") return "bg-red-100 text-red-700";
+    if (user?.houseCertificateStatus === "pending")
+      return "bg-blue-100 text-blue-700";
+    if (user?.houseCertificateStatus === "approved")
+      return "bg-emerald-100 text-emerald-700";
+    if (user?.houseCertificateStatus === "rejected")
+      return "bg-red-100 text-red-700";
     return "bg-amber-100 text-amber-700";
   };
 
@@ -431,10 +439,13 @@ function Profile() {
                     required
                   >
                     <option value="">Select Location</option>
-                    <option value="lalitpur">Lalitpur</option>
-                    <option value="bhaktapur">Bhaktapur</option>
-                    <option value="kathmandu">Kathmandu</option>
+                    <option value="chitwan">Chitwan</option>
+                    <option value="pokhara">Pokhara</option>
+                    <option value="kathmandu">Kathmandu Valley</option>
                   </select>
+                  <p className="text-xs text-stone-500">
+                    Switch cities to view technicians from nearby areas.
+                  </p>
                 </label>
               </div>
 
@@ -519,13 +530,17 @@ function Profile() {
         </section>
 
         {/* Address Book Section */}
-          {user && showAddressBook && (
-            <section className="grid lg:grid-cols-3" >
-              <div className="space-y-6 lg:col-span-2 border p-6 rounded-3xl shadow-sm bg-white">
+        {user && showAddressBook && (
+          <section className="grid lg:grid-cols-3">
+            <div className="space-y-6 lg:col-span-2 border p-6 rounded-3xl shadow-sm bg-white">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-base sm:text-xl font-semibold txt-color-primary flex items-center gap-2">
-                    <MapPin size={18} weight="fill" className="text-color-main" />
+                    <MapPin
+                      size={18}
+                      weight="fill"
+                      className="text-color-main"
+                    />
                     <span className="text-sm sm:text-xl">Address Book</span>
                   </h2>
                   <p className="text-[10px] sm:text-sm text-stone-500 mt-1">
@@ -559,27 +574,45 @@ function Profile() {
                               {address.addressType}
                             </span>
                             {/* Certificate badge */}
-                            {address.houseCertificateStatus === 'approved' ? (
-                              <span className="ml-auto text-[10px] sm:text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 font-semibold">Verified</span>
+                            {address.houseCertificateStatus === "approved" ? (
+                              <span className="ml-auto text-[10px] sm:text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 font-semibold">
+                                Verified
+                              </span>
                             ) : (
-                              <span className="ml-auto text-[10px] sm:text-xs px-2 py-1 rounded-full bg-red-100 text-red-700 font-semibold">Not Verified</span>
+                              <span className="ml-auto text-[10px] sm:text-xs px-2 py-1 rounded-full bg-red-100 text-red-700 font-semibold">
+                                Not Verified
+                              </span>
                             )}
                           </div>
-                          <p className="text-xs sm:text-sm text-gray-600">{address.address}</p>
+                          <p className="text-xs sm:text-sm text-gray-600">
+                            {address.address}
+                          </p>
                           {address.landMark && (
                             <p className="text-xs sm:text-sm text-gray-600">
                               Landmark: {address.landMark}
                             </p>
                           )}
-                          <p className="text-xs sm:text-sm text-gray-600">{address.phone}</p>
+                          <p className="text-xs sm:text-sm text-gray-600">
+                            {address.phone}
+                          </p>
                         </div>
                         <div className="relative">
                           <button
-                            onClick={() => setAddressMenuOpen(addressMenuOpen === address._id ? null : address._id)}
+                            onClick={() =>
+                              setAddressMenuOpen(
+                                addressMenuOpen === address._id
+                                  ? null
+                                  : address._id
+                              )
+                            }
                             className="p-1 sm:p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
                             title="More options"
                           >
-                            <DotsThreeVertical size={16} sm:size={20} weight="bold" />
+                            <DotsThreeVertical
+                              size={16}
+                              sm:size={20}
+                              weight="bold"
+                            />
                           </button>
                           {addressMenuOpen === address._id && (
                             <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 overflow-hidden">
@@ -601,13 +634,18 @@ function Profile() {
                           )}
                         </div>
                       </div>
-                      
                     </div>
                   ))
                 ) : (
                   <div className="col-span-2 text-center py-8 sm:py-12 bg-gray-50 rounded-xl">
-                    <MapPin size={32} sm:size={48} className="mx-auto text-gray-300 mb-2 sm:mb-3" />
-                    <p className="text-xs sm:text-gray-500 mb-2 sm:mb-4">No addresses saved yet</p>
+                    <MapPin
+                      size={32}
+                      sm:size={48}
+                      className="mx-auto text-gray-300 mb-2 sm:mb-3"
+                    />
+                    <p className="text-xs sm:text-gray-500 mb-2 sm:mb-4">
+                      No addresses saved yet
+                    </p>
                     <button
                       onClick={openAddAddressModal}
                       className="px-4 py-1 sm:px-6 sm:py-2 bg-color-main text-white rounded-xl font-semibold btn-filled-slide text-xs sm:text-base"
@@ -617,9 +655,9 @@ function Profile() {
                   </div>
                 )}
               </div>
-              </div>
-            </section>
-          )}
+            </div>
+          </section>
+        )}
       </main>
       <Footer />
 
@@ -639,10 +677,10 @@ function Profile() {
                 ×
               </button>
             </div>
-            
+
             <p className="text-sm text-stone-600">
-              Please upload a document that verifies your house ownership or residency 
-              (e.g., utility bill, property deed, rental agreement).
+              Please upload a document that verifies your house ownership or
+              residency (e.g., utility bill, property deed, rental agreement).
             </p>
 
             <div className="space-y-3">
@@ -665,15 +703,17 @@ function Profile() {
                 </p>
               )}
 
-              {user?.houseCertificateStatus === 'pending' && (
+              {user?.houseCertificateStatus === "pending" && (
                 <p className="text-sm text-blue-600">
-                  Your previous certificate is pending approval. You can upload a new one to replace it.
+                  Your previous certificate is pending approval. You can upload
+                  a new one to replace it.
                 </p>
               )}
 
-              {user?.houseCertificateStatus === 'rejected' && (
+              {user?.houseCertificateStatus === "rejected" && (
                 <p className="text-sm text-red-600">
-                  Your previous certificate was rejected. Please upload a new one.
+                  Your previous certificate was rejected. Please upload a new
+                  one.
                 </p>
               )}
             </div>
@@ -778,7 +818,9 @@ function Profile() {
                   <div className="space-y-3">
                     {addressFormData.houseCertificateUrl && (
                       <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <p className="text-xs font-semibold text-green-700 mb-2">✓ Certificate Uploaded</p>
+                        <p className="text-xs font-semibold text-green-700 mb-2">
+                          ✓ Certificate Uploaded
+                        </p>
                         <p className="text-xs text-green-600">
                           Status: {addressFormData.houseCertificateStatus}
                         </p>
@@ -792,7 +834,9 @@ function Profile() {
                       className="px-4 py-2 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900 cursor-pointer"
                     />
                     {uploadingAddressCertificate && (
-                      <p className="text-xs text-blue-600">Uploading certificate...</p>
+                      <p className="text-xs text-blue-600">
+                        Uploading certificate...
+                      </p>
                     )}
                   </div>
                 </label>

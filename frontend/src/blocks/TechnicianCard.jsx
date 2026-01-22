@@ -63,7 +63,7 @@ const TechnicianCard = ({ pro, onBookClick }) => {
           {/* BOOK NOW BUTTON */}
           <Link
             to={`/booktechnician/${pro._id || pro.id}`}
-            className="bg-blue-950 hover:bg-blue-900 text-white font-semibold py-2 px-4 rounded-full transition-colors flex items-center justify-center gap-1.5 shadow-md text-sm whitespace-nowrap shrink-0"
+            className="bg-color-main hover:bg-blue-900 text-white font-semibold py-2 px-4 rounded-full transition-colors flex items-center justify-center gap-1.5 shadow-md text-sm whitespace-nowrap shrink-0"
             onClick={onBookClick}
           >
             <Calendar size={14} weight="fill" />

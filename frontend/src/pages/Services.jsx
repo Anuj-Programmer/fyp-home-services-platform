@@ -47,7 +47,7 @@ function Services() {
           const user = JSON.parse(localStorage.getItem("user") || "{}");
           const address = user.address;
           let url = "/api/technicians/get-active-technicians";
-          if (address && ["lalitpur", "bakhtapur", "kathmandu"].includes(address)) {
+          if (address && ["chitwan", "pokhara", "kathmandu"].includes(address)) {
             url += `?address=${address}`;
           }
           const response = await axios.get(url);

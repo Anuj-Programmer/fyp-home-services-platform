@@ -14,7 +14,7 @@ const serviceOptions = [
   "Locksmith",
 ];
 
-const locationOptions = ["lalitpur", "bhaktapur", "kathmandu"];
+const locationOptions = ["chitwan", "pokhara", "kathmandu"];
 
 function TechnicianRegisterInfo() {
   const [formData, setFormData] = useState({

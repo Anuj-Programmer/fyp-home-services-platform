@@ -247,7 +247,7 @@ const Navbar = () => {
                 {/* Unauthenticated buttons */}
                 {!isAuthenticated && (
                   <>
-                    <Link to="/register-technician" className="">
+                    <Link to="/register-technician" className="text-base">
                       Become a Professional
                     </Link>
                     <Link

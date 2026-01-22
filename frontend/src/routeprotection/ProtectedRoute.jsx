@@ -15,7 +15,7 @@ function ProtectedRoute({ children, requireAdmin = false, requireTechnician = fa
     const payload = JSON.parse(atob(token.split('.')[1]));
     const isExpired = Date.now() >= payload.exp * 1000;
     if (isExpired) {
-      localStorage.removeItem("token");
+      Cookies.remove("token");
       localStorage.removeItem("user"); // optional
       return <Navigate to="/login" replace />;
     }

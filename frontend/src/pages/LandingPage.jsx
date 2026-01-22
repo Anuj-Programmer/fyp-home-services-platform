@@ -89,12 +89,12 @@ function LandingPage() {
 
           {/* Left Text Section */}
           <div className="flex-1 space-y-6 relative z-10">
-            <p className="text-xl font-medium txt-color-primary">
+            <p className="text-base font-medium txt-color-primary">
               Quality Home Services at a fair price.
             </p>
 
             <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold leading-tight txt-color-primary">
-              Specialized, efficient, and thorough Home services
+              Specialized, efficient, and thorough<br /> Home Services
             </h1>
 
             <p className="text-lg leading-relaxed max-w-lg txt-color-primary">

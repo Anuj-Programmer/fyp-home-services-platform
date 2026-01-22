@@ -69,7 +69,7 @@ function SearchResults() {
             page: 1,
             pageSize: 100 // Get more results to filter through
           };
-          if (userAddress && ["lalitpur", "bakhtapur", "kathmandu"].includes(userAddress)) {
+          if (userAddress && ["chitwan", "pokhara", "kathmandu"].includes(userAddress)) {
             params.userAddress = userAddress;
           }
 

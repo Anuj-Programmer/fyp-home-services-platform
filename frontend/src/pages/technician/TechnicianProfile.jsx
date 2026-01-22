@@ -414,9 +414,9 @@ function TechnicianProfile() {
                     required
                   >
                     <option value="">Select location</option>
-                    <option value="lalitpur">Lalitpur</option>
-                    <option value="bhaktapur">Bhaktapur</option>
-                    <option value="kathmandu">Kathmandu</option>
+                    <option value="chitwan">Chitwan</option>
+                    <option value="pokhara">Pokhara</option>
+                    <option value="kathmandu">Kathmandu Valley</option>
                   </select>
                 </label>
               </div>
