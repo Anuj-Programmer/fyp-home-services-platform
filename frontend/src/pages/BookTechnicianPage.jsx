@@ -17,6 +17,7 @@ function BookTechnicianPage() {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [availableSlots, setAvailableSlots] = useState([]);
+  const [bookedSlots, setBookedSlots] = useState([]);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [user, setUser] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -65,15 +66,37 @@ function BookTechnicianPage() {
       const dayName = selectedDateObj.toLocaleString('en-US', { weekday: 'long' });
       const dayAvailability = technician.availability.find((slot) => slot.day === dayName);
       if (dayAvailability) {
-        setAvailableSlots(
-          generateTimeSlots(dayAvailability.startTime, dayAvailability.endTime, dayAvailability.slotDuration)
-        );
+        const slots = generateTimeSlots(dayAvailability.startTime, dayAvailability.endTime, dayAvailability.slotDuration);
+        setAvailableSlots(slots);
+        
+        // Fetch booked slots for this technician on this date
+        fetchBookedSlots();
+
+        // Set up polling to refresh booked slots every 5 seconds
+        const pollInterval = setInterval(() => {
+          fetchBookedSlots();
+        }, 5000);
+
+        // Cleanup interval on unmount or when selectedDate changes
+        return () => clearInterval(pollInterval);
       } else {
         setAvailableSlots([]);
+        setBookedSlots([]);
         toast.error(`Technician is not available on ${dayName}s`);
       }
     }
   }, [selectedDate, technician]);
+
+  // Fetch booked slots from backend
+  const fetchBookedSlots = async () => {
+    try {
+      const { data } = await axios.get(`/api/bookings/booked-slots/${id}/${selectedDate}`);
+      setBookedSlots(data.bookedSlots || []);
+    } catch (error) {
+      console.error('Error fetching booked slots:', error);
+      setBookedSlots([]);
+    }
+  };
 
   // Generate time slots
   const generateTimeSlots = (startTime, endTime, duration) => {
@@ -149,12 +172,21 @@ function BookTechnicianPage() {
   const handleConfirmBooking = async () => {
     try {
       setBookingLoading(true);
+      
+      // Validate that an address is selected
+      if (!selectedAddress) {
+        toast.error('Please select an address');
+        setBookingLoading(false);
+        return;
+      }
+      
       const bookingData = {
         technician: id,
         serviceDate: selectedDate,
         serviceTime: selectedTime,
         fee: technician.fee,
         orderNote: orderNote,
+        selectedAddress: selectedAddress,
         technicianInfo: {
           firstname: technician.firstName,
           lastname: technician.lastName,
@@ -345,19 +377,26 @@ function BookTechnicianPage() {
                 <label className="block text-sm font-semibold text-gray-700 mb-3">Select Time Slot</label>
                 {availableSlots.length > 0 ? (
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                    {availableSlots.map((slot) => (
-                      <button
-                        key={slot}
-                        onClick={() => setSelectedTime(slot)}
-                        className={`py-2 px-3 rounded-lg border-2 font-medium transition ${
-                          selectedTime === slot
-                            ? 'border-color-main bg-color-main text-white'
-                            : 'border-gray-300 bg-white text-gray-700 hover:border-color-main'
-                        }`}
-                      >
-                        {slot}
-                      </button>
-                    ))}
+                    {availableSlots.map((slot) => {
+                      const isBooked = bookedSlots.includes(slot);
+                      return (
+                        <button
+                          key={slot}
+                          onClick={() => !isBooked && setSelectedTime(slot)}
+                          disabled={isBooked}
+                          className={`py-2 px-3 rounded-lg border-2 font-medium transition ${
+                            isBooked
+                              ? 'border-gray-300 bg-gray-200 text-gray-500 cursor-not-allowed opacity-60'
+                              : selectedTime === slot
+                              ? 'border-color-main bg-color-main text-white'
+                              : 'border-gray-300 bg-white text-gray-700 hover:border-color-main'
+                          }`}
+                          title={isBooked ? 'This slot is already booked' : ''}
+                        >
+                          {slot}
+                        </button>
+                      );
+                    })}
                   </div>
                 ) : selectedDate ? (
                   <div className="bg-red-50 p-4 rounded-lg border border-red-200">
@@ -460,9 +499,14 @@ function BookTechnicianPage() {
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-gray-800 text-sm capitalize">
-                              {address.contactName} ({address.addressType})
-                            </h4>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-semibold text-gray-800 text-sm capitalize">
+                                {address.contactName} ({address.addressType})
+                              </h4>
+                              {address.isHouseVerified && (
+                                <CheckCircle size={16} weight="fill" className="text-green-600 shrink-0" title="Verified Address" />
+                              )}
+                            </div>
                             <p className="text-xs text-gray-600 mt-1">{address.address}</p>
                             {address.landMark && (
                               <p className="text-xs text-gray-500">Landmark: {address.landMark}</p>
@@ -506,9 +550,9 @@ function BookTechnicianPage() {
             <div className="px-3 py-4 sm:px-6 sm:py-6 border-t border-gray-200 bg-white shrink-0">
               <button
                 onClick={handleConfirmBooking}
-                disabled={bookingLoading || !selectedDate || !selectedTime}
+                disabled={bookingLoading || !selectedDate || !selectedTime || !selectedAddress}
                 className={`w-full py-3 sm:py-4 px-4 sm:px-6 rounded-lg font-bold text-base sm:text-lg text-white transition ${
-                  bookingLoading || !selectedDate || !selectedTime
+                  bookingLoading || !selectedDate || !selectedTime || !selectedAddress
                     ? 'bg-gray-400 cursor-not-allowed'
                     : 'bg-color-main hover:bg-blue-700 btn-filled-slide'
                 }`}

@@ -5,8 +5,8 @@ const Technician = require('../models/technicianModel');
 // Create a new booking
 exports.createBooking = async (req, res) => {
   try {
-    const userId = req.user._id;
-    const { technician, serviceDate, serviceTime, fee, orderNote, technicianInfo } = req.body;
+    const userId = req.body.userId;
+    const { technician, serviceDate, serviceTime, fee, orderNote, technicianInfo, selectedAddress } = req.body;
 
     // Validate required fields
     if (!technician || !serviceDate || !serviceTime || !fee) {
@@ -15,6 +15,17 @@ exports.createBooking = async (req, res) => {
         message: 'Missing required fields: technician, serviceDate, serviceTime, fee',
       });
     }
+
+    // Validate selectedAddress
+    if (!selectedAddress || !selectedAddress.address || !selectedAddress.phone || !selectedAddress.landMark || !selectedAddress._id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or incomplete address. Please select a valid address.',
+      });
+    }
+
+    // Extract addressId from selectedAddress
+    const addressId = selectedAddress._id;
 
     // Get user details
     const user = await User.findById(userId);
@@ -52,16 +63,42 @@ exports.createBooking = async (req, res) => {
         description: technicianInfo.description,
         email: technicianInfo.email,
         phone: technicianData.phone,
+        isVerifiedTechnician: technicianData.isVerifiedTechnician || false,
       },
       userInfo: {
         firstname: user.firstName,
         lastname: user.lastName,
         email: user.email,
+        address: selectedAddress?.address || '',
+        phone: selectedAddress?.phone || user.phone || '',
+        landMark: selectedAddress?.landMark || '',
+        addressId: addressId,
+        isHouseVerified: selectedAddress?.isHouseVerified || false,
       },
     });
 
     // Save booking
     const savedBooking = await newBooking.save();
+
+    user.notification = user.notification || [];
+    user.notification.push({
+      type: 'booking',
+      message: `Your Booking status is pending. Awaiting ${technicianInfo.firstname} ${technicianInfo.lastname}'s confirmation.`,
+      bookingId: savedBooking._id,
+      date: new Date(),
+      read: false,
+    });
+    await user.save();
+
+    technicianData.notification = technicianData.notification || [];
+    technicianData.notification.push({
+      type: 'booking',
+      message: `New booking assigned by user ${user.firstName} ${user.lastName}`, 
+      bookingId: savedBooking._id,
+      date: new Date(),
+      read: false,
+    });
+    await technicianData.save();
 
     return res.status(201).json({
       success: true,
@@ -81,7 +118,7 @@ exports.createBooking = async (req, res) => {
 // Get all bookings for a user
 exports.getUserBookings = async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.body.userId;
 
     const bookings = await Booking.find({ user: userId })
       .populate('technician')
@@ -105,7 +142,7 @@ exports.getUserBookings = async (req, res) => {
 // Get all bookings for a technician
 exports.getTechnicianBookings = async (req, res) => {
   try {
-    const technicianId = req.user._id;
+    const technicianId = req.body.technicianId;
 
     const bookings = await Booking.find({ technician: technicianId })
       .populate('user')
@@ -151,6 +188,40 @@ exports.getBookingById = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Error fetching booking',
+      error: error.message,
+    });
+  }
+};
+
+// Get booked time slots for a technician on a specific date (excluding cancelled bookings)
+exports.getBookedSlots = async (req, res) => {
+  try {
+    const { technicianId, date } = req.params;
+
+    // Parse the date and get start and end of that day
+    const selectedDate = new Date(date);
+    const dayStart = new Date(selectedDate.setHours(0, 0, 0, 0));
+    const dayEnd = new Date(selectedDate.setHours(23, 59, 59, 999));
+
+    // Find bookings for this technician on this date, excluding cancelled
+    const bookings = await Booking.find({
+      technician: technicianId,
+      serviceDate: { $gte: dayStart, $lte: dayEnd },
+      status: { $ne: 'cancelled' } // Exclude cancelled bookings
+    });
+
+    // Extract booked time slots
+    const bookedSlots = bookings.map(booking => booking.serviceTime);
+
+    return res.status(200).json({
+      success: true,
+      bookedSlots,
+    });
+  } catch (error) {
+    console.error('Error fetching booked slots:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching booked slots',
       error: error.message,
     });
   }

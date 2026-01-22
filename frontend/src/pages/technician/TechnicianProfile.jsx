@@ -601,20 +601,26 @@ function TechnicianProfile() {
                 <div className="flex flex-col gap-3 text-sm">
                   <div className="flex items-center justify-between">
                     <span>Certificate verification</span>
-                    <button
-                      type="button"
-                      className={`px-3 py-1 rounded-full text-xs font-semibold cursor-pointer hover:opacity-80 transition-opacity ${getCertificateStatusColor()}`}
-                      onClick={() => {
-                        if (user?.certificateStatus !== 'approved') {
-                          setShowCertificateModal(true);
-                        }
-                      }}
-                    >
-                      {getCertificateStatusText()}
-                    </button>
+                    {user?.isVerifiedTechnician ? (
+                      <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold">
+                        Verified
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        className={`px-3 py-1 rounded-full text-xs font-semibold cursor-pointer hover:opacity-80 transition-opacity ${getCertificateStatusColor()}`}
+                        onClick={() => {
+                          if (user?.certificateStatus !== 'approved') {
+                            setShowCertificateModal(true);
+                          }
+                        }}
+                      >
+                        {getCertificateStatusText()}
+                      </button>
+                    )}
                   </div>
 
-                  {user?.certificateStatus === 'pending' && (
+                  {/* {user?.certificateStatus === 'pending' && (
                     <p className="text-xs text-blue-600">
                       Your certificate is under review. You can upload a new one to replace it.
                     </p>
@@ -631,7 +637,7 @@ function TechnicianProfile() {
                       Upload a valid certificate to get verified and increase
                       customer trust.
                     </p>
-                  )}
+                  )} */}
                 </div>
               </div>
             </div>

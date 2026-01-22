@@ -7,6 +7,7 @@ const connectDB = require('./config/db');
 const userRoutes = require("./routes/userRoutes");
 const otpRoutes = require("./routes/otpRoutes");
 const technicianRoutes = require("./routes/technicianRoutes")
+const bookingRoutes = require("./routes/bookingRoutes")
 const adminRoutes = require("./routes/adminRoutes")
 const cors = require('cors');
 
@@ -29,6 +30,7 @@ app.get('/', (req, res) => {
 });
 
 app.use("/api/otp", otpRoutes);
+app.use("/api/bookings", bookingRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/technicians", technicianRoutes)
 app.use("/api/admin", adminRoutes)

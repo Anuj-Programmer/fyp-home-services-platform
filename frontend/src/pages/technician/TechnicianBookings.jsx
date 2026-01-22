@@ -1,6 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "@/blocks/Navbar";
 import Footer from "@/blocks/Footer";
+import axios from "axios";
+import toast from "react-hot-toast";
+import Cookies from "js-cookie";
 import "../../css/landingPage.css";
 // Dummy data for technician bookings
 const technicianBookings = [
@@ -129,24 +132,78 @@ function TechnicianBookings() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // Get current date (for "Today" filter)
   const today = new Date();
   const todayString = `${String(today.getDate()).padStart(2, "0")} ${today.toLocaleString("en-US", { month: "short" })} ${today.getFullYear()}`;
 
+  // Fetch technician bookings from backend
+  useEffect(() => {
+    const fetchTechnicianBookings = async () => {
+      try {
+        setLoading(true);
+        const token = Cookies.get("token") || localStorage.getItem("token");
+        const response = await axios.get("/api/bookings/technician-bookings", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.data.success) {
+          // Transform backend data to match frontend format
+          const transformedBookings = response.data.bookings.map((booking) => ({
+            id: booking._id,
+            clientName: `${booking.userInfo.firstname} ${booking.userInfo.lastname}`,
+            clientPhone: booking.userInfo.phone,
+            clientEmail: booking.userInfo.email,
+            bookingDate: new Date(booking.serviceDate).toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            }),
+            bookingTime: booking.serviceTime,
+            address: booking.userInfo.address,
+            landmark: booking.userInfo.landMark,
+            serviceType: booking.technicianInfo.servicetype,
+            status: booking.status.charAt(0).toUpperCase() + booking.status.slice(1),
+            verified: booking.userInfo.isHouseVerified || false,
+            note: booking.note,
+          }));
+
+          // Merge backend data with dummy data - show both
+          setBookings([...transformedBookings, ...technicianBookings]);
+        } else {
+          // Show only dummy data if fetch fails
+          setBookings(technicianBookings);
+          toast.error("Failed to fetch bookings");
+        }
+      } catch (error) {
+        console.error("Error fetching bookings:", error);
+        // Show only dummy data if fetch fails
+        setBookings(technicianBookings);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTechnicianBookings();
+  }, []);
+
   // Filter bookings based on active tab and search query
-  let filteredBookings = technicianBookings;
+  let filteredBookings = bookings;
 
   if (activeTab === "Upcoming") {
-    filteredBookings = technicianBookings.filter(booking => booking.status === "Confirmed");
+    filteredBookings = bookings.filter(booking => booking.status === "Confirmed");
   } else if (activeTab === "Today") {
-    filteredBookings = technicianBookings.filter(
+    filteredBookings = bookings.filter(
       booking => booking.status === "Confirmed" && booking.bookingDate === todayString
     );
   } else if (activeTab === "Pending") {
-    filteredBookings = technicianBookings.filter(booking => booking.status === "Pending");
+    filteredBookings = bookings.filter(booking => booking.status === "Pending");
   } else if (activeTab === "Rescheduled") {
-    filteredBookings = technicianBookings.filter(booking => booking.status === "Rescheduled");
+    filteredBookings = bookings.filter(booking => booking.status === "Rescheduled");
   }
   // "All" shows everything as initialized
 
@@ -232,25 +289,30 @@ function TechnicianBookings() {
 
           {/* Table */}
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="text-stone-500 uppercase text-xs tracking-wide border-b bg-stone-50">
-                  <th className="px-6 py-4 font-semibold w-40">Client Name</th>
-                  <th className="px-6 py-4 font-semibold w-48">Booking Date</th>
-                  <th className="px-6 py-4 font-semibold w-56">Location / Address</th>
-                  <th className="px-6 py-4 font-semibold w-32">Status</th>
-                  <th className="px-6 py-4 font-semibold w-56">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredBookings.length > 0 ? (
-                  filteredBookings.map((booking) => (
-                    <tr
-                      key={booking.id}
-                      className="border-b hover:bg-stone-50 transition-colors duration-150"
-                    >
-                      <td className="px-6 py-4 font-semibold text-neutral-900 w-40 truncate">
-                        {booking.clientName}
+            {loading ? (
+              <div className="py-12 text-center">
+                <p className="text-stone-500 text-base">Loading your bookings...</p>
+              </div>
+            ) : (
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="text-stone-500 uppercase text-xs tracking-wide border-b bg-stone-50">
+                    <th className="px-6 py-4 font-semibold w-40">Client Name</th>
+                    <th className="px-6 py-4 font-semibold w-48">Booking Date</th>
+                    <th className="px-6 py-4 font-semibold w-56">Location / Address</th>
+                    <th className="px-6 py-4 font-semibold w-32">Status</th>
+                    <th className="px-6 py-4 font-semibold w-56">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredBookings.length > 0 ? (
+                    filteredBookings.map((booking) => (
+                      <tr
+                        key={booking.id}
+                        className="border-b hover:bg-stone-50 transition-colors duration-150"
+                      >
+                        <td className="px-6 py-4 font-semibold text-neutral-900 w-40 truncate">
+                          {booking.clientName}
                       </td>
                       <td className="px-6 py-4 text-stone-700 w-48">
                         <div className="text-sm font-medium">{booking.bookingDate}</div>
@@ -323,6 +385,7 @@ function TechnicianBookings() {
                 )}
               </tbody>
             </table>
+            )}
           </div>
         </section>
       </main>

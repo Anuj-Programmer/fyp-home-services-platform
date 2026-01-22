@@ -16,7 +16,7 @@ const Navbar = () => {
   const [user, setUser] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -38,15 +38,15 @@ const Navbar = () => {
             Authorization: `Bearer ${token}`,
           },
         });
-        
+
         setUser(data);
         setNotifications(data.notification || []);
-        
+
         // Optional: Update localStorage as a cache
         localStorage.setItem("user", JSON.stringify(data));
       } catch (error) {
         console.error("Error fetching user:", error);
-        
+
         // Fallback to localStorage if API fails
         const storedUser = localStorage.getItem("user");
         if (storedUser) {
@@ -123,11 +123,10 @@ const Navbar = () => {
           Authorization: `Bearer ${token}`,
         },
       });
-      
+
       setUser(userData.data);
       setNotifications(userData.data.notification || []);
       localStorage.setItem("user", JSON.stringify(userData.data));
-
     } catch (err) {
       console.error(err);
       toast.error(err.response?.data?.message || "Error updating status");
@@ -143,18 +142,19 @@ const Navbar = () => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
       toast.success(data.message || "All notifications marked as read");
-      
+
       // Update state with backend response
       setUser(data.data);
       setNotifications(data.data.notification || []);
       localStorage.setItem("user", JSON.stringify(data.data));
-      
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.message || "Error marking notifications as read");
+      toast.error(
+        err.response?.data?.message || "Error marking notifications as read",
+      );
     }
   };
 
@@ -167,25 +167,27 @@ const Navbar = () => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
       //toast.success(data.message || "All notifications deleted");
-      
+
       // Update state with backend response
       setUser(data.data);
       setNotifications(data.data.notification || []);
       localStorage.setItem("user", JSON.stringify(data.data));
-      
+
       setShowNotifications(false);
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.message || "Error deleting notifications");
+      toast.error(
+        err.response?.data?.message || "Error deleting notifications",
+      );
     }
   };
 
   const handleSearchSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!searchTerm.trim()) {
       toast.error("Please enter a search term");
       return;
@@ -214,10 +216,10 @@ const Navbar = () => {
                 isAdmin
                   ? "/admin"
                   : user?.role === "technician"
-                  ? "/technician-dashboard"
-                  : isAuthenticated
-                  ? "/home"
-                  : "/"
+                    ? "/technician-dashboard"
+                    : isAuthenticated
+                      ? "/home"
+                      : "/"
               }
               className="Logo"
               onClick={handleLogoClick}
@@ -308,12 +310,19 @@ const Navbar = () => {
                                       `New notification from ${notification.name}`}
                                   </p>
                                   <p className="text-xs text-gray-500 mt-1">
-                                    {new Date(
-                                      notification.createdAt
-                                    ).toLocaleString()}
+                                    {notification.date
+                                      ? new Date(
+                                          notification.date,
+                                        ).toLocaleString()
+                                      : notification.createdAt
+                                        ? new Date(
+                                            notification.createdAt,
+                                          ).toLocaleString()
+                                        : "—"}
                                   </p>
 
-                                  {notification.action === "approve_or_reject" &&
+                                  {notification.action ===
+                                    "approve_or_reject" &&
                                     notification.technicianId && (
                                       <div className="mt-2 flex gap-2">
                                         <button
@@ -321,7 +330,7 @@ const Navbar = () => {
                                           onClick={() =>
                                             handleTechnicianStatus(
                                               notification.technicianId,
-                                              "approved"
+                                              "approved",
                                             )
                                           }
                                         >
@@ -332,7 +341,7 @@ const Navbar = () => {
                                           onClick={() =>
                                             handleTechnicianStatus(
                                               notification.technicianId,
-                                              "rejected"
+                                              "rejected",
                                             )
                                           }
                                         >
@@ -372,26 +381,28 @@ const Navbar = () => {
                               navigate(
                                 user?.role === "technician"
                                   ? "/technician-profile"
-                                  : "/profile"
+                                  : "/profile",
                               );
                               setShowProfileMenu(false);
                             }}
                           >
                             View Profile
                           </button>
-                          {!isAdmin && (<button
-                            className="w-full text-left px-4 py-2 hover:bg-gray-50"
-                            onClick={() => {
-                              navigate(
-                                user?.role === "technician"
-                                  ? "/TechnicianBookings"
-                                  : "/bookings"
-                              );
-                              setShowProfileMenu(false);
-                            }}
-                          >
-                            Booking
-                          </button>)}
+                          {!isAdmin && (
+                            <button
+                              className="w-full text-left px-4 py-2 hover:bg-gray-50"
+                              onClick={() => {
+                                navigate(
+                                  user?.role === "technician"
+                                    ? "/TechnicianBookings"
+                                    : "/bookings",
+                                );
+                                setShowProfileMenu(false);
+                              }}
+                            >
+                              Booking
+                            </button>
+                          )}
                           <button
                             className="w-full text-left px-4 py-2 text-red-500 hover:bg-red-50"
                             onClick={handleLogout}
@@ -476,14 +487,15 @@ const Navbar = () => {
                 {mobileModal === "profile" && "Profile"}
               </h2>
               <div className="flex items-center gap-4">
-                {mobileModal === "notifications" && notifications.length > 0 && (
-                  <button
-                    onClick={handleDeleteAllNotifications}
-                    className="text-sm text-blue-600 hover:text-blue-800 font-semibold"
-                  >
-                    Clear All
-                  </button>
-                )}
+                {mobileModal === "notifications" &&
+                  notifications.length > 0 && (
+                    <button
+                      onClick={handleDeleteAllNotifications}
+                      className="text-sm text-blue-600 hover:text-blue-800 font-semibold"
+                    >
+                      Clear All
+                    </button>
+                  )}
                 <button
                   onClick={() => setMobileModal(null)}
                   className="p-1 hover:bg-gray-100 rounded"
@@ -529,9 +541,13 @@ const Navbar = () => {
                               `New notification from ${notification.name}`}
                           </p>
                           <p className="text-xs text-gray-500 mt-1">
-                            {new Date(
-                              notification.createdAt
-                            ).toLocaleString()}
+                            {notification.date
+                              ? new Date(notification.date).toLocaleString()
+                              : notification.createdAt
+                                ? new Date(
+                                    notification.createdAt,
+                                  ).toLocaleString()
+                                : "—"}
                           </p>
 
                           {notification.action === "approve_or_reject" &&
@@ -542,7 +558,7 @@ const Navbar = () => {
                                   onClick={() => {
                                     handleTechnicianStatus(
                                       notification.technicianId,
-                                      "approved"
+                                      "approved",
                                     );
                                   }}
                                 >
@@ -553,7 +569,7 @@ const Navbar = () => {
                                   onClick={() => {
                                     handleTechnicianStatus(
                                       notification.technicianId,
-                                      "rejected"
+                                      "rejected",
                                     );
                                   }}
                                 >
@@ -580,7 +596,7 @@ const Navbar = () => {
                       navigate(
                         user?.role === "technician"
                           ? "/technician-profile"
-                          : "/profile"
+                          : "/profile",
                       );
                       setMobileModal(null);
                     }}
@@ -592,7 +608,11 @@ const Navbar = () => {
                     <button
                       className="w-full text-left px-4 py-3 bg-white border rounded-lg hover:bg-gray-50"
                       onClick={() => {
-                        navigate(user?.role === "technician" ? "/TechnicianBookings" : "/bookings");
+                        navigate(
+                          user?.role === "technician"
+                            ? "/TechnicianBookings"
+                            : "/bookings",
+                        );
                         setMobileModal(null);
                       }}
                     >

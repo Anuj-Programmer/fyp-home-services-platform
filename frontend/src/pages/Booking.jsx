@@ -1,7 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { CheckCircle } from "phosphor-react";
 import Navbar from "@/blocks/Navbar";
 import Footer from "@/blocks/Footer";
+import axios from "axios";
+import toast from "react-hot-toast";
+import Cookies from "js-cookie";
 import "../css/landingPage.css";
 
 // Dummy data with various statuses
@@ -17,7 +20,6 @@ const technicianBookings = [
     email: "sonal.mehra@example.com",
     phone: "+91 9876543219",
     status: "Pending",
-    avatar: "https://i.pravatar.cc/150?img=10",
   },
   // Confirmed
   {
@@ -30,7 +32,6 @@ const technicianBookings = [
     email: "ramesh.patel@example.com",
     phone: "+91 9876543212",
     status: "Confirmed",
-    avatar: "https://i.pravatar.cc/150?img=3",
   },
   {
     id: "BK-2048",
@@ -42,7 +43,6 @@ const technicianBookings = [
     email: "dib.rai@example.com",
     phone: "+91 9876543213",
     status: "Confirmed",
-    avatar: "https://i.pravatar.cc/150?img=4",
   },
   // Completed
   {
@@ -55,7 +55,6 @@ const technicianBookings = [
     email: "amit.sharma@example.com",
     phone: "+91 9876543210",
     status: "Completed",
-    avatar: "https://i.pravatar.cc/150?img=1",
   },
   {
     id: "BK-2046",
@@ -67,7 +66,6 @@ const technicianBookings = [
     email: "ravi.kumar@example.com",
     phone: "+91 9876543214",
     status: "Completed",
-    avatar: "https://i.pravatar.cc/150?img=5",
   },
   // Cancelled
   {
@@ -80,7 +78,6 @@ const technicianBookings = [
     email: "priya.singh@example.com",
     phone: "+91 9876543215",
     status: "Cancelled",
-    avatar: "https://i.pravatar.cc/150?img=6",
   },
   {
     id: "BK-2044",
@@ -92,7 +89,6 @@ const technicianBookings = [
     email: "arjun.desai@example.com",
     phone: "+91 9876543216",
     status: "Cancelled",
-    avatar: "https://i.pravatar.cc/150?img=7",
   },
   // Rescheduled
   {
@@ -105,7 +101,6 @@ const technicianBookings = [
     email: "neha.gupta@example.com",
     phone: "+91 9876543217",
     status: "Rescheduled",
-    avatar: "https://i.pravatar.cc/150?img=8",
   },
   {
     id: "BK-2042",
@@ -117,7 +112,6 @@ const technicianBookings = [
     email: "vikram.singh@example.com",
     phone: "+91 9876543218",
     status: "Rescheduled",
-    avatar: "https://i.pravatar.cc/150?img=9",
   },
 ];
 
@@ -126,15 +120,67 @@ const TABS = ["All", "Upcoming", "Pending", "Cancelled", "Rescheduled", "Complet
 function Booking() {
   const [activeTab, setActiveTab] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch user bookings from backend
+  useEffect(() => {
+    const fetchUserBookings = async () => {
+      try {
+        setLoading(true);
+        const token = Cookies.get("token") || localStorage.getItem("token");
+        const response = await axios.get("/api/bookings/user-bookings", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.data.success) {
+          // Transform backend data to match frontend format
+          const transformedBookings = response.data.bookings.map((booking) => ({
+            id: booking._id,
+            technicianName: `${booking.technicianInfo.firstname} ${booking.technicianInfo.lastname}`,
+            specialty: booking.technicianInfo.servicetype,
+            bookingDate: new Date(booking.serviceDate).toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            }),
+            time: booking.serviceTime,
+            serviceType: booking.technicianInfo.servicetype,
+            email: booking.technicianInfo.email,
+            phone: booking.technicianInfo.phone,
+            status: booking.status.charAt(0).toUpperCase() + booking.status.slice(1),
+            isVerifiedTechnician: booking.technicianInfo.isVerifiedTechnician || false,
+          }));
+
+          // Merge backend data with dummy data - show both
+          setBookings([...transformedBookings, ...technicianBookings]);
+        } else {
+          // Show only dummy data if fetch fails
+          setBookings(technicianBookings);
+          toast.error("Failed to fetch bookings");
+        }
+      } catch (error) {
+        console.error("Error fetching bookings:", error);
+        // Show only dummy data if fetch fails
+        setBookings(technicianBookings);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserBookings();
+  }, []);
 
   // Filter bookings based on active tab and search query
   let filteredBookings;
   if (activeTab === "All") {
-    filteredBookings = technicianBookings;
+    filteredBookings = bookings;
   } else if (activeTab === "Upcoming") {
-    filteredBookings = technicianBookings.filter(booking => booking.status === "Confirmed");
+    filteredBookings = bookings.filter(booking => booking.status === "Confirmed");
   } else {
-    filteredBookings = technicianBookings.filter(booking => booking.status === activeTab);
+    filteredBookings = bookings.filter(booking => booking.status === activeTab);
   }
 
   // Apply search filter
@@ -213,7 +259,11 @@ function Booking() {
 
           {/* Booking Cards */}
           <div className="p-4 md:p-6 space-y-3">
-            {filteredBookings.length > 0 ? (
+            {loading ? (
+              <div className="py-12 text-center">
+                <p className="text-stone-500 text-base">Loading your bookings...</p>
+              </div>
+            ) : filteredBookings.length > 0 ? (
               filteredBookings.map((booking) => (
                 <div
                   key={booking.id}
@@ -230,7 +280,9 @@ function Booking() {
                         <p className="text-base font-semibold text-neutral-900 truncate">
                           {booking.technicianName}
                         </p>
-                        <CheckCircle size={16} weight="fill" className="text-blue-600 shrink-0 ml-1" title="Verified Technician" />
+                        {booking.isVerifiedTechnician && (
+                          <CheckCircle size={16} weight="fill" className="text-blue-600 shrink-0 ml-1" title="Verified Technician" />
+                        )}
                       </div>
                     </div>
 

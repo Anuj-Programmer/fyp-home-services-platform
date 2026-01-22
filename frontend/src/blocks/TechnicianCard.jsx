@@ -57,7 +57,7 @@ const TechnicianCard = ({ pro, onBookClick }) => {
           {/* CONSULTATION FEES */}
           <div>
             <p className="text-xs text-gray-600 font-medium mb-0.5">Fees</p>
-            <p className="text-xl font-bold text-orange-500">${pro.fee || 0}</p>
+            <p className="text-xl font-bold text-orange-500">Rs. {pro.fee || 0}</p>
           </div>
 
           {/* BOOK NOW BUTTON */}

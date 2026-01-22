@@ -16,11 +16,16 @@ const bookingSchema = new mongoose.Schema({
       description: String,
       email: String,
       phone: String,
+      isVerifiedTechnician: Boolean
     },
     userInfo: {
         firstname: String,
         lastname: String,
         email: String,
+        address: String,
+        phone: String,
+        landMark: String,
+        isHouseVerified: Boolean,
     },
     note: { type: String },
     // Review and rating for this booking

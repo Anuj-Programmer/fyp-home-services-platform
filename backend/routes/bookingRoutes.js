@@ -12,9 +12,10 @@ const {
   cancelBooking,
   rescheduleBooking,
   deleteBooking,
+  getBookedSlots,
 } = require('../controllers/bookingCtrl');
 
-// Create a new booking
+// Create a new booking api/bookings/create
 router.post('/create', authMiddleware, createBooking);
 
 // Get all bookings for a user
@@ -25,6 +26,9 @@ router.get('/technician-bookings', authMiddleware, getTechnicianBookings);
 
 // Get single booking by ID
 router.get('/:bookingId', authMiddleware, getBookingById);
+
+// Get booked slots for a technician on a specific date
+router.get('/booked-slots/:technicianId/:date', getBookedSlots);
 
 // Update booking status
 router.put('/:bookingId/status', authMiddleware, updateBookingStatus);
