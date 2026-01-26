@@ -7,114 +7,6 @@ import toast from "react-hot-toast";
 import Cookies from "js-cookie";
 import "../css/landingPage.css";
 
-// Dummy data with various statuses
-const technicianBookings = [
-  // Pending
-  {
-    id: "BK-2052",
-    technicianName: "Sonal Mehra",
-    specialty: "Home Cleaning",
-    bookingDate: "05 Dec 2025",
-    time: "4:00 PM",
-    serviceType: "Home Cleaning",
-    email: "sonal.mehra@example.com",
-    phone: "+91 9876543219",
-    status: "Pending",
-  },
-  // Confirmed
-  {
-    id: "BK-2049",
-    technicianName: "Ramesh Patel",
-    specialty: "Electrical",
-    bookingDate: "30 Nov 2025",
-    time: "2:00 PM",
-    serviceType: "Electrical Inspection",
-    email: "ramesh.patel@example.com",
-    phone: "+91 9876543212",
-    status: "Confirmed",
-  },
-  {
-    id: "BK-2048",
-    technicianName: "Dib Rai",
-    specialty: "Gardening",
-    bookingDate: "01 Dec 2025",
-    time: "11:00 AM",
-    serviceType: "Gardening Maintenance",
-    email: "dib.rai@example.com",
-    phone: "+91 9876543213",
-    status: "Confirmed",
-  },
-  // Completed
-  {
-    id: "BK-2047",
-    technicianName: "Amit Sharma",
-    specialty: "Deep Cleaning",
-    bookingDate: "20 Nov 2025",
-    time: "9:00 AM",
-    serviceType: "Window Cleaning",
-    email: "amit.sharma@example.com",
-    phone: "+91 9876543210",
-    status: "Completed",
-  },
-  {
-    id: "BK-2046",
-    technicianName: "Ravi Kumar",
-    specialty: "AC Maintenance",
-    bookingDate: "18 Nov 2025",
-    time: "3:30 PM",
-    serviceType: "AC Maintenance",
-    email: "ravi.kumar@example.com",
-    phone: "+91 9876543214",
-    status: "Completed",
-  },
-  // Cancelled
-  {
-    id: "BK-2045",
-    technicianName: "Priya Singh",
-    specialty: "Pest Control",
-    bookingDate: "15 Nov 2025",
-    time: "7:00 PM",
-    serviceType: "Pest Control",
-    email: "priya.singh@example.com",
-    phone: "+91 9876543215",
-    status: "Cancelled",
-  },
-  {
-    id: "BK-2044",
-    technicianName: "Arjun Desai",
-    specialty: "Carpentry",
-    bookingDate: "14 Nov 2025",
-    time: "1:00 PM",
-    serviceType: "Carpentry Work",
-    email: "arjun.desai@example.com",
-    phone: "+91 9876543216",
-    status: "Cancelled",
-  },
-  // Rescheduled
-  {
-    id: "BK-2043",
-    technicianName: "Neha Gupta",
-    specialty: "Painting",
-    bookingDate: "12 Nov 2025",
-    time: "5:00 PM",
-    serviceType: "Painting",
-    email: "neha.gupta@example.com",
-    phone: "+91 9876543217",
-    status: "Rescheduled",
-  },
-  {
-    id: "BK-2042",
-    technicianName: "Vikram Singh",
-    specialty: "Plumbing",
-    bookingDate: "10 Nov 2025",
-    time: "10:30 AM",
-    serviceType: "Plumbing Installation",
-    email: "vikram.singh@example.com",
-    phone: "+91 9876543218",
-    status: "Rescheduled",
-  },
-];
-
 const TABS = ["All", "Upcoming", "Pending", "Cancelled", "Rescheduled", "Completed"];
 
 function Booking() {
@@ -154,17 +46,14 @@ function Booking() {
             isVerifiedTechnician: booking.technicianInfo.isVerifiedTechnician || false,
           }));
 
-          // Merge backend data with dummy data - show both
-          setBookings([...transformedBookings, ...technicianBookings]);
+          setBookings(transformedBookings);
         } else {
-          // Show only dummy data if fetch fails
-          setBookings(technicianBookings);
+          setBookings([]);
           toast.error("Failed to fetch bookings");
         }
       } catch (error) {
         console.error("Error fetching bookings:", error);
-        // Show only dummy data if fetch fails
-        setBookings(technicianBookings);
+        setBookings([]);
       } finally {
         setLoading(false);
       }

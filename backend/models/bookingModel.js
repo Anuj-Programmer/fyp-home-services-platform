@@ -5,7 +5,7 @@ const bookingSchema = new mongoose.Schema({
   technician: { type: mongoose.Schema.Types.ObjectId, ref: 'Technician', required: true },
     serviceDate: { type: Date, required: true },
     serviceTime: { type: String, required: true },
-    status: { type: String, enum: ['pending', 'confirmed', 'completed', 'cancelled', 'ontheway', 'inprogress', 'rescheduled'], default: 'pending' },
+    status: { type: String, enum: ['pending', 'confirmed', 'completed', 'cancelled', 'ontheway', 'inprogress', 'rescheduled','expired'], default: 'pending' },
     fee: { type: Number, required: true },
     technicianInfo: {
       firstname: String,

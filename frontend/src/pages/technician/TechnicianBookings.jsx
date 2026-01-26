@@ -5,125 +5,6 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
 import "../../css/landingPage.css";
-// Dummy data for technician bookings
-const technicianBookings = [
-  // Pending
-  {
-    id: "BK-3001",
-    clientName: "Rajesh Kumar",
-    clientPhone: "+91 9876543200",
-    clientEmail: "rajesh.kumar@example.com",
-    bookingDate: "08 Jan 2026",
-    bookingTime: "10:00 AM",
-    address: "123 MG Road, Sector 5",
-    landmark: "Near City Hospital",
-    serviceType: "Home Cleaning",
-    status: "Pending",
-    verified: true,
-    note: "Client prefers morning slots. Please ring doorbell twice.",
-  },
-  {
-    id: "BK-3002",
-    clientName: "Priya Sharma",
-    clientPhone: "+91 8765432100",
-    clientEmail: "priya.sharma@example.com",
-    bookingDate: "09 Jan 2026",
-    bookingTime: "2:00 PM",
-    address: "456 Park Avenue, Apt 302",
-    landmark: "Opposite Green Garden Park",
-    serviceType: "Plumbing Repair",
-    status: "Pending",
-    verified: false,
-    note: "First time customer. Please introduce yourself and confirm service details.",
-  },
-  // Confirmed (Upcoming)
-  {
-    id: "BK-3003",
-    clientName: "Amit Patel",
-    clientPhone: "+91 7654321000",
-    clientEmail: "amit.patel@example.com",
-    bookingDate: "07 Jan 2026",
-    bookingTime: "11:00 AM",
-    address: "789 Beach Road, Ground Floor",
-    landmark: "Near Metro Station",
-    serviceType: "Electrical Work",
-    status: "Confirmed",
-    verified: true,
-    note: "Please bring all necessary tools. Old wiring needs to be replaced.",
-  },
-  {
-    id: "BK-3004",
-    clientName: "Neha Verma",
-    clientPhone: "+91 6543210000",
-    clientEmail: "neha.verma@example.com",
-    bookingDate: "07 Jan 2026",
-    bookingTime: "3:30 PM",
-    address: "321 Garden Lane, Villa 7",
-    landmark: "Gated Community",
-    serviceType: "AC Maintenance",
-    status: "Confirmed",
-    verified: true,
-    note: "AC is not cooling properly. Please check the compressor.",
-  },
-  {
-    id: "BK-3005",
-    clientName: "Vikram Singh",
-    clientPhone: "+91 5432100000",
-    clientEmail: "vikram.singh@example.com",
-    bookingDate: "10 Jan 2026",
-    bookingTime: "9:00 AM",
-    address: "555 Tech Park, Building A",
-    landmark: "Business District",
-    serviceType: "Deep Cleaning",
-    status: "Confirmed",
-    verified: true,
-    note: "Office cleaning. Provide quote after inspection.",
-  },
-  // Rescheduled
-  {
-    id: "BK-3006",
-    clientName: "Sanjana Gupta",
-    clientPhone: "+91 4321000000",
-    clientEmail: "sanjana.gupta@example.com",
-    bookingDate: "12 Jan 2026",
-    bookingTime: "5:00 PM",
-    address: "112 Maple Street, Apt 501",
-    landmark: "Shopping Complex Nearby",
-    serviceType: "Painting",
-    status: "Rescheduled",
-    verified: false,
-    note: "Reschedule reason: Client was out of station. New date: 12 Jan.",
-  },
-  {
-    id: "BK-3007",
-    clientName: "Deepak Verma",
-    clientPhone: "+91 3210000000",
-    clientEmail: "deepak.verma@example.com",
-    bookingDate: "15 Jan 2026",
-    bookingTime: "1:00 PM",
-    address: "999 Oak Street, House 45",
-    landmark: "Residential Society",
-    serviceType: "Carpentry",
-    status: "Rescheduled",
-    verified: true,
-    note: "Client requested later time. Furniture assembly required.",
-  },
-  // Completed
-  {
-    id: "BK-3008",
-    clientName: "Anjali Das",
-    clientPhone: "+91 2100000000",
-    clientEmail: "anjali.das@example.com",
-    bookingDate: "05 Jan 2026",
-    bookingTime: "8:00 AM",
-    address: "678 Birch Road, Apt 101",
-    landmark: "Near Market",
-    serviceType: "Home Cleaning",
-    status: "Completed",
-    verified: true,
-    note: "Service completed. Customer satisfied with work.",
-  },
-];
 
 const TABS = ["Upcoming", "Today", "All", "Pending", "Rescheduled"];
 
@@ -172,17 +53,14 @@ function TechnicianBookings() {
             note: booking.note,
           }));
 
-          // Merge backend data with dummy data - show both
-          setBookings([...transformedBookings, ...technicianBookings]);
+          setBookings(transformedBookings);
         } else {
-          // Show only dummy data if fetch fails
-          setBookings(technicianBookings);
+          setBookings([]);
           toast.error("Failed to fetch bookings");
         }
       } catch (error) {
         console.error("Error fetching bookings:", error);
-        // Show only dummy data if fetch fails
-        setBookings(technicianBookings);
+        setBookings([]);
       } finally {
         setLoading(false);
       }
