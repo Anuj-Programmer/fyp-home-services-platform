@@ -76,7 +76,7 @@ function VerifyLoginOtp() {
 
       toast.success(data.message || "Login successful!");
 
-      Cookies.set("token", data.token);
+      Cookies.set("token", data.token, {expires: 7, path: '/', sameSite:'Lax'}); // Set token in cookies for 7 days
       //localStorage.setItem("token", data.token);
       // Store user along with role
       const userWithRole = {

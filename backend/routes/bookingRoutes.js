@@ -30,13 +30,13 @@ router.get('/:bookingId', authMiddleware, getBookingById);
 // Get booked slots for a technician on a specific date
 router.get('/booked-slots/:technicianId/:date', getBookedSlots);
 
-// Update booking status
+// api/bookings/:bookingId/status Update booking status
 router.put('/:bookingId/status', authMiddleware, updateBookingStatus);
 
 // Add review to booking
 router.post('/:bookingId/review', authMiddleware, addReview);
 
-// Cancel booking
+// Cancel booking api/bookings/:bookingId/cancel
 router.put('/:bookingId/cancel', authMiddleware, cancelBooking);
 
 // Reschedule booking

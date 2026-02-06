@@ -50,7 +50,7 @@ function RegisterInfo() {
       // Clear localStorage flags after registration
       localStorage.removeItem("email");
       localStorage.removeItem("otpVerified");
-      Cookies.set("token", data.token);
+       Cookies.set("token", data.token, {expires: 7, path: '/', sameSite:'Lax'}); 
       //localStorage.setItem("token", data.token);    
       // Cookies.set("token", data.token);
         // ⬇️ IMPORTANT: Store role together with user

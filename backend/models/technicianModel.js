@@ -57,8 +57,8 @@ const TechnicianSchema = new mongoose.Schema({
 
   certificateStatus: {
     type: String,
-    enum: ['pending', 'approved', 'rejected'],
-    default: 'pending'
+    enum: ['pending', 'approved', 'rejected', "not_provided"],
+    default: 'not_provided'
   },
 
   isVerifiedTechnician: {
@@ -115,12 +115,6 @@ averageRating: { type: Number, default: 0 }
   }
 });
 
-// Auto-set verified status if certificate exists
-TechnicianSchema.pre("save", function (next) {
-  if (this.certificateUrl) {
-    this.isVerifiedTechnician = true;
-  }
-  next();
-});
+
 
 module.exports = mongoose.model("Technician", TechnicianSchema);

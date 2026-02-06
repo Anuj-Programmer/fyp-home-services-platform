@@ -379,19 +379,24 @@ function BookTechnicianPage() {
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                     {availableSlots.map((slot) => {
                       const isBooked = bookedSlots.includes(slot);
+                      
+                      // Check if slot is in the past (only for today)
+                      const today = new Date().toISOString().split('T')[0];
+                      const isPastTime = selectedDate === today && slot < new Date().toTimeString().slice(0, 5);
+                      
                       return (
                         <button
                           key={slot}
-                          onClick={() => !isBooked && setSelectedTime(slot)}
-                          disabled={isBooked}
+                          onClick={() => !isBooked && !isPastTime && setSelectedTime(slot)}
+                          disabled={isBooked || isPastTime}
                           className={`py-2 px-3 rounded-lg border-2 font-medium transition ${
-                            isBooked
+                            isBooked || isPastTime
                               ? 'border-gray-300 bg-gray-200 text-gray-500 cursor-not-allowed opacity-60'
                               : selectedTime === slot
                               ? 'border-color-main bg-color-main text-white'
                               : 'border-gray-300 bg-white text-gray-700 hover:border-color-main'
                           }`}
-                          title={isBooked ? 'This slot is already booked' : ''}
+                          title={isBooked ? 'This slot is already booked' : isPastTime ? 'This time has already passed' : ''}
                         >
                           {slot}
                         </button>

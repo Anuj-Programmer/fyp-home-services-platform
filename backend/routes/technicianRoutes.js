@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const authMiddleware = require('../middleware/authmiddleware');
 
-const {registerTechnician, updateTechnicianProfile, getActiveTechnicians, getTechnicianById, searchTechnician, uploadTechnicianCertificate, allGetActiveTechnicians} = require('../controllers/technicianCtrl');
+const {registerTechnician, updateTechnicianProfile, getActiveTechnicians, getTechnicianById, searchTechnician, uploadTechnicianCertificate, updateTechnicianStatus, allGetActiveTechnicians} = require('../controllers/technicianCtrl');
 
 router.post("/registerTechnician", registerTechnician);
 
@@ -19,6 +19,9 @@ router.get("/search-technician", authMiddleware, searchTechnician);
 
 // Upload Technician Certificate || POST /api/technicians/upload-certificate
 router.post("/upload-certificate", authMiddleware, uploadTechnicianCertificate);
+
+// Update Technician Status || PUT /api/technicians/update-status
+router.put("/update-status", authMiddleware, updateTechnicianStatus);
 
 module.exports = router;
 

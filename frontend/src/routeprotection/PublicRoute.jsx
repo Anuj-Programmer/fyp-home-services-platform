@@ -13,6 +13,7 @@ function PublicRoute({ children }) {
 
       if (isExpired) {
         // Remove expired token and user data
+        Cookies.remove("token");
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         return children; // Let them access the public page
@@ -33,6 +34,7 @@ function PublicRoute({ children }) {
       }
     } catch (err) {
       console.error("Invalid token", err);
+      Cookies.remove("token");
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       return children;

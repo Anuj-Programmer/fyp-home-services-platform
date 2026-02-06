@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { CheckCircle } from "phosphor-react";
 import Navbar from "@/blocks/Navbar";
 import Footer from "@/blocks/Footer";
@@ -7,13 +8,17 @@ import toast from "react-hot-toast";
 import Cookies from "js-cookie";
 import "../css/landingPage.css";
 
-const TABS = ["All", "Upcoming", "Pending", "Cancelled", "Rescheduled", "Completed"];
+const TABS = ["All", "Upcoming", "Pending"  , "Completed"];
 
 function Booking() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [cancellingBookingId, setCancellingBookingId] = useState(null);
 
   // Fetch user bookings from backend
   useEffect(() => {
@@ -31,6 +36,7 @@ function Booking() {
           // Transform backend data to match frontend format
           const transformedBookings = response.data.bookings.map((booking) => ({
             id: booking._id,
+            technicianId: typeof booking.technician === 'object' ? booking.technician._id : booking.technician,
             technicianName: `${booking.technicianInfo.firstname} ${booking.technicianInfo.lastname}`,
             specialty: booking.technicianInfo.servicetype,
             bookingDate: new Date(booking.serviceDate).toLocaleDateString("en-GB", {
@@ -89,12 +95,82 @@ function Booking() {
         return "bg-emerald-100 text-emerald-700";
       case "Pending":
         return "bg-blue-100 text-blue-700";
+      case "Expired":
       case "Cancelled":
+      case "Declined":
         return "bg-red-100 text-red-700";
       case "Rescheduled":
+      case "Inprogress":
         return "bg-amber-100 text-amber-700";
       default:
         return "bg-stone-100 text-stone-700";
+    }
+  };
+
+  const handleViewClick = (booking) => {
+    setSelectedBooking(booking);
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedBooking(null);
+  };
+
+  // Cancel booking handler
+  const handleCancelBooking = async (bookingId) => {
+    try {
+      // Show confirmation dialog
+      if (!window.confirm("Are you sure you want to cancel this booking?")) {
+        return;
+      }
+
+      setCancellingBookingId(bookingId);
+      const token = Cookies.get("token") || localStorage.getItem("token");
+      
+      const response = await axios.put(
+        `/api/bookings/${bookingId}/cancel`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.data.success) {
+        toast.success("Booking cancelled successfully");
+        
+        // Update the bookings list
+        setBookings(prevBookings =>
+          prevBookings.map(booking =>
+            booking.id === bookingId
+              ? { ...booking, status: "Cancelled" }
+              : booking
+          )
+        );
+      } else {
+        toast.error(response.data.message || "Failed to cancel booking");
+      }
+    } catch (error) {
+      console.error("Error cancelling booking:", error);
+      toast.error(error.response?.data?.message || "Failed to cancel booking");
+    } finally {
+      setCancellingBookingId(null);
+    }
+  };
+
+  // Get progress stage based on booking status
+  const getProgressStage = (status) => {
+    switch (status) {
+      case "Confirmed":
+        return 1;
+      case "Inprogress":
+        return 2;
+      case "Completed":
+        return 3;
+      default:
+        return 0;
     }
   };
 
@@ -220,8 +296,13 @@ function Booking() {
                     <div className="flex gap-2 shrink-0">
                       {booking.status === "Completed" ? (
                         <>
+                          <button 
+                            onClick={() => handleViewClick(booking)}
+                            className="px-3 py-1.5 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap">
+                            Details
+                          </button>
                           <button className="px-3 py-1.5 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap">
-                            Payment
+                            Pay
                           </button>
                           <button className="px-3 py-1.5 border border-color-primary text-color-primary text-xs font-semibold rounded-full hover:bg-blue-50 transition-colors whitespace-nowrap">
                             Rate
@@ -229,26 +310,49 @@ function Booking() {
                         </>
                       ) : booking.status === "Confirmed" ? (
                         <>
-                          <button className="px-3 py-1.5 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap">
+                          <button 
+                            onClick={() => handleViewClick(booking)}
+                            className="px-3 py-1.5 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap">
                             Details
                           </button>
-                          <button className="px-3 py-1.5 border border-color-primary text-color-primary text-xs font-semibold rounded-full hover:bg-blue-50 transition-colors whitespace-nowrap">
-                            Reschedule
+                          <button 
+                            onClick={() => handleCancelBooking(booking.id)}
+                            disabled={cancellingBookingId === booking.id}
+                            className="px-3 py-1.5 border border-red-600 text-red-600 text-xs font-semibold rounded-full hover:bg-red-50 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed">
+                            {cancellingBookingId === booking.id ? "Cancelling..." : "Cancel"}
                           </button>
                         </>
-                      ) : booking.status === "Cancelled" ? (
-                        <button className="px-3 py-1.5 bg-stone-200 text-stone-600 text-xs font-semibold rounded-full hover:bg-stone-300 transition-colors whitespace-nowrap">
+                      ) : booking.status === "Inprogress" ? (
+                        <button 
+                          onClick={() => handleViewClick(booking)}
+                          className="px-3 py-1.5 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap">
                           View Details
                         </button>
+                      ) : booking.status === "Cancelled" ? (
+                        <button 
+                          onClick={() => handleViewClick(booking)}
+                          className="px-3 py-1.5 bg-stone-200 text-stone-600 text-xs font-semibold rounded-full hover:bg-stone-300 transition-colors whitespace-nowrap">
+                          View Detail
+                        </button>
+                      ) : booking.status === "Declined" ? (
+                        <button 
+                          onClick={() => handleViewClick(booking)}
+                          className="px-3 py-1.5 bg-color-main text-white text-xs font-semibold rounded-full hover:bg-stone-300 transition-colors whitespace-nowrap">
+                          View Details
+                        </button>
+                      ) : booking.status === "Expired" ? (
+                        <button 
+                          onClick={() => navigate(`/booktechnician/${booking.technicianId}`)}
+                          className="px-3 py-1.5 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap">
+                          Reschedule
+                        </button>
                       ) : (
-                        <>
-                          <button className="px-3 py-1.5 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap">
-                            Reschedule
-                          </button>
-                          <button className="px-3 py-1.5 border border-red-600 text-red-600 text-xs font-semibold rounded-full hover:bg-red-50 transition-colors whitespace-nowrap">
-                            Cancel
-                          </button>
-                        </>
+                        <button 
+                          onClick={() => handleCancelBooking(booking.id)}
+                          disabled={cancellingBookingId === booking.id}
+                          className="px-3 py-1.5 border border-red-600 text-red-600 text-xs font-semibold rounded-full hover:bg-red-50 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed">
+                          {cancellingBookingId === booking.id ? "Cancelling..." : "Cancel"}
+                        </button>
                       )}
                     </div>
                   </div>
@@ -318,8 +422,13 @@ function Booking() {
                     <div className="flex gap-2 pt-1">
                       {booking.status === "Completed" ? (
                         <>
+                          <button 
+                            onClick={() => handleViewClick(booking)}
+                            className="flex-1 px-3 py-2 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity">
+                            Details
+                          </button>
                           <button className="flex-1 px-3 py-2 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity">
-                            Payment
+                            Pay
                           </button>
                           <button className="flex-1 px-3 py-2 border border-color-primary txt-color-primary text-xs font-semibold rounded-full hover:bg-blue-50 transition-colors">
                             Rate
@@ -327,26 +436,49 @@ function Booking() {
                         </>
                       ) : booking.status === "Confirmed" ? (
                         <>
-                          <button className="flex-1 px-3 py-2 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity">
+                          <button 
+                            onClick={() => handleViewClick(booking)}
+                            className="flex-1 px-3 py-2 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity">
                             Details
                           </button>
-                          <button className="flex-1 px-3 py-2 border border-color-primary txt-color-primary text-xs font-semibold rounded-full hover:bg-blue-50 transition-colors">
-                            Reschedule
+                          <button 
+                            onClick={() => handleCancelBooking(booking.id)}
+                            disabled={cancellingBookingId === booking.id}
+                            className="flex-1 px-3 py-2 border border-red-600 text-red-600 text-xs font-semibold rounded-full hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            {cancellingBookingId === booking.id ? "Cancelling..." : "Cancel"}
                           </button>
                         </>
+                      ) : booking.status === "Inprogress" ? (
+                        <button 
+                          onClick={() => handleViewClick(booking)}
+                          className="flex-1 px-3 py-2 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity">
+                          View Details
+                        </button>
                       ) : booking.status === "Cancelled" ? (
-                        <button className="flex-1 px-3 py-2 bg-stone-200 text-stone-600 text-xs font-semibold rounded-full hover:bg-stone-300 transition-colors">
+                        <button 
+                          onClick={() => handleViewClick(booking)}
+                          className="flex-1 px-3 py-2 bg-stone-200 text-stone-600 text-xs font-semibold rounded-full hover:bg-stone-300 transition-colors">
                           Details
                         </button>
+                      ) : booking.status === "Declined" ? (
+                        <button 
+                          onClick={() => handleViewClick(booking)}
+                          className="flex-1 px-3 py-2 bg-stone-200 text-stone-600 text-xs font-semibold rounded-full hover:bg-stone-300 transition-colors">
+                          Details
+                        </button>
+                      ) : booking.status === "Expired" ? (
+                        <button 
+                          onClick={() => navigate(`/booktechnician/${booking.technicianId}`)}
+                          className="flex-1 px-3 py-2 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity">
+                          Reschedule
+                        </button>
                       ) : (
-                        <>
-                          <button className="flex-1 px-3 py-2 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity">
-                            Reschedule
-                          </button>
-                          <button className="flex-1 px-3 py-2 border border-red-600 text-red-600 text-xs font-semibold rounded-full hover:bg-red-50 transition-colors">
-                            Cancel
-                          </button>
-                        </>
+                        <button 
+                          onClick={() => handleCancelBooking(booking.id)}
+                          disabled={cancellingBookingId === booking.id}
+                          className="flex-1 px-3 py-2 border border-red-600 text-red-600 text-xs font-semibold rounded-full hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                          {cancellingBookingId === booking.id ? "Cancelling..." : "Cancel"}
+                        </button>
                       )}
                     </div>
                   </div>
@@ -362,6 +494,171 @@ function Booking() {
           </div>
         </section>
       </main>
+
+      {/* Modal */}
+      {showModal && selectedBooking && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-sm p-4"
+          onClick={handleCloseModal}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white text-color-primary px-6 py-4 flex items-center justify-between border-b">
+              <h2 className="text-xl font-semibold">Booking Details</h2>
+              <button
+                onClick={handleCloseModal}
+                className="text-stone-600 hover:text-stone-900 rounded-full p-1 transition-colors text-2xl font-light"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6">
+              {/* Technician Information */}
+              <div>
+                <h3 className="text-base font-semibold text-neutral-900 mb-3 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-color-main" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                  </svg>
+                  Technician Information
+                </h3>
+                <div className="bg-stone-50 p-4 rounded-lg space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-stone-600 uppercase tracking-wide font-semibold mb-1">Name</p>
+                      <p className="text-sm text-neutral-900">{selectedBooking.technicianName}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-stone-600 uppercase tracking-wide font-semibold mb-1">Specialty</p>
+                      <p className="text-sm text-neutral-900">{selectedBooking.specialty}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-stone-600 uppercase tracking-wide font-semibold mb-1">Email</p>
+                      <p className="text-sm text-neutral-900">{selectedBooking.email}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-stone-600 uppercase tracking-wide font-semibold mb-1">Phone</p>
+                      <p className="text-sm text-neutral-900">{selectedBooking.phone}</p>
+                    </div>
+                  </div>
+                  {selectedBooking.isVerifiedTechnician && (
+                    <div className="flex items-center gap-2 bg-emerald-100 p-3 rounded-lg mt-2">
+                      <CheckCircle size={18} weight="fill" className="text-emerald-600" />
+                      <span className="text-sm font-medium text-emerald-700">Verified Technician</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Progress Indicator for Confirmed, Inprogress, and Completed Bookings */}
+              {(selectedBooking.status === "Confirmed" || selectedBooking.status === "Inprogress" || selectedBooking.status === "Completed") && (
+                <div className="bg-stone-50 p-6 rounded-lg mt-6">
+                  <h3 className="text-sm font-semibold text-stone-700 mb-6 uppercase tracking-wide">Service Progress</h3>
+                  <div className="flex items-center justify-between relative pb-4">
+                    {/* Stage 1: Accepted */}
+                    <div className="flex flex-col items-center z-10">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all ${
+                        getProgressStage(selectedBooking.status) >= 1
+                          ? "bg-emerald-500 text-white"
+                          : "bg-stone-300 text-stone-600"
+                      }`}>
+                        ✓
+                      </div>
+                      <p className="text-xs font-medium text-stone-700 mt-3">Accepted</p>
+                    </div>
+
+                    {/* Connector Line 1 */}
+                    <div className={`flex-1 h-1 mx-2 transition-all ${
+                      getProgressStage(selectedBooking.status) >= 2
+                        ? "bg-emerald-500"
+                        : "bg-stone-300"
+                    }`}></div>
+
+                    {/* Stage 2: In Progress */}
+                    <div className="flex flex-col items-center z-10">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all ${
+                        getProgressStage(selectedBooking.status) >= 2
+                          ? "bg-emerald-500 text-white"
+                          : "bg-stone-300 text-stone-600"
+                      }`}>
+                        ○
+                      </div>
+                      <p className="text-xs font-medium text-stone-700 mt-3">In Progress</p>
+                    </div>
+
+                    {/* Connector Line 2 */}
+                    <div className={`flex-1 h-1 mx-2 transition-all ${
+                      getProgressStage(selectedBooking.status) >= 3
+                        ? "bg-emerald-500"
+                        : "bg-stone-300"
+                    }`}></div>
+
+                    {/* Stage 3: Completed */}
+                    <div className="flex flex-col items-center z-10">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all ${
+                        getProgressStage(selectedBooking.status) >= 3
+                          ? "bg-emerald-500 text-white"
+                          : "bg-stone-300 text-stone-600"
+                      }`}>
+                        ✓
+                      </div>
+                      <p className="text-xs font-medium text-stone-700 mt-3">Completed</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Service & Booking Details */}
+              <div className="mt-6">
+                <h3 className="text-base font-semibold text-neutral-900 mb-3 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-color-main" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
+                  </svg>
+                  Booking Details
+                </h3>
+                <div className="bg-stone-50 p-4 rounded-lg">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-stone-600 uppercase tracking-wide font-semibold mb-1">Service Type</p>
+                      <p className="text-sm text-neutral-900">{selectedBooking.serviceType}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-stone-600 uppercase tracking-wide font-semibold mb-1">Status</p>
+                      <span className={`px-3 py-1 text-xs font-semibold rounded-full inline-block ${getStatusColor(selectedBooking.status)}`}>
+                        {selectedBooking.status}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-stone-600 uppercase tracking-wide font-semibold mb-1">Booking Date</p>
+                      <p className="text-sm text-neutral-900">{selectedBooking.bookingDate}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-stone-600 uppercase tracking-wide font-semibold mb-1">Booking Time</p>
+                      <p className="text-sm text-neutral-900">{selectedBooking.time}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-stone-50 px-6 py-4 border-t flex gap-3 justify-end">
+              <button
+                onClick={handleCloseModal}
+                className="px-4 py-2 bg-stone-200 text-stone-700 font-medium rounded-lg hover:bg-stone-300 transition-colors text-sm"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Footer />
     </>
   );

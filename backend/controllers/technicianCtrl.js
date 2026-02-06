@@ -433,6 +433,46 @@ const uploadTechnicianCertificate = async (req, res) => {
   }
 };
 
+const updateTechnicianStatus = async (req, res) => {
+  try {
+    const { technicianId, status } = req.body;
+
+    if (!technicianId) {
+      return res.status(400).json({ message: "Technician ID is required" });
+    }
+
+    if (!status || !["active", "inactive"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status. Allowed values: active, inactive" });
+    }
+
+    // Find the technician
+    const technician = await Technician.findById(technicianId);
+    if (!technician) {
+      return res.status(404).json({ message: "Technician not found" });
+    }
+
+    // Update status
+    technician.status = status;
+    await technician.save();
+
+    res.status(200).json({
+      message: `Technician status updated to ${status} successfully`,
+      technician: {
+        ...technician.toObject(),
+        role: "technician",
+      },
+    });
+  } catch (error) {
+    console.error("Error updating technician status:", error);
+    res.status(500).json({ 
+      message: "Server error updating technician status",
+      error: error.message 
+    });
+  }
+};
+
+
+
 module.exports = {
   registerTechnician,
   updateTechnicianProfile,
@@ -440,6 +480,7 @@ module.exports = {
   getTechnicianById,
   searchTechnician,
   uploadTechnicianCertificate,
+  updateTechnicianStatus,
   allGetActiveTechnicians
 }
   

@@ -300,7 +300,13 @@ const Navbar = () => {
                           </div>
                           <div className="max-h-64 overflow-y-auto">
                             {notifications.length > 0 ? (
-                              notifications.map((notification, index) => (
+                              [...notifications]
+                                .sort((a, b) => {
+                                  const dateA = new Date(a.date || a.createdAt);
+                                  const dateB = new Date(b.date || b.createdAt);
+                                  return dateB - dateA;
+                                })
+                                .map((notification, index) => (
                                 <div
                                   key={index}
                                   className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b"
@@ -531,7 +537,13 @@ const Navbar = () => {
                 <div>
                   <div className="space-y-2">
                     {notifications.length > 0 ? (
-                      notifications.map((notification, index) => (
+                      [...notifications]
+                        .sort((a, b) => {
+                          const dateA = new Date(a.date || a.createdAt);
+                          const dateB = new Date(b.date || b.createdAt);
+                          return dateB - dateA;
+                        })
+                        .map((notification, index) => (
                         <div
                           key={index}
                           className="p-3 bg-white border rounded-lg"

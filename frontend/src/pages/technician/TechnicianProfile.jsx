@@ -17,6 +17,8 @@ function TechnicianProfile() {
   const [showTimeModal, setShowTimeModal] = useState(false);
   const [editingDay, setEditingDay] = useState(null);
   const [timeError, setTimeError] = useState("");
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -204,6 +206,14 @@ function TechnicianProfile() {
     e.preventDefault();
     setSaving(true);
 
+    // Check if at least one day is available
+    const hasAvailability = Object.values(availability).some(day => day.isAvailable);
+    if (!hasAvailability) {
+      toast.error("Please set availability for at least one day of the week");
+      setSaving(false);
+      return;
+    }
+
     try {
       const payload = {
         firstName: formData.firstName,
@@ -303,7 +313,7 @@ function TechnicianProfile() {
   };
 
   const getCertificateStatusText = () => {
-    if (!user?.certificateUrl) return "Upload proof";
+    if (user?.certificateStatus === "not_provided") return "Upload proof";
     if (user?.certificateStatus === "pending") return "Approval Pending";
     if (user?.certificateStatus === "approved") return "Approved";
     if (user?.certificateStatus === "rejected") return "Rejected - Re-upload";
@@ -311,11 +321,67 @@ function TechnicianProfile() {
   };
 
   const getCertificateStatusColor = () => {
-    if (!user?.certificateUrl) return "bg-amber-100 text-amber-700";
+    if (user?.certificateStatus === "not_provided") return "bg-amber-100 text-amber-700";
     if (user?.certificateStatus === "pending") return "bg-blue-100 text-blue-700";
     if (user?.certificateStatus === "approved") return "bg-emerald-100 text-emerald-700";
     if (user?.certificateStatus === "rejected") return "bg-red-100 text-red-700";
     return "bg-amber-100 text-amber-700";
+  };
+
+  const isProfileComplete = 
+    formData.firstName && 
+    formData.lastName && 
+    formData.phone && 
+    formData.location && 
+    formData.experienceYears && 
+    formData.fee && 
+    formData.photoUrl && 
+    formData.description && 
+    Object.values(availability).some(day => day.isAvailable);
+
+  const handleStatusModalOpen = () => {
+    if (!isProfileComplete) {
+      toast.error("Please complete all required fields first");
+      return;
+    }
+    setShowStatusModal(true);
+  };
+
+  const handleStatusChange = async (newStatus) => {
+    try {
+      setUpdatingStatus(true);
+
+      const { data } = await axios.put(
+        "/api/technicians/update-status",
+        {
+          technicianId: user._id,
+          status: newStatus,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // Update local state
+      const updatedUser = {
+        ...data.technician,
+        role: "technician",
+      };
+
+      setUser(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+
+      toast.success(`Account status changed to ${newStatus.toUpperCase()}`);
+      setShowStatusModal(false);
+    } catch (error) {
+      console.error("Error updating status:", error);
+      const errMsg = error.response?.data?.message || "Unable to update status";
+      toast.error(errMsg);
+    } finally {
+      setUpdatingStatus(false);
+    }
   };
 
   return (
@@ -361,7 +427,9 @@ function TechnicianProfile() {
                 Professional information
               </h2>
               <p className="text-sm text-stone-500">
-                Update your experience, location, rates, certifications, and availability
+                {!formData.firstName || !formData.lastName || !formData.phone || !formData.location || !formData.experienceYears || !formData.fee || !formData.photoUrl || !formData.description || !Object.values(availability).some(day => day.isAvailable)
+                  ? "Fill all the required fields for your account to get active"
+                  : "Update your experience, location, rates, certifications, and availability"}
               </p>
             </div>
 
@@ -402,6 +470,7 @@ function TechnicianProfile() {
                     onChange={handleInputChange}
                     className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
                     placeholder="+977-"
+                    required
                   />
                 </label>
                 <label className="flex flex-col gap-1 text-xs sm:text-sm font-medium text-stone-600">
@@ -449,6 +518,7 @@ function TechnicianProfile() {
                       }}
                       className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
                       placeholder="e.g. 5"
+                      required
                     />
                   </label>
                   <label className="flex flex-col gap-1 text-xs sm:text-sm font-medium text-stone-600">
@@ -467,22 +537,36 @@ function TechnicianProfile() {
                       }}
                       className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
                       placeholder="e.g. 500"
+                      required
                     />
                   </label>
                 </div>
 
                 <label className="flex flex-col gap-1 text-xs sm:text-sm font-medium text-stone-600">
                   Profile photo
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePhotoUpload}
-                    className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
-                  />
-                  {formData.photoUrl && (
-                    <p className="text-xs text-green-600 mt-1">
-                      ✓ Photo uploaded: {formData.photoUrl.substring(0, 50)}...
-                    </p>
+                  {formData.photoUrl ? (
+                    <div className="flex flex-col gap-2">
+                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-xs text-green-700 font-medium mb-3">✓ Photo uploaded</p>
+                        <label className="inline-block px-4 py-2 bg-green-100 text-green-700 rounded-lg text-xs font-semibold cursor-pointer hover:bg-green-200 transition">
+                          Change photo
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handlePhotoUpload}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  ) : (
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
+                      required
+                    />
                   )}
                 </label>
 
@@ -495,6 +579,7 @@ function TechnicianProfile() {
                     className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900 resize-none"
                     placeholder="Tell customers about your experience, expertise, and what makes you unique..."
                     rows="4"
+                    required
                   />
                 </label>
               </div>
@@ -570,24 +655,45 @@ function TechnicianProfile() {
               <h3 className="text-lg font-semibold txt-color-primary">
                 Account health
               </h3>
-              <p className="text-sm text-stone-500">
+              {/* <p className="text-sm text-stone-500">
                 Keep your account verified to unlock premium features and boost
                 visibility.
-              </p>
+              </p> */}
               <div className="flex flex-col gap-3 text-sm">
                 {/* Account Status */}
                 <div className="flex items-center justify-between">
                   <span>Account status</span>
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                      user?.status === "active"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-gray-100 text-gray-700"
-                    }`}
-                  >
-                    {user?.status === "active" ? "Active" : "Inactive"}
-                  </span>
+                  {isProfileComplete ? (
+                    <button
+                      type="button"
+                      onClick={handleStatusModalOpen}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold cursor-pointer hover:opacity-80 transition-opacity ${
+                        user?.status === "active"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-gray-100 text-gray-700"
+                      }`}
+                    >
+                      {user?.status === "active" ? "Active" : "Inactive"}
+                    </button>
+                  ) : (
+                    <>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          user?.status === "active"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        {user?.status === "active" ? "Active" : "Inactive"}
+                      </span>
+                    </>
+                  )}
                 </div>
+                {!isProfileComplete && (
+                  <p className="text-xs text-stone-500">
+                    Complete all required fields to change account status
+                  </p>
+                )}
 
                 {/* Email verification */}
                 <div className="flex items-center justify-between">
@@ -610,7 +716,7 @@ function TechnicianProfile() {
                         type="button"
                         className={`px-3 py-1 rounded-full text-xs font-semibold cursor-pointer hover:opacity-80 transition-opacity ${getCertificateStatusColor()}`}
                         onClick={() => {
-                          if (user?.certificateStatus !== 'approved') {
+                          if (user?.certificateStatus === 'not_provided' || user?.certificateStatus === 'pending') {
                             setShowCertificateModal(true);
                           }
                         }}
@@ -620,7 +726,13 @@ function TechnicianProfile() {
                     )}
                   </div>
 
-                  {/* {user?.certificateStatus === 'pending' && (
+                  {user?.certificateStatus === 'not_provided' && (
+                    <p className="text-xs text-amber-600">
+                      Upload a valid certificate to get verified and increase customer trust.
+                    </p>
+                  )}
+
+                  {user?.certificateStatus === 'pending' && (
                     <p className="text-xs text-blue-600">
                       Your certificate is under review. You can upload a new one to replace it.
                     </p>
@@ -631,13 +743,6 @@ function TechnicianProfile() {
                       Your certificate was rejected. Please upload a valid certificate.
                     </p>
                   )}
-
-                  {!user?.certificateUrl && (
-                    <p className="text-xs text-stone-500">
-                      Upload a valid certificate to get verified and increase
-                      customer trust.
-                    </p>
-                  )} */}
                 </div>
               </div>
             </div>
@@ -676,6 +781,14 @@ function TechnicianProfile() {
           <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full mx-4">
             <h3 className="text-xl font-bold mb-4">Upload Technician Certificate</h3>
             
+            {user?.certificateStatus === 'not_provided' && (
+              <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
+                <p className="text-sm text-amber-800">
+                  Upload your certificate to gain verified technician status and increase customer trust.
+                </p>
+              </div>
+            )}
+
             {user?.certificateStatus === 'pending' && (
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
                 <p className="text-sm text-blue-800">
@@ -721,6 +834,74 @@ function TechnicianProfile() {
             >
               Cancel
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Status Change Modal */}
+      {showStatusModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl sm:text-2xl font-bold txt-color-primary">
+                Change Account Status
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowStatusModal(false)}
+                disabled={updatingStatus}
+                className="text-gray-400 hover:text-gray-600 transition disabled:opacity-50"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <p className="text-sm text-stone-600 mb-4">
+                  Current status: <span className="font-semibold txt-color-primary">{user?.status === "active" ? "Active" : "Inactive"}</span>
+                </p>
+                <p className="text-sm text-stone-500">
+                  {user?.status === "active" 
+                    ? "Switch to Inactive to temporarily hide your profile from customers"
+                    : "Switch to Active to make your profile visible to customers"}
+                </p>
+              </div>
+
+              <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                <p className="text-xs text-red-700 font-medium">
+                  ⚠️ When switched to Inactive, users won't be able to book you or see your profile
+                </p>
+              </div>
+
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-xs text-blue-700">
+                  💡 You can switch between Active and Inactive anytime without losing your profile data.
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowStatusModal(false)}
+                  disabled={updatingStatus}
+                  className="flex-1 px-4 py-3 bg-stone-100 text-stone-700 rounded-xl font-semibold hover:bg-stone-200 transition disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleStatusChange(user?.status === "active" ? "inactive" : "active")}
+                  disabled={updatingStatus}
+                  className="flex-1 px-4 py-3 bg-color-main text-white rounded-xl font-semibold hover:bg-blue-700 transition disabled:opacity-50"
+                >
+                  {updatingStatus ? "Updating..." : `Switch to ${user?.status === "active" ? "Inactive" : "Active"}`}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

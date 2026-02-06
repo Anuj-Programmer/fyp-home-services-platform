@@ -18,10 +18,12 @@ import {
 import "../css/landingPage.css";
 import { Link } from "react-router-dom";
 import axios from "axios";
+import Cookies from "js-cookie";
 
 function HomePage() {
   const navigate = useNavigate();
   const [recommendedPros, setRecommendedPros] = useState([]);
+  const [upcomingBookings, setUpcomingBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Fetch active technicians for recommended section
@@ -52,6 +54,32 @@ function HomePage() {
       fetchActiveTechnicians();
     }, []);
 
+  // Fetch user's bookings
+  useEffect(() => {
+    const fetchUserBookings = async () => {
+      try {
+        const token = Cookies.get("token") || localStorage.getItem("token");
+        const response = await axios.get("/api/bookings/user-bookings", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (response.data && response.data.success) {
+          // Get the 2 latest bookings
+          const sortedBookings = response.data.bookings.sort(
+            (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+          );
+          setUpcomingBookings(sortedBookings.slice(0, 2));
+        }
+      } catch (error) {
+        console.error("Error fetching bookings:", error);
+        setUpcomingBookings([]);
+      }
+    };
+
+    fetchUserBookings();
+  }, []);
+
   const handleLogout = () => {
     localStorage.clear();
     navigate("/");
@@ -75,23 +103,6 @@ function HomePage() {
       description: "View past services, invoices, and payments.",
       icon: <Wallet weight="fill" />,
       onClick: () => navigate("/payments"),
-    },
-  ];
-
-  const upcomingBookings = [
-    {
-      id: 1,
-      service: "Home Cleaning",
-      date: "Mon, 24 Nov • 10:00 AM",
-      pro: "Amit Sharma",
-      status: "Confirmed",
-    },
-    {
-      id: 2,
-      service: "Plumbing Check",
-      date: "Wed, 26 Nov • 3:30 PM",
-      pro: "Rachin Verma",
-      status: "Pending",
     },
   ];
 
@@ -207,7 +218,7 @@ function HomePage() {
               <div className="flex flex-col gap-4">
                 {upcomingBookings.map((booking) => (
                   <div
-                    key={booking.id}
+                    key={booking._id || booking.id}
                     className="flex items-start gap-3 p-4 bg-white rounded-xl shadow-sm border border-neutral-100"
                   >
                     <div className="mt-1">
@@ -215,23 +226,27 @@ function HomePage() {
                         size={24}
                         weight="fill"
                         className={
-                          booking.status === "Confirmed"
+                          (booking.status === "completed" || booking.status === "confirmed")
                             ? "text-emerald-500"
-                            : "text-amber-500"
+                            : booking.status === "pending"
+                            ? "text-yellow-500"
+                            : (booking.status === "expired" || booking.status === "cancelled")
+                            ? "text-red-500"
+                            : "text-emerald-500"
                         }
                       />
                     </div>
                     <div className="flex-1 flex flex-col gap-1">
                       <span className="text-sm font-semibold txt-color-primary">
-                        {booking.service}
+                        {booking.technicianInfo?.servicetype}
                       </span>
                       <span className="text-xs text-stone-500">
-                        {booking.date}
+                        {new Date(booking.serviceDate).toLocaleDateString()} • {booking.serviceTime}
                       </span>
                       <span className="text-xs text-stone-500">
-                        With {booking.pro}
+                        With {booking.technicianInfo?.firstname} {booking.technicianInfo?.lastname}
                       </span>
-                      <span className="inline-flex mt-1 px-2 py-0.5 text-[10px] font-semibold rounded-full bg-stone-100 text-stone-700">
+                      <span className="inline-flex mt-1 px-2 py-0.5 text-[10px] font-semibold rounded-full bg-stone-100 text-stone-700 capitalize">
                         {booking.status}
                       </span>
                     </div>

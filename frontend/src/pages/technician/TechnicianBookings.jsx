@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import Cookies from "js-cookie";
 import "../../css/landingPage.css";
 
+
 const TABS = ["Upcoming", "Today", "All", "Pending", "Rescheduled"];
 
 function TechnicianBookings() {
@@ -98,13 +99,16 @@ function TechnicianBookings() {
   const getStatusColor = (status) => {
     switch (status) {
       case "Confirmed":
-        return "bg-emerald-100 text-emerald-700";
-      case "Pending":
-        return "bg-blue-100 text-blue-700";
-      case "Rescheduled":
-        return "bg-amber-100 text-amber-700";
       case "Completed":
-        return "bg-stone-100 text-stone-700";
+        return "bg-emerald-100 text-emerald-700";
+      case "Expired":
+        return "bg-red-100 text-red-700";
+      case "Declined":
+        return "bg-red-100 text-red-700";
+      case "Rescheduled":
+      case "Inprogress":
+      case "Pending":
+        return "bg-amber-100 text-amber-700";
       default:
         return "bg-stone-100 text-stone-700";
     }
@@ -118,6 +122,163 @@ function TechnicianBookings() {
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedBooking(null);
+  };
+
+  const handleAcceptBooking = async (bookingId) => {
+    try {
+      const token = Cookies.get("token") || localStorage.getItem("token");
+      const response = await axios.put(
+        `/api/bookings/${bookingId}/status`,
+        { status: "confirmed" },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.data.success) {
+        toast.success("Booking accepted successfully!");
+        // Update the booking in the list
+        setBookings(
+          bookings.map((booking) =>
+            booking.id === bookingId ? { ...booking, status: "Confirmed" } : booking
+          )
+        );
+        handleCloseModal();
+      } else {
+        toast.error("Failed to accept booking");
+      }
+    } catch (error) {
+      console.error("Error accepting booking:", error);
+      toast.error(error.response?.data?.message || "Error accepting booking");
+    }
+  };
+
+  const handleDeclineBooking = async (bookingId) => {
+    try {
+      const token = Cookies.get("token") || localStorage.getItem("token");
+      const response = await axios.put(
+        `/api/bookings/${bookingId}/status`,
+        { status: "declined" },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.data.success) {
+        toast.success("Booking declined successfully!");
+        // Update the booking in the list
+        setBookings(
+          bookings.map((booking) =>
+            booking.id === bookingId ? { ...booking, status: "Declined" } : booking
+          )
+        );
+        handleCloseModal();
+      } else {
+        toast.error("Failed to decline booking");
+      }
+    } catch (error) {
+      console.error("Error declining booking:", error);
+      toast.error(error.response?.data?.message || "Error declining booking");
+    }
+  };
+
+  const handleStartService = async (bookingId) => {
+    try {
+      const token = Cookies.get("token") || localStorage.getItem("token");
+      const response = await axios.put(
+        `/api/bookings/${bookingId}/status`,
+        { status: "inprogress" },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.data.success) {
+        toast.success("Service started successfully!");
+        // Update the booking in the list
+        setBookings(
+          bookings.map((booking) =>
+            booking.id === bookingId ? { ...booking, status: "Inprogress" } : booking
+          )
+        );
+        handleCloseModal();
+      } else {
+        toast.error("Failed to start service");
+      }
+    } catch (error) {
+      console.error("Error starting service:", error);
+      toast.error(error.response?.data?.message || "Error starting service");
+    }
+  };
+
+  const handleCompleteService = async (bookingId) => {
+    try {
+      const token = Cookies.get("token") || localStorage.getItem("token");
+      const response = await axios.put(
+        `/api/bookings/${bookingId}/status`,
+        { status: "completed" },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.data.success) {
+        toast.success("Service completed successfully!");
+        // Update the booking in the list
+        setBookings(
+          bookings.map((booking) =>
+            booking.id === bookingId ? { ...booking, status: "Completed" } : booking
+          )
+        );
+        handleCloseModal();
+      } else {
+        toast.error("Failed to complete service");
+      }
+    } catch (error) {
+      console.error("Error completing service:", error);
+      toast.error(error.response?.data?.message || "Error completing service");
+    }
+  };
+
+  // Check if the service time slot has been reached (15 minutes before scheduled time)
+  const isServiceTimeReached = (bookingDate, bookingTime) => {
+    const now = new Date();
+    const bookingDateTime = new Date(bookingDate);
+    const SERVICE_START_BUFFER_MINUTES = 60; 
+
+    // Parse the service time (assuming format like "2:00 PM" or "14:00")
+    const timeParts = bookingTime.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+    if (timeParts) {
+      let hours = parseInt(timeParts[1]);
+      const minutes = parseInt(timeParts[2]);
+      const period = timeParts[3];
+
+      // Convert to 24-hour format if AM/PM is present
+      if (period) {
+        if (period.toUpperCase() === 'PM' && hours !== 12) {
+          hours += 12;
+        } else if (period.toUpperCase() === 'AM' && hours === 12) {
+          hours = 0;
+        }
+      }
+
+      bookingDateTime.setHours(hours, minutes, 0, 0);
+      
+      // Subtract buffer time from the booking time (allows service to start early)
+      bookingDateTime.setMinutes(bookingDateTime.getMinutes() - SERVICE_START_BUFFER_MINUTES);
+      
+      return now >= bookingDateTime;
+    }
+
+    return false;
   };
 
   return (
@@ -165,8 +326,8 @@ function TechnicianBookings() {
             </div>
           </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto">
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
             {loading ? (
               <div className="py-12 text-center">
                 <p className="text-stone-500 text-base">Loading your bookings...</p>
@@ -208,11 +369,13 @@ function TechnicianBookings() {
                         <div className="flex gap-2 flex-wrap">
                           {booking.status === "Pending" ? (
                             <>
-                              <button className="px-3 py-1.5 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap">
+                              <button 
+                                onClick={() => handleAcceptBooking(booking.id)}
+                                className="px-3 py-1.5 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap">
                                 Accept
                               </button>
-                              <button className="px-3 py-1.5 border border-red-600 text-red-600 text-xs font-semibold rounded-full hover:bg-red-50 transition-colors whitespace-nowrap">
-                                Cancel
+                              <button onClick={() => handleDeclineBooking(booking.id)} className="px-3 py-1.5 border border-red-600 text-red-600 text-xs font-semibold rounded-full hover:bg-red-50 transition-colors whitespace-nowrap">
+                                Decline
                               </button>
                               <button
                                 onClick={() => handleViewClick(booking)}
@@ -230,9 +393,31 @@ function TechnicianBookings() {
                                 View Details
                               </button>
                               <button
-                                className="px-3 py-1.5 border border-color-primary text-color-primary text-xs font-semibold rounded-full hover:bg-blue-50 transition-colors whitespace-nowrap"
+                                onClick={() => handleStartService(booking.id)}
+                                disabled={!isServiceTimeReached(booking.bookingDate, booking.bookingTime)}
+                                title={!isServiceTimeReached(booking.bookingDate, booking.bookingTime) ? `Booking time has not reached. Scheduled for ${booking.bookingDate} at ${booking.bookingTime}` : ""}
+                                className={`px-3 py-1.5 text-xs font-semibold rounded-full whitespace-nowrap transition-all ${
+                                  isServiceTimeReached(booking.bookingDate, booking.bookingTime)
+                                    ? "border border-color-primary text-color-primary hover:bg-blue-50 cursor-pointer"
+                                    : "border border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed"
+                                }`}
                               >
-                                Reschedule
+                                Start Service
+                              </button>
+                            </>
+                          ) : booking.status === "Inprogress" ? (
+                            <>
+                              <button
+                                onClick={() => handleViewClick(booking)}
+                                className="px-3 py-1.5 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap"
+                              >
+                                View Details
+                              </button>
+                              <button
+                                onClick={() => handleCompleteService(booking.id)}
+                                className="px-3 py-1.5 border border-emerald-600 text-emerald-600 text-xs font-semibold rounded-full hover:bg-emerald-50 transition-colors whitespace-nowrap"
+                              >
+                                Complete
                               </button>
                             </>
                           ) : booking.status === "Rescheduled" ? (
@@ -263,6 +448,150 @@ function TechnicianBookings() {
                 )}
               </tbody>
             </table>
+            )}
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden p-4 space-y-3">
+            {loading ? (
+              <div className="py-12 text-center">
+                <p className="text-stone-500 text-base">Loading your bookings...</p>
+              </div>
+            ) : filteredBookings.length > 0 ? (
+              filteredBookings.map((booking) => (
+                <div
+                  key={booking.id}
+                  className="bg-white border border-stone-200 rounded-xl p-4 space-y-3 hover:shadow-md hover:border-stone-300 transition-all duration-200"
+                >
+                  {/* Top: Name and Status */}
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-color-main uppercase tracking-wide mb-1">
+                        Client
+                      </p>
+                      <p className="text-sm font-semibold text-neutral-900">
+                        {booking.clientName}
+                      </p>
+                    </div>
+                    <span className={`px-2.5 py-1 text-xs font-semibold rounded-full shrink-0 ${getStatusColor(booking.status)}`}>
+                      {booking.status}
+                    </span>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="h-px bg-stone-100"></div>
+
+                  {/* Date & Time */}
+                  <div>
+                    <p className="text-xs text-stone-500 mb-0.5">Date & Time</p>
+                    <div className="flex items-center gap-1.5 text-stone-700 text-sm">
+                      <svg className="w-4 h-4 text-color-main shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
+                      </svg>
+                      <span className="font-medium">{booking.bookingDate} • {booking.bookingTime}</span>
+                    </div>
+                  </div>
+
+                  {/* Address */}
+                  <div>
+                    <p className="text-xs text-stone-500 mb-0.5">Location</p>
+                    <p className="text-sm font-medium text-neutral-900 line-clamp-2">
+                      {booking.address}
+                    </p>
+                  </div>
+
+                  {/* Service Type */}
+                  <div>
+                    <p className="text-xs text-stone-500 mb-0.5">Service Type</p>
+                    <p className="text-sm font-medium text-neutral-900">
+                      {booking.serviceType}
+                    </p>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="h-px bg-stone-100"></div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 pt-1">
+                    {booking.status === "Pending" ? (
+                      <>
+                        <button 
+                          onClick={() => handleAcceptBooking(booking.id)}
+                          className="flex-1 px-3 py-2 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity">
+                          Accept
+                        </button>
+                        <button 
+                          onClick={() => handleDeclineBooking(booking.id)}
+                          className="flex-1 px-3 py-2 border border-red-600 text-red-600 text-xs font-semibold rounded-full hover:bg-red-50 transition-colors">
+                          Decline
+                        </button>
+                        <button
+                          onClick={() => handleViewClick(booking)}
+                          className="px-3 py-2 bg-stone-200 text-stone-700 text-xs font-semibold rounded-full hover:bg-stone-300 transition-colors"
+                        >
+                          View
+                        </button>
+                      </>
+                    ) : booking.status === "Confirmed" ? (
+                      <>
+                        <button
+                          onClick={() => handleViewClick(booking)}
+                          className="flex-1 px-3 py-2 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity"
+                        >
+                          View Details
+                        </button>
+                        <button
+                          onClick={() => handleStartService(booking.id)}
+                          disabled={!isServiceTimeReached(booking.bookingDate, booking.bookingTime)}
+                          title={!isServiceTimeReached(booking.bookingDate, booking.bookingTime) ? `Booking time has not reached. Scheduled for ${booking.bookingDate} at ${booking.bookingTime}` : ""}
+                          className={`flex-1 px-3 py-2 text-xs font-semibold rounded-full transition-all ${
+                            isServiceTimeReached(booking.bookingDate, booking.bookingTime)
+                              ? "border border-color-primary text-color-primary hover:bg-blue-50 cursor-pointer"
+                              : "border border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed"
+                          }`}
+                        >
+                          Start
+                        </button>
+                      </>
+                    ) : booking.status === "Inprogress" ? (
+                      <>
+                        <button
+                          onClick={() => handleViewClick(booking)}
+                          className="flex-1 px-3 py-2 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity"
+                        >
+                          View Details
+                        </button>
+                        <button
+                          onClick={() => handleCompleteService(booking.id)}
+                          className="flex-1 px-3 py-2 border border-emerald-600 text-emerald-600 text-xs font-semibold rounded-full hover:bg-emerald-50 transition-colors"
+                        >
+                          Complete
+                        </button>
+                      </>
+                    ) : booking.status === "Rescheduled" ? (
+                      <button
+                        onClick={() => handleViewClick(booking)}
+                        className="flex-1 px-3 py-2 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity"
+                      >
+                        View Details
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleViewClick(booking)}
+                        className="flex-1 px-3 py-2 bg-stone-200 text-stone-700 text-xs font-semibold rounded-full hover:bg-stone-300 transition-colors"
+                      >
+                        View
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="py-12 text-center">
+                <p className="text-stone-500 text-base">
+                  No bookings found for this filter.
+                </p>
+              </div>
             )}
           </div>
         </section>
@@ -410,8 +739,37 @@ function TechnicianBookings() {
                 Close
               </button>
               {selectedBooking.status === "Pending" && (
-                <button className="px-4 py-1.5 bg-color-main text-white font-normal rounded-lg hover:opacity-90 transition-opacity text-sm">
-                  Accept Booking
+                <>
+                  <button 
+                    onClick={() => handleDeclineBooking(selectedBooking.id)}
+                    className="px-4 py-1.5 border border-red-600 text-red-600 font-normal rounded-lg hover:bg-red-50 transition-colors text-sm">
+                    Decline
+                  </button>
+                  <button 
+                    onClick={() => handleAcceptBooking(selectedBooking.id)}
+                    className="px-4 py-1.5 bg-color-main text-white font-normal rounded-lg hover:opacity-90 transition-opacity text-sm">
+                    Accept Booking
+                  </button>
+                </>
+              )}
+              {selectedBooking.status === "Confirmed" && (
+                <button 
+                  onClick={() => handleStartService(selectedBooking.id)}
+                  disabled={!isServiceTimeReached(selectedBooking.bookingDate, selectedBooking.bookingTime)}
+                  title={!isServiceTimeReached(selectedBooking.bookingDate, selectedBooking.bookingTime) ? `Booking time has not reached. Scheduled for ${selectedBooking.bookingDate} at ${selectedBooking.bookingTime}` : ""}
+                  className={`px-4 py-1.5 font-normal rounded-lg text-sm transition-all ${
+                    isServiceTimeReached(selectedBooking.bookingDate, selectedBooking.bookingTime)
+                      ? "bg-color-main text-white hover:opacity-90 cursor-pointer"
+                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  }`}>
+                  Start Service
+                </button>
+              )}
+              {selectedBooking.status === "Inprogress" && (
+                <button 
+                  onClick={() => handleCompleteService(selectedBooking.id)}
+                  className="px-4 py-1.5 bg-emerald-600 text-white font-normal rounded-lg hover:bg-emerald-700 transition-colors text-sm">
+                  Complete Service
                 </button>
               )}
             </div>

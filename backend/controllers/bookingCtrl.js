@@ -5,6 +5,7 @@ const Technician = require('../models/technicianModel');
 // Create a new booking
 exports.createBooking = async (req, res) => {
   try {
+    const EXPIRATION_MINUTES = 30; // Technician has 30 min to accept
     const userId = req.body.userId;
     const { technician, serviceDate, serviceTime, fee, orderNote, technicianInfo, selectedAddress } = req.body;
 
@@ -45,6 +46,10 @@ exports.createBooking = async (req, res) => {
       });
     }
 
+    // Calculate expiration time
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + EXPIRATION_MINUTES * 60000); // add 30 min
+
     // Create booking object
     const newBooking = new Booking({
       user: userId,
@@ -54,6 +59,7 @@ exports.createBooking = async (req, res) => {
       fee,
       note: orderNote,
       status: 'pending',
+      expiresAt,
       technicianInfo: {
         firstname: technicianInfo.firstname,
         lastname: technicianInfo.lastname,
@@ -125,6 +131,43 @@ exports.getUserBookings = async (req, res) => {
       .populate('user')
       .sort({ createdAt: -1 });
 
+    const now = new Date();
+
+    for (let booking of bookings) {
+      if (booking.status === 'pending' && booking.expiresAt && now > booking.expiresAt) {
+        booking.status = 'expired';
+        await booking.save();
+
+        // Push notification to user
+        const user = await User.findById(booking.user);
+        if (user) {
+          user.notification = user.notification || [];
+          user.notification.push({
+            type: 'booking',
+            message: `Your booking with ${booking.technicianInfo.firstname} ${booking.technicianInfo.lastname} has expired.`,
+            bookingId: booking._id,
+            date: new Date(),
+            read: false,
+          });
+          await user.save();
+        }
+
+        // Push notification to technician
+        const technician = await Technician.findById(booking.technician);
+        if (technician) {
+          technician.notification = technician.notification || [];
+          technician.notification.push({
+            type: 'booking',
+            message: `Booking with ${booking.userInfo.firstname} ${booking.userInfo.lastname} has expired.`,
+            bookingId: booking._id,
+            date: new Date(),
+            read: false,
+          });
+          await technician.save();
+        }
+      }
+    }
+
     return res.status(200).json({
       success: true,
       bookings,
@@ -148,6 +191,43 @@ exports.getTechnicianBookings = async (req, res) => {
       .populate('user')
       .populate('technician')
       .sort({ createdAt: -1 });
+
+    const now = new Date();
+
+    for (let booking of bookings) {
+      if (booking.status === 'pending' && booking.expiresAt && now > booking.expiresAt) {
+        booking.status = 'expired';
+        await booking.save();
+
+        // Push notification to user
+        const user = await User.findById(booking.user);
+        if (user) {
+          user.notification = user.notification || [];
+          user.notification.push({
+            type: 'booking',
+            message: `Your booking with ${booking.technicianInfo.firstname} ${booking.technicianInfo.lastname} has expired.`,
+            bookingId: booking._id,
+            date: new Date(),
+            read: false,
+          });
+          await user.save();
+        }
+
+        // Push notification to technician
+        const technician = await Technician.findById(booking.technician);
+        if (technician) {
+          technician.notification = technician.notification || [];
+          technician.notification.push({
+            type: 'booking',
+            message: `Booking with ${booking.userInfo.firstname} ${booking.userInfo.lastname} has expired.`,
+            bookingId: booking._id,
+            date: new Date(),
+            read: false,
+          });
+          await technician.save();
+        }
+      }
+    }
 
     return res.status(200).json({
       success: true,
@@ -193,7 +273,7 @@ exports.getBookingById = async (req, res) => {
   }
 };
 
-// Get booked time slots for a technician on a specific date (excluding cancelled bookings)
+// Get booked time slots for a technician on a specific date (excluding cancelled and expired bookings)
 exports.getBookedSlots = async (req, res) => {
   try {
     const { technicianId, date } = req.params;
@@ -203,11 +283,11 @@ exports.getBookedSlots = async (req, res) => {
     const dayStart = new Date(selectedDate.setHours(0, 0, 0, 0));
     const dayEnd = new Date(selectedDate.setHours(23, 59, 59, 999));
 
-    // Find bookings for this technician on this date, excluding cancelled
+    // Find bookings for this technician on this date, excluding cancelled and expired
     const bookings = await Booking.find({
       technician: technicianId,
       serviceDate: { $gte: dayStart, $lte: dayEnd },
-      status: { $ne: 'cancelled' } // Exclude cancelled bookings
+      status: { $nin: ['cancelled', 'expired', 'declined'] } // Exclude cancelled and expired bookings
     });
 
     // Extract booked time slots
@@ -234,12 +314,59 @@ exports.updateBookingStatus = async (req, res) => {
     const { status } = req.body;
 
     // Validate status
-    const validStatuses = ['pending', 'confirmed', 'completed', 'cancelled', 'ontheway', 'inprogress', 'rescheduled'];
+    const validStatuses = ['pending', 'confirmed', 'completed', 'cancelled', 'ontheway', 'inprogress', 'rescheduled','declined'];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid status',
       });
+    }
+
+    const booking = await Booking.findById(bookingId).populate('technician').populate('user');
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found',
+      });
+    }
+
+    // Check if trying to set status to 'inprogress'
+    if (status === 'inprogress') {
+      // Service start time buffer (in minutes) - change this to adjust when technicians can start service
+      const SERVICE_START_BUFFER_MINUTES = 60; 
+      const now = new Date();
+      const bookingDateTime = new Date(booking.serviceDate);
+      
+      // Parse the service time (assuming format like "2:00 PM" or "14:00")
+      const timeParts = booking.serviceTime.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+      if (timeParts) {
+        let hours = parseInt(timeParts[1]);
+        const minutes = parseInt(timeParts[2]);
+        const period = timeParts[3];
+
+        // Convert to 24-hour format if AM/PM is present
+        if (period) {
+          if (period.toUpperCase() === 'PM' && hours !== 12) {
+            hours += 12;
+          } else if (period.toUpperCase() === 'AM' && hours === 12) {
+            hours = 0;
+          }
+        }
+
+        bookingDateTime.setHours(hours, minutes, 0, 0);
+        
+        // Allow service to start based on SERVICE_START_BUFFER_MINUTES before scheduled time
+        bookingDateTime.setMinutes(bookingDateTime.getMinutes() - SERVICE_START_BUFFER_MINUTES);
+
+        // Check if current time is before the allowed start time
+        if (now < bookingDateTime) {
+          return res.status(400).json({
+            success: false,
+            message: `Service can only start ${SERVICE_START_BUFFER_MINUTES} minutes before scheduled time of ${booking.serviceTime}`,
+          });
+        }
+      }
     }
 
     const updatedBooking = await Booking.findByIdAndUpdate(
@@ -253,6 +380,60 @@ exports.updateBookingStatus = async (req, res) => {
         success: false,
         message: 'Booking not found',
       });
+    }
+
+    // Send notification to user if status is confirmed
+    if (status === 'confirmed') {
+      const user = await User.findById(updatedBooking.user);
+      if (user) {
+        const bookingDate = new Date(updatedBooking.serviceDate).toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        });
+        
+        user.notification = user.notification || [];
+        user.notification.push({
+          type: 'booking',
+          message: `Your booking with ${updatedBooking.technicianInfo.firstname} ${updatedBooking.technicianInfo.lastname} has been confirmed for ${bookingDate} ${updatedBooking.serviceTime}.`,
+          bookingId: updatedBooking._id,
+          date: new Date(),
+          read: false,
+        });
+        await user.save();
+      }
+    }
+
+    // Send notification to user if status is inprogress
+    if (status === 'inprogress') {
+      const user = await User.findById(updatedBooking.user);
+      if (user) {
+        user.notification = user.notification || [];
+        user.notification.push({
+          type: 'booking',
+          message: `Your booking with ${updatedBooking.technicianInfo.firstname} ${updatedBooking.technicianInfo.lastname} is now in progress.`,
+          bookingId: updatedBooking._id,
+          date: new Date(),
+          read: false,
+        });
+        await user.save();
+      }
+    }
+
+    // Send notification to user if status is completed
+    if (status === 'completed') {
+      const user = await User.findById(updatedBooking.user);
+      if (user) {
+        user.notification = user.notification || [];
+        user.notification.push({
+          type: 'booking',
+          message: `Your booking with ${updatedBooking.technicianInfo.firstname} ${updatedBooking.technicianInfo.lastname} has been completed.`,
+          bookingId: updatedBooking._id,
+          date: new Date(),
+          read: false,
+        });
+        await user.save();
+      }
     }
 
     return res.status(200).json({
@@ -341,6 +522,34 @@ exports.cancelBooking = async (req, res) => {
 
     booking.status = 'cancelled';
     const updatedBooking = await booking.save();
+
+    // Send notification to user
+    const user = await User.findById(booking.user);
+    if (user) {
+      user.notification = user.notification || [];
+      user.notification.push({
+        type: 'booking',
+        message: `You have cancelled your booking with ${booking.technicianInfo.firstname} ${booking.technicianInfo.lastname}.`,
+        bookingId: booking._id,
+        date: new Date(),
+        read: false,
+      });
+      await user.save();
+    }
+
+    // Send notification to technician
+    const technician = await Technician.findById(booking.technician);
+    if (technician) {
+      technician.notification = technician.notification || [];
+      technician.notification.push({
+        type: 'booking',
+        message: `${booking.userInfo.firstname} ${booking.userInfo.lastname} has cancelled their booking.`,
+        bookingId: booking._id,
+        date: new Date(),
+        read: false,
+      });
+      await technician.save();
+    }
 
     return res.status(200).json({
       success: true,
