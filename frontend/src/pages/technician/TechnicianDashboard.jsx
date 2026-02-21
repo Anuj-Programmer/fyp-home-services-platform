@@ -6,21 +6,54 @@ import '../../css/landingPage.css'
 import axios from 'axios'
 import Cookies from 'js-cookie'
 
-const stats = [
-  { label: "Completed Jobs", value: 24, key: "completed" },
-  { label: "Pending Requests", value: 5, key: "pending" },
-  { label: "Rating", value: "4.8/5" },
-  { label: "Earnings (This Month)", value: "$2,340" },
-];
-
 function TechnicianDashboard() {
   const navigate = useNavigate()
   const [upcomingJobs, setUpcomingJobs] = useState([])
   const [loading, setLoading] = useState(true)
+  const [averageRating, setAverageRating] = useState(0)
   const [statsCounts, setStatsCounts] = useState({
     completed: 0,
     pending: 0,
   })
+
+  // Build stats array dynamically with averageRating
+  const stats = [
+    { label: "Completed Jobs", value: 24, key: "completed" },
+    { label: "Pending Requests", value: 5, key: "pending" },
+    { label: "Rating", value: `${averageRating}/5` },
+    { label: "Earnings (This Month)", value: "$2,340" },
+  ]
+
+  // Fetch technician profile for average rating
+  useEffect(() => {
+    const fetchTechnicianProfile = async () => {
+      try {
+        const userData = localStorage.getItem('user')
+        const user = userData ? JSON.parse(userData) : null
+        
+        if (!user?._id) {
+          setAverageRating(0)
+          return
+        }
+
+        const token = Cookies.get('token') || localStorage.getItem('token')
+        const response = await axios.get(`/api/technicians/get-technician/${user._id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        if (response.data && response.data.success) {
+          setAverageRating(response.data.technician.averageRating || 0)
+        }
+      } catch (error) {
+        console.error('Error fetching technician profile:', error)
+        setAverageRating(0)
+      }
+    }
+
+    fetchTechnicianProfile()
+  }, [])
 
   // Fetch technician bookings
   useEffect(() => {
@@ -112,6 +145,9 @@ function TechnicianDashboard() {
               </button> */}
               <button onClick={() => navigate('/TechnicianBookings')} className="px-4 py-3 rounded-xl border text-left text-sm font-semibold hover:bg-stone-50 btn-transparent-slide">
                 View Bookings
+              </button>
+              <button onClick={() => navigate('/TechnicianReview')} className="px-4 py-3 rounded-xl border text-left text-sm font-semibold hover:bg-stone-50 btn-transparent-slide">
+                View Ratings
               </button>
             </div>
           </div>

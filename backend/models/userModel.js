@@ -23,7 +23,7 @@ const addressSchema = new mongoose.Schema({
   // House verification per address
   isHouseVerified: { type: Boolean, default: false },
   houseCertificateUrl: { type: String },
-  houseCertificateStatus: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+  houseCertificateStatus: { type: String, enum: ['pending', 'approved', 'rejected', 'not_provided'], default: 'not_provided' },
   
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
@@ -51,7 +51,7 @@ const userSchema = new mongoose.Schema({
   houseDocuments: [{ type: String }], // uploaded proof
   isHouseVerified: { type: Boolean, default: false },
   houseCertificateUrl: { type: String }, // latest certificate upload
-  houseCertificateStatus: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+  houseCertificateStatus: { type: String, enum: ['pending', 'approved', 'rejected', 'not_provided'], default: 'not_provided' },
 
   // Admin flag
   isAdmin: { type: Boolean, default: false },

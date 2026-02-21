@@ -188,7 +188,7 @@ function SearchResults() {
   return (
     <>
       <Navbar />
-      <main className="px-6 lg:px-32 pt-24 pb-16 min-h-screen bg-stone-50 space-y-12">
+      <main className="px-6 lg:px-32 pt-16 pb-16 min-h-screen bg-stone-50 space-y-12">
         {/* Intro */}
         <section className="flex flex-col lg:flex-row items-start justify-between gap-8">
           <div className="space-y-4">

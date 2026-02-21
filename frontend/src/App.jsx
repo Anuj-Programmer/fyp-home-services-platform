@@ -24,6 +24,11 @@ import TechnicianProfile from './pages/technician/TechnicianProfile.jsx'
 import BookTechnicianPage from './pages/BookTechnicianPage.jsx'
 import BookTechnicianFrontend from './pages/BookTechnicianFrontend.jsx'
 import TechnicianBookings from './pages/technician/TechnicianBookings.jsx'
+import TechnicianReview from './pages/technician/TechnicianReview.jsx'
+import APUsers from './pages/admin/APUsers.jsx'
+import APBookings from './pages/admin/APBookings.jsx'
+import APTechnician from './pages/admin/APTechnician.jsx'
+import AdminProfile from './pages/admin/AdminProfile.jsx'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -130,7 +135,16 @@ function App() {
            }
          />
          <Route path="/BookTechnicianPage" element={<BookTechnicianFrontend />} />
-         <Route path="/TechnicianBookings" element={<TechnicianBookings />} />
+         
+         <Route path="/TechnicianBookings" element={<ProtectedRoute requireTechnician><TechnicianBookings /></ProtectedRoute>} />
+         <Route path="/TechnicianReview" element={<ProtectedRoute requireTechnician><TechnicianReview/></ProtectedRoute>} />
+
+        <Route path="/AdminUsers" element={<ProtectedRoute requireAdmin><APUsers /></ProtectedRoute>} />
+        <Route path="/AdminBookings" element={<ProtectedRoute requireAdmin><APBookings /></ProtectedRoute>} />
+        <Route path="/AdminTechnicians" element={<ProtectedRoute requireAdmin><APTechnician /></ProtectedRoute>} />
+        <Route path="/AdminProfile" element={<ProtectedRoute ><AdminProfile /></ProtectedRoute>} />
+         
+         
        </Routes>
 
      </BrowserRouter>

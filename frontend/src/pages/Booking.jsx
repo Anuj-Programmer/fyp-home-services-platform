@@ -19,12 +19,43 @@ function Booking() {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [cancellingBookingId, setCancellingBookingId] = useState(null);
+  
+  // Rating modal state
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [ratingBooking, setRatingBooking] = useState(null);
+  const [selectedRating, setSelectedRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewedBookings, setReviewedBookings] = useState(new Set());
+  
+  // Cancellation modal state
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [bookingToCancel, setBookingToCancel] = useState(null);
+  
+  // User state
+  const [user, setUser] = useState(null);
 
-  // Fetch user bookings from backend
+  // Fetch user data from localStorage
   useEffect(() => {
-    const fetchUserBookings = async () => {
+    try {
+      const userData = localStorage.getItem("user");
+      if (userData) {
+        setUser(JSON.parse(userData));
+      }
+    } catch (error) {
+      console.error("Error parsing user data:", error);
+    }
+  }, []);
+
+  // Fetch user bookings from backend with polling every 5 seconds
+  useEffect(() => {
+    let isMounted = true;
+    let intervalId;
+
+    const fetchUserBookings = async (showLoading = true) => {
       try {
-        setLoading(true);
+        if (showLoading) setLoading(true);
         const token = Cookies.get("token") || localStorage.getItem("token");
         const response = await axios.get("/api/bookings/user-bookings", {
           headers: {
@@ -52,20 +83,32 @@ function Booking() {
             isVerifiedTechnician: booking.technicianInfo.isVerifiedTechnician || false,
           }));
 
-          setBookings(transformedBookings);
+          if (isMounted) {
+            setBookings(transformedBookings);
+          }
         } else {
-          setBookings([]);
+          if (isMounted) setBookings([]);
           toast.error("Failed to fetch bookings");
         }
       } catch (error) {
         console.error("Error fetching bookings:", error);
-        setBookings([]);
+        if (isMounted) setBookings([]);
       } finally {
-        setLoading(false);
+        if (showLoading && isMounted) setLoading(false);
       }
     };
 
-    fetchUserBookings();
+    // Initial fetch with loading
+    fetchUserBookings(true);
+    // Poll every 5 seconds (without loading spinner)
+    intervalId = setInterval(() => {
+      fetchUserBookings(false);
+    }, 3000);
+
+    return () => {
+      isMounted = false;
+      if (intervalId) clearInterval(intervalId);
+    };
   }, []);
 
   // Filter bookings based on active tab and search query
@@ -117,19 +160,87 @@ function Booking() {
     setSelectedBooking(null);
   };
 
-  // Cancel booking handler
-  const handleCancelBooking = async (bookingId) => {
-    try {
-      // Show confirmation dialog
-      if (!window.confirm("Are you sure you want to cancel this booking?")) {
-        return;
-      }
+  // Rating modal handlers
+  const handleOpenRatingModal = (booking) => {
+    setRatingBooking(booking);
+    setShowRatingModal(true);
+    setSelectedRating(0);
+    setHoverRating(0);
+    setReviewComment("");
+  };
 
-      setCancellingBookingId(bookingId);
+  const handleCloseRatingModal = () => {
+    setShowRatingModal(false);
+    setRatingBooking(null);
+    setSelectedRating(0);
+    setHoverRating(0);
+    setReviewComment("");
+  };
+
+  const handleSubmitReview = async () => {
+    if (selectedRating === 0) {
+      toast.error("Please select a rating");
+      return;
+    }
+
+    if (!user?._id) {
+      toast.error("User information not found");
+      return;
+    }
+
+    try {
+      setSubmittingReview(true);
+      const token = Cookies.get("token") || localStorage.getItem("token");
+      
+      await axios.post(
+        `/api/reviews/${ratingBooking.id}`,
+        {
+          bookingId: ratingBooking.id,
+          rating: selectedRating,
+          comment: reviewComment,
+          userId: user._id
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      toast.success("Review submitted successfully!");
+      // Add booking to reviewed bookings
+      setReviewedBookings(prev => new Set([...prev, ratingBooking.id]));
+      handleCloseRatingModal();
+    } catch (error) {
+      console.error("Error submitting review:", error);
+      toast.error(error.response?.data?.message || "Failed to submit review");
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  // Open cancellation confirmation modal
+  const handleOpenCancelModal = (bookingId) => {
+    setBookingToCancel(bookingId);
+    setShowCancelModal(true);
+  };
+
+  // Close cancellation modal
+  const handleCloseCancelModal = () => {
+    setShowCancelModal(false);
+    setBookingToCancel(null);
+  };
+
+  // Confirm and cancel booking
+  const confirmCancelBooking = async () => {
+    if (!bookingToCancel) return;
+
+    try {
+      setCancellingBookingId(bookingToCancel);
       const token = Cookies.get("token") || localStorage.getItem("token");
       
       const response = await axios.put(
-        `/api/bookings/${bookingId}/cancel`,
+        `/api/bookings/${bookingToCancel}/cancel`,
         {},
         {
           headers: {
@@ -144,7 +255,7 @@ function Booking() {
         // Update the bookings list
         setBookings(prevBookings =>
           prevBookings.map(booking =>
-            booking.id === bookingId
+            booking.id === bookingToCancel
               ? { ...booking, status: "Cancelled" }
               : booking
           )
@@ -157,6 +268,7 @@ function Booking() {
       toast.error(error.response?.data?.message || "Failed to cancel booking");
     } finally {
       setCancellingBookingId(null);
+      handleCloseCancelModal();
     }
   };
 
@@ -304,7 +416,15 @@ function Booking() {
                           <button className="px-3 py-1.5 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap">
                             Pay
                           </button>
-                          <button className="px-3 py-1.5 border border-color-primary text-color-primary text-xs font-semibold rounded-full hover:bg-blue-50 transition-colors whitespace-nowrap">
+                          <button 
+                            onClick={() => !reviewedBookings.has(booking.id) && handleOpenRatingModal(booking)}
+                            disabled={reviewedBookings.has(booking.id)}
+                            title={reviewedBookings.has(booking.id) ? "You have already reviewed this booking" : "Rate this booking"}
+                            className={`px-3 py-1.5 border text-xs font-semibold rounded-full transition-colors whitespace-nowrap ${
+                              reviewedBookings.has(booking.id)
+                                ? "border-stone-300 text-stone-400 cursor-not-allowed opacity-60"
+                                : "border-color-primary text-color-primary hover:bg-blue-50"
+                            }`}>
                             Rate
                           </button>
                         </>
@@ -316,7 +436,7 @@ function Booking() {
                             Details
                           </button>
                           <button 
-                            onClick={() => handleCancelBooking(booking.id)}
+                            onClick={() => handleOpenCancelModal(booking.id)}
                             disabled={cancellingBookingId === booking.id}
                             className="px-3 py-1.5 border border-red-600 text-red-600 text-xs font-semibold rounded-full hover:bg-red-50 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed">
                             {cancellingBookingId === booking.id ? "Cancelling..." : "Cancel"}
@@ -348,7 +468,7 @@ function Booking() {
                         </button>
                       ) : (
                         <button 
-                          onClick={() => handleCancelBooking(booking.id)}
+                          onClick={() => handleOpenCancelModal(booking.id)}
                           disabled={cancellingBookingId === booking.id}
                           className="px-3 py-1.5 border border-red-600 text-red-600 text-xs font-semibold rounded-full hover:bg-red-50 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed">
                           {cancellingBookingId === booking.id ? "Cancelling..." : "Cancel"}
@@ -430,7 +550,15 @@ function Booking() {
                           <button className="flex-1 px-3 py-2 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity">
                             Pay
                           </button>
-                          <button className="flex-1 px-3 py-2 border border-color-primary txt-color-primary text-xs font-semibold rounded-full hover:bg-blue-50 transition-colors">
+                          <button 
+                            onClick={() => !reviewedBookings.has(booking.id) && handleOpenRatingModal(booking)}
+                            disabled={reviewedBookings.has(booking.id)}
+                            title={reviewedBookings.has(booking.id) ? "You have already reviewed this booking" : "Rate this booking"}
+                            className={`flex-1 px-3 py-2 border text-xs font-semibold rounded-full transition-colors ${
+                              reviewedBookings.has(booking.id)
+                                ? "border-stone-300 text-stone-400 cursor-not-allowed opacity-60"
+                                : "border-color-primary text-color-primary hover:bg-blue-50"
+                            }`}>
                             Rate
                           </button>
                         </>
@@ -442,7 +570,7 @@ function Booking() {
                             Details
                           </button>
                           <button 
-                            onClick={() => handleCancelBooking(booking.id)}
+                            onClick={() => handleOpenCancelModal(booking.id)}
                             disabled={cancellingBookingId === booking.id}
                             className="flex-1 px-3 py-2 border border-red-600 text-red-600 text-xs font-semibold rounded-full hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                             {cancellingBookingId === booking.id ? "Cancelling..." : "Cancel"}
@@ -474,7 +602,7 @@ function Booking() {
                         </button>
                       ) : (
                         <button 
-                          onClick={() => handleCancelBooking(booking.id)}
+                          onClick={() => handleOpenCancelModal(booking.id)}
                           disabled={cancellingBookingId === booking.id}
                           className="flex-1 px-3 py-2 border border-red-600 text-red-600 text-xs font-semibold rounded-full hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                           {cancellingBookingId === booking.id ? "Cancelling..." : "Cancel"}
@@ -653,6 +781,153 @@ function Booking() {
                 className="px-4 py-2 bg-stone-200 text-stone-700 font-medium rounded-lg hover:bg-stone-300 transition-colors text-sm"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rating Modal */}
+      {showRatingModal && ratingBooking && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-sm p-4"
+          onClick={handleCloseRatingModal}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl max-w-md w-full"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white text-color-primary px-6 py-4 flex items-center justify-between border-b rounded-t-2xl">
+              <h2 className="text-xl font-semibold">Rate Your Experience</h2>
+              <button
+                onClick={handleCloseRatingModal}
+                className="text-stone-600 hover:text-stone-900 rounded-full p-1 transition-colors text-2xl font-light"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-6">
+              {/* Technician Info */}
+              <div className="text-center">
+                <p className="text-sm text-stone-600 mb-1">How was your experience with</p>
+                <p className="text-lg font-semibold text-neutral-900">{ratingBooking.technicianName}</p>
+                <p className="text-sm text-color-main">{ratingBooking.specialty}</p>
+              </div>
+
+              {/* Star Rating */}
+              <div className="flex flex-col items-center space-y-3">
+                <p className="text-base font-semibold text-neutral-900">
+                  {selectedRating === 0 ? "Select Rating" : 
+                   selectedRating === 1 ? "Poor" :
+                   selectedRating === 2 ? "Fair" :
+                   selectedRating === 3 ? "Good" :
+                   selectedRating === 4 ? "Very Good" : "Excellent"}
+                </p>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setSelectedRating(star)}
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      className="transition-transform hover:scale-110 focus:outline-none"
+                    >
+                      <svg
+                        className={`w-12 h-12 transition-colors ${
+                          star <= (hoverRating || selectedRating)
+                            ? "fill-orange-500 text-orange-500"
+                            : "fill-stone-300 text-stone-300"
+                        }`}
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                      </svg>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Review Comment */}
+              <div>
+                <label className="block text-sm font-semibold text-neutral-900 mb-2">
+                  Write Your Review
+                </label>
+                <textarea
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  placeholder="Please share your experience with us ..."
+                  rows={4}
+                  className="w-full px-4 py-3 border border-stone-300 rounded-lg text-sm text-neutral-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-color-main focus:border-transparent transition-all resize-none"
+                />
+              </div>
+
+              {/* Submit Button */}
+              <button
+                onClick={handleSubmitReview}
+                disabled={submittingReview || selectedRating === 0}
+                className="w-full py-3 bg-color-main text-white font-semibold rounded-full hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submittingReview ? "Submitting..." : "Submit Review"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancellation Confirmation Modal */}
+      {showCancelModal && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-sm p-4"
+          onClick={handleCloseCancelModal}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl w-full max-w-sm"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-neutral-900">Cancel Booking</h2>
+              <button
+                onClick={handleCloseCancelModal}
+                className="text-stone-600 hover:text-stone-900 rounded-full p-1 transition-colors text-2xl font-light"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-4">
+                <svg className="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
+                </svg>
+              </div>
+              <p className="text-center text-neutral-900 font-semibold mb-2">Are you sure?</p>
+              <p className="text-center text-stone-600 text-sm">
+                Are you sure you want to cancel this booking? This action cannot be undone.
+              </p>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-stone-50 px-6 py-4 border-t flex gap-3 justify-end">
+              <button
+                onClick={handleCloseCancelModal}
+                className="px-4 py-2 bg-stone-200 text-stone-700 font-medium rounded-lg hover:bg-stone-300 transition-colors text-sm"
+              >
+                Keep Booking
+              </button>
+              <button
+                onClick={confirmCancelBooking}
+                disabled={cancellingBookingId === bookingToCancel}
+                className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {cancellingBookingId === bookingToCancel ? "Cancelling..." : "Cancel Booking"}
               </button>
             </div>
           </div>

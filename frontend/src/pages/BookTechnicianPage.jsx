@@ -14,6 +14,7 @@ function BookTechnicianPage() {
 
   const [technician, setTechnician] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [reviews, setReviews] = useState([]);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [availableSlots, setAvailableSlots] = useState([]);
@@ -58,6 +59,40 @@ function BookTechnicianPage() {
       fetchTechnician();
     }
   }, [id]);
+
+  // Fetch technician reviews
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchTechnicianReviews = async () => {
+      try {
+        const response = await axios.get(`/api/reviews/technician/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.data.success) {
+          // Transform backend data to match frontend format
+          const transformedReviews = response.data.reviews.map((review) => ({
+            id: review._id,
+            rating: review.rating,
+            comment: review.comment,
+            customer: `${review.userId?.firstName || "User"} ${review.userId?.lastName || ""}`.trim(),
+          }));
+
+          setReviews(transformedReviews);
+        } else {
+          setReviews([]);
+        }
+      } catch (error) {
+        console.error('Error fetching reviews:', error);
+        setReviews([]);
+      }
+    };
+
+    fetchTechnicianReviews();
+  }, [id, token]);
 
   // Get available time slots based on selected date
   useEffect(() => {
@@ -264,7 +299,26 @@ function BookTechnicianPage() {
 
   // Use highlights if available, else fallback to []
   const highlights = technician.highlights || [];
-  const reviews = technician.reviews || [];
+
+  // Render star rating
+  const renderStars = (rating, size = 16) => {
+    return (
+      <div className="flex gap-0.5">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Star
+            key={star}
+            size={size}
+            weight={star <= rating ? "fill" : "regular"}
+            className={
+              star <= rating
+                ? "text-yellow-400"
+                : "text-gray-300"
+            }
+          />
+        ))}
+      </div>
+    );
+  };
 
   return (
     <>
@@ -315,8 +369,7 @@ function BookTechnicianPage() {
                 {reviews.map((review, idx) => (
                   <div key={idx} className="bg-gray-50 rounded-lg p-4 shadow-sm">
                     <div className="flex items-center gap-2 mb-1">
-                      <Star size={16} weight="fill" className="text-yellow-400" />
-                      <span className="font-semibold text-gray-700">{review.rating}</span>
+                      {renderStars(review.rating, 16)}
                       {review.customer && <span className="text-gray-500 text-xs">by {review.customer}</span>}
                     </div>
                     <p className="text-gray-600 text-sm">{review.comment}</p>

@@ -39,7 +39,9 @@ const registerTechnician = async (req, res) => {
         experienceYears,
         serviceType,
         certificateUrl,
-        location
+        location,
+        // Set certificate status to pending if certificate is provided
+        certificateStatus: certificateUrl ? 'pending' : 'not_provided'
       });
   
       await technician.save();
@@ -54,13 +56,17 @@ const registerTechnician = async (req, res) => {
         });
       }
   
-      // Push minimal notification
-      admin.notification.push({
+      // Create detailed notification
+      const notificationMessage = {
         technicianId: technician._id,
         name: `${firstName} ${lastName}`,
-        action: "approve_or_reject",
+        action: certificateUrl ? "verify_certificate_and_account" : "approve_or_reject",
+        notificationType: certificateUrl ? "account_with_certificate" : "account_pending",
         createdAt: new Date()
-      });
+      };
+
+      // Push notification to admin
+      admin.notification.push(notificationMessage);
   
       await admin.save();
   

@@ -9,6 +9,7 @@ const otpRoutes = require("./routes/otpRoutes");
 const technicianRoutes = require("./routes/technicianRoutes")
 const bookingRoutes = require("./routes/bookingRoutes")
 const adminRoutes = require("./routes/adminRoutes")
+const reviewRoutes = require("./routes/reviewRoutes")
 const cors = require('cors');
 
 // Load environment variables
@@ -34,6 +35,7 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/technicians", technicianRoutes)
 app.use("/api/admin", adminRoutes)
+app.use("/api/reviews", reviewRoutes)
 
 // Start the server
 const port = process.env.PORT || 8080;

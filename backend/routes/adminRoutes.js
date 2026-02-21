@@ -6,7 +6,10 @@ const {
 	changeTechnicianStatus,
 	changeTechnicianCertificateStatus,
 	changeHouseVerificationStatus,
-	changeAddressVerificationStatus
+	changeAddressVerificationStatus,
+	getAllTechnicians,
+	getAllUsers,
+	getAllBookings,
 } = require('../controllers/adminCtrl');
 
 
@@ -22,6 +25,17 @@ router.patch("/user/:userId/house-certificate-status", authMiddleware, changeHou
 
 // User address certificate status
 router.patch("/user/:userId/address/:addressId/verification-status", authMiddleware, changeAddressVerificationStatus);
+
+// Get all technicians /api/admin/technicians
+router.get("/technicians", authMiddleware, getAllTechnicians);
+
+// Get all users /api/admin/users
+router.get("/users", authMiddleware, getAllUsers);
+
+// Get all bookings
+router.get("/bookings", authMiddleware, getAllBookings);
+
+
 
 module.exports = router;
 

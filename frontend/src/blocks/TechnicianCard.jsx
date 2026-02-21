@@ -15,7 +15,7 @@ const TechnicianCard = ({ pro, onBookClick }) => {
         {/* RATING BADGE - Top Left (always show) */}
         <div className="absolute top-3 left-3 z-10 bg-color-main text-white rounded-lg px-2.5 py-1 flex items-center gap-1 shadow-md">
           <Star size={14} weight="fill" className="text-white" />
-          <span className="text-[12px]">{(typeof pro.averageRating === 'number' ? pro.averageRating.toFixed(1) : '0.0')}</span>
+          <span className="text-[12px]">{(typeof pro.averageRating === 'number' ? pro.averageRating.toFixed(1) : 'N/A')}</span>
         </div>
 
       </div>

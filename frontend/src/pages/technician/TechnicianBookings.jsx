@@ -21,11 +21,14 @@ function TechnicianBookings() {
   const today = new Date();
   const todayString = `${String(today.getDate()).padStart(2, "0")} ${today.toLocaleString("en-US", { month: "short" })} ${today.getFullYear()}`;
 
-  // Fetch technician bookings from backend
+  // Fetch technician bookings from backend with polling every 5 seconds
   useEffect(() => {
-    const fetchTechnicianBookings = async () => {
+    let isMounted = true;
+    let intervalId;
+
+    const fetchTechnicianBookings = async (showLoading = true) => {
       try {
-        setLoading(true);
+        if (showLoading) setLoading(true);
         const token = Cookies.get("token") || localStorage.getItem("token");
         const response = await axios.get("/api/bookings/technician-bookings", {
           headers: {
@@ -54,20 +57,30 @@ function TechnicianBookings() {
             note: booking.note,
           }));
 
-          setBookings(transformedBookings);
+          if (isMounted) setBookings(transformedBookings);
         } else {
-          setBookings([]);
+          if (isMounted) setBookings([]);
           toast.error("Failed to fetch bookings");
         }
       } catch (error) {
         console.error("Error fetching bookings:", error);
-        setBookings([]);
+        if (isMounted) setBookings([]);
       } finally {
-        setLoading(false);
+        if (showLoading && isMounted) setLoading(false);
       }
     };
 
-    fetchTechnicianBookings();
+    // Initial fetch with loading
+    fetchTechnicianBookings(true);
+    // Poll every 5 seconds (without loading spinner)
+    intervalId = setInterval(() => {
+      fetchTechnicianBookings(false);
+    }, 3000);
+
+    return () => {
+      isMounted = false;
+      if (intervalId) clearInterval(intervalId);
+    };
   }, []);
 
   // Filter bookings based on active tab and search query

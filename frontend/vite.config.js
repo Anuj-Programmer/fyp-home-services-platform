@@ -14,5 +14,6 @@ export default defineConfig({
       // Proxy all requests starting with /api to your backend
       '/api': 'http://localhost:8080',
     },
+    host: true,
   },
 });

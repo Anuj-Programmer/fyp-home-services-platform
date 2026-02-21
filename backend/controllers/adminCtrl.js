@@ -272,9 +272,69 @@ const changeAddressVerificationStatus = async (req, res) => {
   }
 };
 
+const getAllTechnicians = async (req, res) => {
+  try {
+    const technicians = await Technician.find().sort({ createdAt: -1 });
+    res.status(200).json({
+      success: true,
+      technicians
+    });
+  } catch (error) {
+    console.error('Error fetching technicians:', error);
+    res.status(500).json({  
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+
+};
+
+
+const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().sort({ createdAt: -1 });
+    res.status(200).json({
+      success: true,
+      users
+    });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+getAllBookings = async (req, res) => {
+  try {
+    const bookings = await Booking.find()
+      .populate("userId", "firstName lastName email")
+      .populate("technicianId", "firstName lastName email")
+      .sort({ createdAt: -1 });
+    res.status(200).json({
+      success: true,
+      bookings
+    });
+  } catch (error) {
+    console.error('Error fetching bookings:', error);
+    res.status(500).json({  
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+
   module.exports = {
     changeTechnicianStatus,
     changeHouseVerificationStatus,
     changeTechnicianCertificateStatus,
-    changeAddressVerificationStatus
+    changeAddressVerificationStatus,
+    getAllTechnicians,
+    getAllUsers,
+    getAllBookings,
   };

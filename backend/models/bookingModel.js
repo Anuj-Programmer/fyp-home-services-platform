@@ -29,13 +29,6 @@ const bookingSchema = new mongoose.Schema({
         isHouseVerified: Boolean,
     },
     note: { type: String },
-    // Review and rating for this booking
-    review: {
-      rating: { type: Number, min: 1, max: 5 },
-      comment: { type: String },
-      createdAt: { type: Date, default: Date.now }
-    },
-    hasReview: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now }
 });
 

@@ -561,34 +561,6 @@ const Navbar = () => {
                                   ).toLocaleString()
                                 : "—"}
                           </p>
-
-                          {notification.action === "approve_or_reject" &&
-                            notification.technicianId && (
-                              <div className="mt-2 flex gap-2">
-                                <button
-                                  className="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
-                                  onClick={() => {
-                                    handleTechnicianStatus(
-                                      notification.technicianId,
-                                      "approved",
-                                    );
-                                  }}
-                                >
-                                  Approve
-                                </button>
-                                <button
-                                  className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
-                                  onClick={() => {
-                                    handleTechnicianStatus(
-                                      notification.technicianId,
-                                      "rejected",
-                                    );
-                                  }}
-                                >
-                                  Decline
-                                </button>
-                              </div>
-                            )}
                         </div>
                       ))
                     ) : (

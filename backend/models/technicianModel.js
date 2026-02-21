@@ -79,16 +79,7 @@ const TechnicianSchema = new mongoose.Schema({
     slotDuration: { type: Number, default: 60 } // in minutes
   }
 ],
- reviews: [
-  {
-    customerId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    rating: { type: Number, min: 1, max: 5, required: true },
-    comment: { type: String, default: "" },
-    createdAt: { type: Date, default: Date.now }
-  }
-],
-averageRating: { type: Number, default: 0 }
-,
+averageRating: { type: Number, default: 0 },
   notification: {
     type: Array,
     default: [] 
