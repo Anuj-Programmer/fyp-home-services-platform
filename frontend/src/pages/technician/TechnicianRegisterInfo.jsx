@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import Navbar from "@/blocks/Navbar";
 import { uploadToCloudinary } from "@/lib/uploadToCloudinary";
 
@@ -158,7 +158,6 @@ function TechnicianRegisterInfo() {
   return (
     <>
       <Navbar />
-      <Toaster position="top-center" reverseOrder={false} />
       <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-4">
         <div className="w-full max-w-lg bg-white rounded-lg p-6 sm:p-8">
           <h2 className="text-2xl font-bold txt-color-primary mb-6 text-center">

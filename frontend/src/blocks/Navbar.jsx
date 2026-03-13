@@ -5,7 +5,8 @@ import Cookies from "js-cookie";
 import "../css/nav.css";
 import Logo from "../assets/Logo.png";
 import axios from "axios";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
+import { useSocket } from "../context/SocketContext";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -14,17 +15,19 @@ const Navbar = () => {
   const [mobileModal, setMobileModal] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [user, setUser] = useState(null);
-  const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Get notifications from WebSocket context instead of state
+  const { notifications, registerUser, clearNotifications } = useSocket();
+
   const token = Cookies.get("token") || localStorage.getItem("token");
   const isAuthenticated = Boolean(token);
   const isAdmin = Boolean(user?.isAdmin);
 
-  // Fetch current user and notifications from backend
+  // Fetch current user and register with socket
   useEffect(() => {
     const fetchCurrentUser = async () => {
       if (!isAuthenticated) {
@@ -40,7 +43,11 @@ const Navbar = () => {
         });
 
         setUser(data);
-        setNotifications(data.notification || []);
+
+        // Register user with WebSocket for real-time notifications
+        if (data._id) {
+          registerUser(data._id);
+        }
 
         // Optional: Update localStorage as a cache
         localStorage.setItem("user", JSON.stringify(data));
@@ -53,7 +60,9 @@ const Navbar = () => {
           try {
             const parsedUser = JSON.parse(storedUser);
             setUser(parsedUser);
-            setNotifications(parsedUser.notification || []);
+            if (parsedUser._id) {
+              registerUser(parsedUser._id);
+            }
           } catch (e) {
             console.error("Invalid user data in storage", e);
           }
@@ -64,28 +73,7 @@ const Navbar = () => {
     };
 
     fetchCurrentUser();
-  }, [isAuthenticated, token]);
-
-  // Refresh notifications periodically (every 30 seconds)
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    const intervalId = setInterval(async () => {
-      try {
-        const { data } = await axios.get("/api/users/current-user", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setNotifications(data.notification || []);
-        setUser(data);
-      } catch (error) {
-        console.error("Error refreshing notifications:", error);
-      }
-    }, 30000); // 30 seconds
-
-    return () => clearInterval(intervalId);
-  }, [isAuthenticated, token]);
+  }, [isAuthenticated, token, registerUser]);
 
   // Hide links only on OTP pages
   const hideNavLinks =
@@ -106,7 +94,6 @@ const Navbar = () => {
     Cookies.remove("token");
     localStorage.clear();
     setUser(null);
-    setNotifications([]);
     navigate("/");
   };
 
@@ -117,7 +104,7 @@ const Navbar = () => {
       });
       toast.success(data.message || `Technician ${status}`);
 
-      // Refresh notifications from backend
+      // Update user data
       const userData = await axios.get("/api/users/current-user", {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -125,8 +112,8 @@ const Navbar = () => {
       });
 
       setUser(userData.data);
-      setNotifications(userData.data.notification || []);
       localStorage.setItem("user", JSON.stringify(userData.data));
+      // Socket events will update notifications automatically
     } catch (err) {
       console.error(err);
       toast.error(err.response?.data?.message || "Error updating status");
@@ -146,10 +133,10 @@ const Navbar = () => {
       );
       toast.success(data.message || "All notifications marked as read");
 
-      // Update state with backend response
+      // Update user data
       setUser(data.data);
-      setNotifications(data.data.notification || []);
       localStorage.setItem("user", JSON.stringify(data.data));
+      // Socket events will update notifications automatically
     } catch (err) {
       console.error(err);
       toast.error(
@@ -171,10 +158,12 @@ const Navbar = () => {
       );
       //toast.success(data.message || "All notifications deleted");
 
-      // Update state with backend response
+      // Update user data
       setUser(data.data);
-      setNotifications(data.data.notification || []);
       localStorage.setItem("user", JSON.stringify(data.data));
+      
+      // Clear notifications from SocketContext immediately
+      clearNotifications();
 
       setShowNotifications(false);
     } catch (err) {
@@ -206,7 +195,6 @@ const Navbar = () => {
 
   return (
     <>
-      <Toaster position="top-center" reverseOrder={false} />
       <nav className="text-black border-gray-400 bg-gray-100 fixed top-0 left-0 w-full z-50 shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">

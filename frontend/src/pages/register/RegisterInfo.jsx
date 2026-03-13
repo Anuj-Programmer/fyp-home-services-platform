@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { toast, Toaster } from "react-hot-toast";
+import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/blocks/Navbar";
 import Cookies from "js-cookie";
@@ -75,7 +75,7 @@ function RegisterInfo() {
 
   return (
     <>
-    <Toaster position="top-center" reverseOrder={false} />
+
     <Navbar/>
     <div className="min-h-[calc(100vh-64px)] flex sm:items-center sm:justify-center px-4 mt-10 sm:mt-0">
       <div className="w-full max-w-md bg-white rounded-lg  p-6 sm:p-8">

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import Navbar from "@/blocks/Navbar";
 import Logo from "../../assets/faviconLogo.png";
 
@@ -49,7 +49,6 @@ function TechnicianRegisterEmail() {
   return (
     <>
       <Navbar />
-      <Toaster position="top-center" reverseOrder={false} />
       <div className="lg:min-h-[calc(100vh-64px)] flex items-center justify-center px-4 mt-16 lg:mt-0">
         <div className="w-full max-w-md bg-white rounded-lg p-6 sm:p-8">
           <img src={Logo} alt="Logo" className="mx-auto mb-6" />

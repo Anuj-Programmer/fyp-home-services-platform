@@ -81,6 +81,7 @@ exports.createBooking = async (req, res) => {
         addressId: addressId,
         isHouseVerified: selectedAddress?.isHouseVerified || false,
       },
+      hasReview: false,
     });
 
     // Save booking
@@ -105,6 +106,51 @@ exports.createBooking = async (req, res) => {
       read: false,
     });
     await technicianData.save();
+
+    // Emit WebSocket event for real-time notification to technician
+    const io = req.app.get('io');
+    if (io) {
+      const technicianIdStr = technician.toString();
+      
+      // Notify the technician
+      io.to(`user_${technicianIdStr}`).emit('booking:notification', {
+        type: 'NEW_BOOKING',
+        message: `New booking from ${user.firstName} ${user.lastName}`,
+        data: {
+          technicianId: technicianIdStr,
+          userId: userId.toString(),
+          bookingId: savedBooking._id.toString(),
+          serviceDate: savedBooking.serviceDate,
+          serviceTime: savedBooking.serviceTime
+        }
+      });
+
+      // Notify the user
+      const userIdStr = userId.toString();
+      io.to(`user_${userIdStr}`).emit('booking:notification', {
+        type: 'BOOKING_CREATED',
+        message: `Your booking has been created successfully. Awaiting ${technicianInfo.firstname} ${technicianInfo.lastname}'s confirmation.`,
+        data: {
+          userId: userIdStr,
+          technicianId: technicianIdStr,
+          bookingId: savedBooking._id.toString(),
+          serviceDate: savedBooking.serviceDate,
+          serviceTime: savedBooking.serviceTime,
+          technicianName: `${technicianInfo.firstname} ${technicianInfo.lastname}`
+        }
+      });
+      
+      // Broadcast to all users (for anyone viewing the BookTechnicianPage)
+      io.emit('booking:slotsUpdate', {
+        technicianId: technicianIdStr,
+        serviceDate: savedBooking.serviceDate,
+        serviceTime: savedBooking.serviceTime
+      });
+      
+      console.log(`📤 Emitted new booking notification to technician ${technicianIdStr}`.green);
+      console.log(`📤 Emitted booking confirmation to user ${userIdStr}`.green);
+      console.log(`📢 Broadcasted slots update for technician ${technicianIdStr}`.green);
+    }
 
     return res.status(201).json({
       success: true,
@@ -436,6 +482,19 @@ exports.updateBookingStatus = async (req, res) => {
       }
     }
 
+    // Emit WebSocket event for real-time slots update (when declined, slot becomes available)
+    const io = req.app.get('io');
+    if (io && status === 'declined') {
+      // Broadcast to all users (slot is now available again)
+      io.emit('booking:slotsUpdate', {
+        technicianId: updatedBooking.technician._id.toString(),
+        serviceDate: updatedBooking.serviceDate,
+        serviceTime: updatedBooking.serviceTime,
+        status: 'declined'
+      });
+      console.log(`📤 Emitted booking decline slots update for technician ${updatedBooking.technician._id}`.yellow);
+    }
+
     return res.status(200).json({
       success: true,
       message: 'Booking status updated successfully',
@@ -549,6 +608,19 @@ exports.cancelBooking = async (req, res) => {
         read: false,
       });
       await technician.save();
+    }
+
+    // Emit WebSocket event for real-time slots update
+    const io = req.app.get('io');
+    if (io) {
+      // Broadcast to all users (slot is now available again)
+      io.emit('booking:slotsUpdate', {
+        technicianId: booking.technician.toString(),
+        serviceDate: booking.serviceDate,
+        serviceTime: booking.serviceTime,
+        status: 'cancelled'
+      });
+      console.log(`📤 Emitted booking cancellation slots update for technician ${booking.technician}`.yellow);
     }
 
     return res.status(200).json({

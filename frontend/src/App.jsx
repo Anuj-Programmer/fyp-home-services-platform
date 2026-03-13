@@ -4,6 +4,7 @@ import HomePage from './pages/HomePage.jsx'
 import AdminPanel from './pages/admin/AdminPanel.jsx'
 import RegisterEmail from './pages/register/RegisterEmail.jsx'
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Toaster } from 'react-hot-toast';
 import OTPpage from './pages/register/OtpPage.jsx';
 import RegisterInfo from './pages/register/RegisterInfo.jsx';
 import LoginPage from './pages/login/LoginPage.jsx';
@@ -34,9 +35,76 @@ function App() {
   const [count, setCount] = useState(0)
 
   return (
-    <div className='pt-15'>
-     <BrowserRouter>
-       <Routes>
+    <>
+      <Toaster
+        position="bottom-left"
+        reverseOrder={false}
+        gutter={12}
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: "#ffffff",
+            color: "#1a1a1a",
+            borderLeft: "5px solid #1F367F",
+            borderRadius: "10px",
+            boxShadow: "0 8px 24px rgba(31, 54, 127, 0.12), 0 2px 8px rgba(31, 54, 127, 0.08)",
+            padding: "16px 20px",
+            fontSize: "14px",
+            fontWeight: 500,
+            letterSpacing: "-0.3px",
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            backdropFilter: "blur(8px)",
+          },
+          success: {
+            duration: 4000,
+            style: {
+              borderLeftColor: "#16a34a",
+              background: "#f0fdf4",
+            },
+            iconTheme: {
+              primary: "#16a34a",
+              secondary: "#f0fdf4",
+            },
+          },
+          error: {
+            duration: 5000,
+            style: {
+              borderLeftColor: "#dc2626",
+              background: "#fef2f2",
+            },
+            iconTheme: {
+              primary: "#dc2626",
+              secondary: "#fef2f2",
+            },
+          },
+          warning: {
+            duration: 4000,
+            style: {
+              borderLeftColor: "#ea580c",
+              background: "#fef3c7",
+            },
+            iconTheme: {
+              primary: "#ea580c",
+              secondary: "#fef3c7",
+            },
+          },
+          loading: {
+            style: {
+              borderLeftColor: "#1F367F",
+              background: "#f0f4ff",
+            },
+            iconTheme: {
+              primary: "#1F367F",
+              secondary: "#f0f4ff",
+            },
+          },
+        }}
+      />
+      <div className='pt-15'>
+        <BrowserRouter>
+          <Routes>
         <Route
           path="/"
           element={
@@ -146,13 +214,9 @@ function App() {
          
          
        </Routes>
-
-     </BrowserRouter>
-     {/* <BrowserRouter>
-     <Test />
-     </BrowserRouter> */}
-     
-    </div>
+        </BrowserRouter>
+      </div>
+    </>
   )
 }
 

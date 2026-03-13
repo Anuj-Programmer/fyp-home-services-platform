@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import AdminSidebar from "@/pages/admin/AdminSidebar";
 import "../../css/landingPage.css";
 import Cookies from "js-cookie";
@@ -106,7 +106,6 @@ function AdminProfile() {
 
   return (
     <>
-      <Toaster position="top-center" reverseOrder={false} />
       <Navbar />
       <div className="flex min-h-screen bg-stone-50 pt-10">
       <AdminSidebar />

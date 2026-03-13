@@ -360,6 +360,25 @@ const uploadHouseCertificate = async (req, res) => {
       await admin.save();
     }
 
+    // Emit WebSocket event for real-time notification to all admins
+    const io = req.app.get('io');
+    if (io) {
+      const userIdStr = userId.toString();
+      for (const admin of admins) {
+        const adminIdStr = admin._id.toString();
+        io.to(`user_${adminIdStr}`).emit('admin:notification', {
+          type: 'HOUSE_CERTIFICATE_UPLOAD',
+          message: `${user.firstName} ${user.lastName} has uploaded a house certificate for verification`,
+          data: {
+            userId: userIdStr,
+            userName: `${user.firstName} ${user.lastName}`,
+            timestamp: new Date()
+          }
+        });
+      }
+      console.log(`📤 Emitted house certificate upload notification to ${admins.length} admin(s)`.green);
+    }
+
     res.status(200).json({
       message: "Certificate uploaded successfully. Awaiting admin approval.",
       user: {
@@ -524,6 +543,24 @@ const uploadAddressCertificate = async (req, res) => {
         timestamp: new Date(),
       });
       await admin.save();
+
+      // Emit WebSocket event for real-time notification to admin
+      const io = req.app.get('io');
+      if (io && admin._id) {
+        const adminIdStr = admin._id.toString();
+        const userIdStr = userId.toString();
+        io.to(`user_${adminIdStr}`).emit('admin:notification', {
+          type: 'ADDRESS_CERTIFICATE_UPLOAD',
+          message: `${user.firstName} ${user.lastName} has uploaded an address certificate for verification`,
+          data: {
+            userId: userIdStr,
+            userName: `${user.firstName} ${user.lastName}`,
+            addressId: addressId.toString(),
+            timestamp: new Date()
+          }
+        });
+        console.log(`📤 Emitted address certificate upload notification to admin ${adminIdStr}`.green);
+      }
     }
     res.status(200).json({
       message: "Address certificate uploaded successfully. Awaiting admin approval.",

@@ -52,6 +52,15 @@ exports.addReview = async (req, res) => {
 
     await review.save();
 
+    // Update booking with hasReview flag
+    booking.hasReview = true;
+    booking.review = {
+      rating,
+      comment,
+      createdAt: new Date()
+    };
+    await booking.save();
+
     // Update technician's average rating
     const allReviews = await Review.find({ technicianId: booking.technician });
     const averageRating =
@@ -63,10 +72,13 @@ exports.addReview = async (req, res) => {
       averageRating: Math.round(averageRating * 10) / 10
     });
 
+    // Return updated booking with hasReview flag for frontend
+    const updatedBooking = await Booking.findById(bookingId);
     res.status(201).json({
       success: true,
       message: "Review added successfully",
-      review
+      review,
+      booking: updatedBooking
     });
   } catch (error) {
     res.status(500).json({

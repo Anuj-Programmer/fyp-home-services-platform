@@ -69,6 +69,23 @@ const registerTechnician = async (req, res) => {
       admin.notification.push(notificationMessage);
   
       await admin.save();
+
+      // Emit WebSocket event for real-time notification to admin
+      const io = req.app.get('io');
+      if (io && admin._id) {
+        const adminIdStr = admin._id.toString();
+        io.to(`user_${adminIdStr}`).emit('admin:notification', {
+          type: 'TECHNICIAN_REGISTERED',
+          message: `New technician ${firstName} ${lastName} has registered`,
+          data: {
+            technicianId: technician._id.toString(),
+            technicianName: `${firstName} ${lastName}`,
+            action: notificationMessage.action,
+            timestamp: new Date()
+          }
+        });
+        console.log(`📤 Emitted technician registration notification to admin ${adminIdStr}`.green);
+      }
   
       return res.status(201).json({
         success: true,
@@ -424,6 +441,25 @@ const uploadTechnicianCertificate = async (req, res) => {
       admin.notification = admin.notification || [];
       admin.notification.push(notificationMessage);
       await admin.save();
+    }
+
+    // Emit WebSocket event for real-time notification to all admins
+    const io = req.app.get('io');
+    if (io) {
+      const technicianIdStr = technicianId.toString();
+      for (const admin of admins) {
+        const adminIdStr = admin._id.toString();
+        io.to(`user_${adminIdStr}`).emit('admin:notification', {
+          type: 'TECHNICIAN_CERTIFICATE_UPLOAD',
+          message: `${technician.firstName} ${technician.lastName} has uploaded a certificate for verification`,
+          data: {
+            technicianId: technicianIdStr,
+            technicianName: `${technician.firstName} ${technician.lastName}`,
+            timestamp: new Date()
+          }
+        });
+      }
+      console.log(`📤 Emitted certificate upload notification to ${admins.length} admin(s)`.green);
     }
 
     res.status(200).json({

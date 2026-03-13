@@ -1,5 +1,6 @@
-import { MapPin, Calendar, Star, CheckCircle } from "phosphor-react";
+import { MapPin, Calendar, Star } from "phosphor-react";
 import { Link } from "react-router-dom";
+import VerifiedIcon from "@/assets/VerifiedIcon.png";
 
 const TechnicianCard = ({ pro, onBookClick }) => {
   return (
@@ -38,7 +39,7 @@ const TechnicianCard = ({ pro, onBookClick }) => {
               {pro.firstName} {pro.lastName}
             </h3>
             {pro.isVerifiedTechnician && (
-              <CheckCircle size={18} weight="fill" className="text-blue-600 shrink-0" title="Verified Technician" />
+              <img src={VerifiedIcon} alt="Verified Technician" className="w-4 h-4 shrink-0" title="Verified Technician" />
             )}
           </div>
 

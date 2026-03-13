@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { toast, Toaster } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import Cookies from 'js-cookie';
 import { Star, ArrowLeft, CurrencyCircleDollar, Wrench, MapPin, CheckCircle } from 'phosphor-react';
 import Navbar from '@/blocks/Navbar';
 import Footer from '@/blocks/Footer';
+import { useSocket } from '../context/SocketContext';
+import VerifiedIcon from '@/assets/VerifiedIcon.png';
+import houseVerifiedIcon from '@/assets/houseVerifiedIcon.png';
 
 function BookTechnicianPage() {
   const { id } = useParams();
@@ -24,8 +27,9 @@ function BookTechnicianPage() {
   const [showModal, setShowModal] = useState(false);
   const [orderNote, setOrderNote] = useState('');
   const [selectedAddress, setSelectedAddress] = useState(null);
+  const { socket, isConnected, registerUser } = useSocket();
 
-  // Fetch current user data
+  // Fetch current user data and register with WebSocket
   useEffect(() => {
     const fetchUser = async () => {
       if (!token) return;
@@ -34,12 +38,18 @@ function BookTechnicianPage() {
           headers: { Authorization: `Bearer ${token}` }
         });
         setUser(data);
+        
+        // Register user with WebSocket
+        if (data._id) {
+          registerUser(data._id);
+          console.log('🔌 User registered with WebSocket:', data._id);
+        }
       } catch (error) {
         console.error('Error fetching user:', error);
       }
     };
     fetchUser();
-  }, [token]);
+  }, [token, registerUser]);
 
   // Fetch technician details
   useEffect(() => {
@@ -94,6 +104,19 @@ function BookTechnicianPage() {
     fetchTechnicianReviews();
   }, [id, token]);
 
+  // Fetch booked slots from backend
+  const fetchBookedSlots = async () => {
+    if (!selectedDate || !id) return;
+    try {
+      const { data } = await axios.get(`/api/bookings/booked-slots/${id}/${selectedDate}`);
+      setBookedSlots(data.bookedSlots || []);
+      console.log('📋 Fetched booked slots:', data.bookedSlots);
+    } catch (error) {
+      console.error('Error fetching booked slots:', error);
+      setBookedSlots([]);
+    }
+  };
+
   // Get available time slots based on selected date
   useEffect(() => {
     if (selectedDate && technician?.availability) {
@@ -104,16 +127,8 @@ function BookTechnicianPage() {
         const slots = generateTimeSlots(dayAvailability.startTime, dayAvailability.endTime, dayAvailability.slotDuration);
         setAvailableSlots(slots);
         
-        // Fetch booked slots for this technician on this date
+        // Fetch booked slots for this technician on this date (initial load only)
         fetchBookedSlots();
-
-        // Set up polling to refresh booked slots every 5 seconds
-        const pollInterval = setInterval(() => {
-          fetchBookedSlots();
-        }, 5000);
-
-        // Cleanup interval on unmount or when selectedDate changes
-        return () => clearInterval(pollInterval);
       } else {
         setAvailableSlots([]);
         setBookedSlots([]);
@@ -122,16 +137,57 @@ function BookTechnicianPage() {
     }
   }, [selectedDate, technician]);
 
-  // Fetch booked slots from backend
-  const fetchBookedSlots = async () => {
-    try {
-      const { data } = await axios.get(`/api/bookings/booked-slots/${id}/${selectedDate}`);
-      setBookedSlots(data.bookedSlots || []);
-    } catch (error) {
-      console.error('Error fetching booked slots:', error);
-      setBookedSlots([]);
-    }
-  };
+  // Listen for WebSocket notifications to refresh booked slots in real-time
+  useEffect(() => {
+    if (!socket || !id || !selectedDate) return;
+
+    const handleBookingNotification = (data) => {
+      console.log('📬 Received booking notification:', data);
+      console.log('Current technician ID:', id);
+      console.log('Notification technician ID:', data.data?.technicianId);
+      
+      // Ensure both IDs are strings for comparison
+      const currentTechId = String(id);
+      const notifTechId = String(data.data?.technicianId || '');
+      
+      // Refresh booked slots if the notification is for this technician
+      if (notifTechId === currentTechId) {
+        console.log('✅ Match! Refreshing booked slots for this technician');
+        setTimeout(() => fetchBookedSlots(), 200); // Small delay to ensure backend is updated
+      } else {
+        console.log('❌ No match, ignoring notification');
+      }
+    };
+
+    const handleSlotsUpdate = (data) => {
+      console.log('🔄 Received slots update:', data);
+      console.log('Current technician ID:', id);
+      console.log('Update technician ID:', data.technicianId);
+      
+      // Ensure both IDs are strings for comparison
+      const currentTechId = String(id);
+      const updateTechId = String(data.technicianId || '');
+      
+      // Refresh booked slots if update is for current technician
+      if (updateTechId === currentTechId) {
+        console.log('✅ Match! Refreshing booked slots due to booking change');
+        setTimeout(() => fetchBookedSlots(), 200); // Small delay to ensure backend is updated
+      } else {
+        console.log('❌ No match, ignoring update');
+      }
+    };
+
+    socket.on('booking:notification', handleBookingNotification);
+    socket.on('booking:slotsUpdate', handleSlotsUpdate);
+
+    console.log('🎧 WebSocket listeners attached for technician:', id);
+
+    return () => {
+      socket.off('booking:notification', handleBookingNotification);
+      socket.off('booking:slotsUpdate', handleSlotsUpdate);
+      console.log('🔇 WebSocket listeners removed');
+    };
+  }, [socket, id, selectedDate]);
 
   // Generate time slots
   const generateTimeSlots = (startTime, endTime, duration) => {
@@ -232,11 +288,24 @@ function BookTechnicianPage() {
           email: technician.email,
         },
       };
-      await axios.post('/api/bookings/create', bookingData, {
+      const response = await axios.post('/api/bookings/create', bookingData, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
+      
+      // Emit WebSocket event for real-time update
+      if (socket && response.data.booking) {
+        socket.emit('booking:new', {
+          technicianId: id,
+          userId: user._id,
+          bookingId: response.data.booking._id,
+          serviceDate: selectedDate,
+          serviceTime: selectedTime
+        });
+        console.log('📤 Emitted new booking event to technician:', id);
+      }
+      
       toast.success('Booking confirmed! Check your bookings for details.');
       setShowModal(false);
       navigate('/bookings');
@@ -322,7 +391,6 @@ function BookTechnicianPage() {
 
   return (
     <>
-      <Toaster position="top-center" reverseOrder={false} />
       <Navbar />
       <div className="min-h-screen md:min-h-[calc(100vh-64px)] bg-gray-50 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 flex flex-col md:flex-row gap-8">
@@ -391,7 +459,7 @@ function BookTechnicianPage() {
                     {technician.firstName} {technician.lastName}
                   </h2>
                   {technician.isVerifiedTechnician && (
-                    <CheckCircle size={24} weight="fill" className="text-blue-600" />
+                    <img src={VerifiedIcon} alt="Verified Technician" className="w-6 h-6" title="Verified Technician" />
                   )}
                   <span className="text-gray-400 mx-1">•</span>
                   <span className="text-lg text-gray-600">{technician.serviceType}</span>
@@ -562,7 +630,7 @@ function BookTechnicianPage() {
                                 {address.contactName} ({address.addressType})
                               </h4>
                               {address.isHouseVerified && (
-                                <CheckCircle size={16} weight="fill" className="text-green-600 shrink-0" title="Verified Address" />
+                                <img src={houseVerifiedIcon} alt="Verified Address" className="w-4 h-4 shrink-0" title="Verified Address" />
                               )}
                             </div>
                             <p className="text-xs text-gray-600 mt-1">{address.address}</p>

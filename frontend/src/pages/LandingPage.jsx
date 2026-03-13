@@ -23,7 +23,7 @@ import {
 } from "phosphor-react";
 import Footer from "@/blocks/Footer";
 import axios from "axios";
-import { toast, Toaster } from "react-hot-toast";
+import { toast } from "react-hot-toast";
 
 
 function LandingPage() {
@@ -80,7 +80,7 @@ function LandingPage() {
 
   return (
     <>
-      <Toaster position="top-center" reverseOrder={false} />
+
       <Navbar/>
       <div className="">
         <section className="w-full px-6 lg:px-32 py-20 flex flex-col lg:flex-row items-center justify-between gap-12 relative rounded-2xl overflow-hidden">

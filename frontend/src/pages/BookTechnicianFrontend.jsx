@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Star, ArrowLeft, CurrencyCircleDollar, Wrench, MapPin, CheckCircle } from 'phosphor-react';
 import Navbar from '@/blocks/Navbar';
 import Footer from '@/blocks/Footer';
-import { Toaster, toast } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 
 function BookTechnicianFrontend() {
   // Dummy technician data
@@ -129,7 +129,6 @@ function BookTechnicianFrontend() {
 
   return (
     <>
-      <Toaster position="top-center" reverseOrder={false} />
       <Navbar />
       <div className="min-h-screen md:min-h-[calc(100vh-64px)] bg-gray-50 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 flex flex-col md:flex-row gap-8">

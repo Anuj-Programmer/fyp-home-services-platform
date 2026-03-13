@@ -90,6 +90,23 @@ const transporter = nodemailer.createTransport({
         html: htmlTemplate,
         text: messageText
       });
+
+      // Emit WebSocket event for real-time notification to technician
+      const io = req.app.get('io');
+      if (io) {
+        const technicianIdStr = technicianId.toString();
+        io.to(`user_${technicianIdStr}`).emit('booking:notification', {
+          type: status === 'approved' ? 'ACCOUNT_APPROVED' : 'ACCOUNT_REJECTED',
+          message: status === 'approved' 
+            ? 'Your account has been approved! You can now log in.' 
+            : 'Your application has been rejected. Please contact support.',
+          data: {
+            technicianId: technicianIdStr,
+            status: status
+          }
+        });
+        console.log(`📤 Emitted technician status update to ${technicianIdStr}`.green);
+      }
   
       return res.status(200).json({
         success: true,
@@ -148,6 +165,23 @@ const changeTechnicianCertificateStatus = async (req, res) => {
     });
     await technician.save();
 
+    // Emit WebSocket event for real-time notification to technician
+    const io = req.app.get('io');
+    if (io) {
+      const technicianIdStr = technicianId.toString();
+      io.to(`user_${technicianIdStr}`).emit('booking:notification', {
+        type: status === 'approved' ? 'CERTIFICATE_APPROVED' : 'CERTIFICATE_REJECTED',
+        message: status === 'approved'
+          ? 'Your certificate has been approved. You are now a verified technician.'
+          : 'Your certificate was rejected. Please upload a valid certificate.',
+        data: {
+          technicianId: technicianIdStr,
+          certificateStatus: status
+        }
+      });
+      console.log(`📤 Emitted certificate status update to ${technicianIdStr}`.green);
+    }
+
     return res.status(200).json({
       success: true,
       message: `Technician certificate status updated to ${status}.`,
@@ -200,6 +234,23 @@ const changeHouseVerificationStatus = async (req, res) => {
       type: 'house_certificate_' + status
     });
     await user.save();
+
+    // Emit WebSocket event for real-time notification to user
+    const io = req.app.get('io');
+    if (io) {
+      const userIdStr = userId.toString();
+      io.to(`user_${userIdStr}`).emit('booking:notification', {
+        type: status === 'approved' ? 'HOUSE_CERTIFICATE_APPROVED' : 'HOUSE_CERTIFICATE_REJECTED',
+        message: status === 'approved'
+          ? 'Your house certificate has been approved. Your address is now verified.'
+          : 'Your house certificate was rejected. Please upload a valid document.',
+        data: {
+          userId: userIdStr,
+          houseCertificateStatus: status
+        }
+      });
+      console.log(`📤 Emitted house certificate status update to ${userIdStr}`.green);
+    }
 
     // Optionally, send email (not required, but can be added)
 
@@ -257,6 +308,25 @@ const changeAddressVerificationStatus = async (req, res) => {
       type: 'address_certificate_' + status
     });
     await user.save();
+
+    // Emit WebSocket event for real-time notification to user
+    const io = req.app.get('io');
+    if (io) {
+      const userIdStr = userId.toString();
+      io.to(`user_${userIdStr}`).emit('booking:notification', {
+        type: status === 'approved' ? 'ADDRESS_CERTIFICATE_APPROVED' : 'ADDRESS_CERTIFICATE_REJECTED',
+        message: status === 'approved'
+          ? 'Your address certificate has been approved. Your address is now verified.'
+          : 'Your address certificate was rejected. Please upload a valid document.',
+        data: {
+          userId: userIdStr,
+          addressId: addressId.toString(),
+          addressCertificateStatus: status
+        }
+      });
+      console.log(`📤 Emitted address certificate status update to ${userIdStr}`.green);
+    }
+
     return res.status(200).json({
       success: true,
       message: `Address verification status updated to ${status}.`,

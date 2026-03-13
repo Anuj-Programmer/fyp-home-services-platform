@@ -19,9 +19,11 @@ import "../css/landingPage.css";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import Cookies from "js-cookie";
+import { useSocket } from "@/context/SocketContext";
 
 function HomePage() {
   const navigate = useNavigate();
+  const { socket, isConnected } = useSocket();
   const [recommendedPros, setRecommendedPros] = useState([]);
   const [upcomingBookings, setUpcomingBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,30 +57,50 @@ function HomePage() {
     }, []);
 
   // Fetch user's bookings
-  useEffect(() => {
-    const fetchUserBookings = async () => {
-      try {
-        const token = Cookies.get("token") || localStorage.getItem("token");
-        const response = await axios.get("/api/bookings/user-bookings", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        if (response.data && response.data.success) {
-          // Get the 2 latest bookings
-          const sortedBookings = response.data.bookings.sort(
-            (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-          );
-          setUpcomingBookings(sortedBookings.slice(0, 2));
-        }
-      } catch (error) {
-        console.error("Error fetching bookings:", error);
-        setUpcomingBookings([]);
+  const fetchUserBookings = async () => {
+    try {
+      const token = Cookies.get("token") || localStorage.getItem("token");
+      const response = await axios.get("/api/bookings/user-bookings", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (response.data && response.data.success) {
+        // Get the 2 latest bookings
+        const sortedBookings = response.data.bookings.sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
+        setUpcomingBookings(sortedBookings.slice(0, 2));
       }
-    };
+    } catch (error) {
+      console.error("Error fetching bookings:", error);
+      setUpcomingBookings([]);
+    }
+  };
 
+  // Initial fetch on component mount
+  useEffect(() => {
     fetchUserBookings();
   }, []);
+
+  // Listen for real-time booking updates via WebSocket
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleBookingNotification = (data) => {
+      console.log('📬 Booking notification received:', data);
+      // Refetch bookings when any booking notification is received
+      fetchUserBookings();
+    };
+
+    // Subscribe to booking notifications
+    socket.on('booking:notification', handleBookingNotification);
+
+    // Cleanup listener on unmount
+    return () => {
+      socket.off('booking:notification', handleBookingNotification);
+    };
+  }, [socket]);
 
   const handleLogout = () => {
     localStorage.clear();

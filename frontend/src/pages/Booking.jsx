@@ -6,6 +6,7 @@ import Footer from "@/blocks/Footer";
 import axios from "axios";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
+import { useSocket } from "../context/SocketContext";
 import "../css/landingPage.css";
 
 const TABS = ["All", "Upcoming", "Pending"  , "Completed"];
@@ -33,83 +34,118 @@ function Booking() {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState(null);
   
+  // Payment modal state
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentBooking, setPaymentBooking] = useState(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  
   // User state
   const [user, setUser] = useState(null);
+  const { socket, isConnected, notifications, registerUser } = useSocket();
 
   // Fetch user data from localStorage
   useEffect(() => {
     try {
       const userData = localStorage.getItem("user");
       if (userData) {
-        setUser(JSON.parse(userData));
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+        // Register user with socket for real-time updates
+        if (parsedUser._id) {
+          registerUser(parsedUser._id);
+          console.log('🔌 User registered with WebSocket:', parsedUser._id);
+        }
       }
     } catch (error) {
       console.error("Error parsing user data:", error);
     }
+  }, [registerUser]);
+
+  // Fetch user bookings from backend (initial load only)
+  const fetchUserBookings = async (showLoading = true) => {
+    try {
+      if (showLoading) setLoading(true);
+      const token = Cookies.get("token") || localStorage.getItem("token");
+      const response = await axios.get("/api/bookings/user-bookings", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.data.success) {
+        // Transform backend data to match frontend format
+        const transformedBookings = response.data.bookings.map((booking) => ({
+          id: booking._id,
+          technicianId: typeof booking.technician === 'object' ? booking.technician._id : booking.technician,
+          technicianName: `${booking.technicianInfo.firstname} ${booking.technicianInfo.lastname}`,
+          specialty: booking.technicianInfo.servicetype,
+          bookingDate: new Date(booking.serviceDate).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          }),
+          time: booking.serviceTime,
+          serviceType: booking.technicianInfo.servicetype,
+          email: booking.technicianInfo.email,
+          phone: booking.technicianInfo.phone,
+          status: booking.status.charAt(0).toUpperCase() + booking.status.slice(1),
+          isVerifiedTechnician: booking.technicianInfo.isVerifiedTechnician || false,
+          hasReview: booking.hasReview || false,
+          fee: booking.fee || 0
+        }));
+
+        setBookings(transformedBookings);
+
+        // Populate reviewedBookings from backend data
+        const reviewedIds = new Set();
+        response.data.bookings.forEach((booking) => {
+          if (booking.hasReview) {
+            reviewedIds.add(booking._id);
+          }
+        });
+        setReviewedBookings(reviewedIds);
+      } else {
+        setBookings([]);
+        toast.error("Failed to fetch bookings");
+      }
+    } catch (error) {
+      console.error("Error fetching bookings:", error);
+      setBookings([]);
+    } finally {
+      if (showLoading) setLoading(false);
+    }
+  };
+
+  // Initial fetch on mount
+  useEffect(() => {
+    fetchUserBookings(true);
   }, []);
 
-  // Fetch user bookings from backend with polling every 5 seconds
+  // Listen for WebSocket notifications for real-time updates
   useEffect(() => {
-    let isMounted = true;
-    let intervalId;
+    if (!socket) return;
 
-    const fetchUserBookings = async (showLoading = true) => {
-      try {
-        if (showLoading) setLoading(true);
-        const token = Cookies.get("token") || localStorage.getItem("token");
-        const response = await axios.get("/api/bookings/user-bookings", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.data.success) {
-          // Transform backend data to match frontend format
-          const transformedBookings = response.data.bookings.map((booking) => ({
-            id: booking._id,
-            technicianId: typeof booking.technician === 'object' ? booking.technician._id : booking.technician,
-            technicianName: `${booking.technicianInfo.firstname} ${booking.technicianInfo.lastname}`,
-            specialty: booking.technicianInfo.servicetype,
-            bookingDate: new Date(booking.serviceDate).toLocaleDateString("en-GB", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            }),
-            time: booking.serviceTime,
-            serviceType: booking.technicianInfo.servicetype,
-            email: booking.technicianInfo.email,
-            phone: booking.technicianInfo.phone,
-            status: booking.status.charAt(0).toUpperCase() + booking.status.slice(1),
-            isVerifiedTechnician: booking.technicianInfo.isVerifiedTechnician || false,
-          }));
-
-          if (isMounted) {
-            setBookings(transformedBookings);
-          }
-        } else {
-          if (isMounted) setBookings([]);
-          toast.error("Failed to fetch bookings");
-        }
-      } catch (error) {
-        console.error("Error fetching bookings:", error);
-        if (isMounted) setBookings([]);
-      } finally {
-        if (showLoading && isMounted) setLoading(false);
+    const handleBookingNotification = (data) => {
+      console.log('📬 Received booking notification:', data);
+      // Refresh bookings when notification received
+      fetchUserBookings(false);
+      
+      // Show toast notification
+      if (data.type === 'NEW_BOOKING') {
+        toast.success(data.message || 'New booking created!');
+      } else if (data.type === 'BOOKING_STATUS_UPDATE') {
+        toast.info(data.message || 'Booking status updated');
+      } else if (data.type === 'BOOKING_CANCELLED') {
+        toast.info(data.message || 'Booking cancelled');
       }
     };
 
-    // Initial fetch with loading
-    fetchUserBookings(true);
-    // Poll every 5 seconds (without loading spinner)
-    intervalId = setInterval(() => {
-      fetchUserBookings(false);
-    }, 3000);
+    socket.on('booking:notification', handleBookingNotification);
 
     return () => {
-      isMounted = false;
-      if (intervalId) clearInterval(intervalId);
+      socket.off('booking:notification', handleBookingNotification);
     };
-  }, []);
+  }, [socket]);
 
   // Filter bookings based on active tab and search query
   let filteredBookings;
@@ -208,9 +244,10 @@ function Booking() {
       );
 
       toast.success("Review submitted successfully!");
-      // Add booking to reviewed bookings
-      setReviewedBookings(prev => new Set([...prev, ratingBooking.id]));
       handleCloseRatingModal();
+      
+      // Refetch bookings to get updated hasReview status from backend
+      await fetchUserBookings(false);
     } catch (error) {
       console.error("Error submitting review:", error);
       toast.error(error.response?.data?.message || "Failed to submit review");
@@ -260,6 +297,20 @@ function Booking() {
               : booking
           )
         );
+        
+        // Emit WebSocket event for real-time update
+        if (socket && response.data.booking) {
+          const technicianId = typeof response.data.booking.technician === 'object' 
+            ? response.data.booking.technician._id 
+            : response.data.booking.technician;
+          socket.emit('booking:statusUpdate', {
+            bookingId: bookingToCancel,
+            userId: user?._id,
+            technicianId: technicianId,
+            status: 'cancelled'
+          });
+          console.log('📡 Emitted booking cancellation to technician:', technicianId);
+        }
       } else {
         toast.error(response.data.message || "Failed to cancel booking");
       }
@@ -283,6 +334,35 @@ function Booking() {
         return 3;
       default:
         return 0;
+    }
+  };
+
+  // Payment modal handlers
+  const handleOpenPaymentModal = (booking) => {
+    setPaymentBooking(booking);
+    setShowPaymentModal(true);
+  };
+
+  const handleClosePaymentModal = () => {
+    setShowPaymentModal(false);
+    setPaymentBooking(null);
+    setIsProcessingPayment(false);
+  };
+
+  const handlePayWithKhalti = async () => {
+    if (!paymentBooking) return;
+
+    try {
+      setIsProcessingPayment(true);
+      // TODO: Integrate with Khalti payment gateway
+      toast.success("Redirecting to Khalti...");
+      // Khalti integration will be implemented here
+      handleClosePaymentModal();
+    } catch (error) {
+      console.error("Error processing payment:", error);
+      toast.error("Payment processing failed");
+    } finally {
+      setIsProcessingPayment(false);
     }
   };
 
@@ -413,7 +493,9 @@ function Booking() {
                             className="px-3 py-1.5 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap">
                             Details
                           </button>
-                          <button className="px-3 py-1.5 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap">
+                          <button 
+                            onClick={() => handleOpenPaymentModal(booking)}
+                            className="px-3 py-1.5 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap">
                             Pay
                           </button>
                           <button 
@@ -547,7 +629,9 @@ function Booking() {
                             className="flex-1 px-3 py-2 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity">
                             Details
                           </button>
-                          <button className="flex-1 px-3 py-2 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity">
+                          <button 
+                            onClick={() => handleOpenPaymentModal(booking)}
+                            className="flex-1 px-3 py-2 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity">
                             Pay
                           </button>
                           <button 
@@ -928,6 +1012,112 @@ function Booking() {
                 className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {cancellingBookingId === bookingToCancel ? "Cancelling..." : "Cancel Booking"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Modal */}
+      {showPaymentModal && paymentBooking && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-sm p-4"
+          onClick={handleClosePaymentModal}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl w-full max-w-md"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white text-color-primary px-6 py-4 flex items-center justify-between border-b rounded-t-2xl">
+              <h2 className="text-xl font-semibold">Payment Bill</h2>
+              <button
+                onClick={handleClosePaymentModal}
+                className="text-stone-600 hover:text-stone-900 rounded-full p-1 transition-colors text-2xl font-light"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-6">
+              {/* Booking Details Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-neutral-900 uppercase tracking-wide">Booking Details</h3>
+                <div className="space-y-3 bg-stone-50 p-4 rounded-lg">
+                  <div className="flex justify-between items-start">
+                    <span className="text-sm text-stone-600">Technician</span>
+                    <span className="text-sm font-semibold text-neutral-900 text-right">{paymentBooking.technicianName}</span>
+                  </div>
+                  <div className="flex justify-between items-start">
+                    <span className="text-sm text-stone-600">Service</span>
+                    <span className="text-sm font-semibold text-neutral-900 text-right">{paymentBooking.serviceType}</span>
+                  </div>
+                  <div className="flex justify-between items-start">
+                    <span className="text-sm text-stone-600">Specialty</span>
+                    <span className="text-sm font-semibold text-neutral-900 text-right">{paymentBooking.specialty}</span>
+                  </div>
+                  <div className="h-px bg-stone-200"></div>
+                  <div className="flex justify-between items-start">
+                    <span className="text-sm text-stone-600">Date & Time</span>
+                    <span className="text-sm font-semibold text-neutral-900 text-right">{paymentBooking.bookingDate} • {paymentBooking.time}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Price Section */}
+              <div className="border-t pt-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-stone-600">Service Charge</span>
+                  <span className="text-sm font-semibold text-neutral-900">Rs. {paymentBooking.fee}</span>
+                </div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-stone-600">Platform Fee</span>
+                  <span className="text-sm font-semibold text-neutral-900">Rs. 50</span>
+                </div>
+                <div className="h-px bg-stone-200 my-3"></div>
+                <div className="flex justify-between items-center">
+                  <span className="text-base font-semibold text-neutral-900">Total Amount</span>
+                  <span className="text-xl font-bold text-color-main">Rs. {paymentBooking.fee + 50}</span>
+                </div>
+              </div>
+
+              {/* Notice */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-xs text-blue-700">
+                  <strong>Note:</strong> Please ensure all booking details are correct before proceeding with payment.
+                </p>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-stone-50 px-6 py-4 border-t flex gap-3 justify-end rounded-b-2xl">
+              <button
+                onClick={handleClosePaymentModal}
+                disabled={isProcessingPayment}
+                className="px-4 py-2.5 bg-stone-200 text-stone-700 font-medium rounded-full hover:bg-stone-300 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePayWithKhalti}
+                disabled={isProcessingPayment}
+                className="px-4 py-2.5 bg-color-main text-white font-medium rounded-full hover:opacity-90 transition-opacity text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isProcessingPayment ? (
+                  <>
+                    <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-7-2h6v-2h-6v2z" />
+                    </svg>
+                    Pay with Khalti
+                  </>
+                )}
               </button>
             </div>
           </div>

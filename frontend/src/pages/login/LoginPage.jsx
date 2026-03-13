@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { Toaster, toast } from "react-hot-toast";
+import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/blocks/Navbar";
 import Logo from "../../assets/faviconLogo.png";
@@ -49,7 +49,7 @@ function LoginPage() {
 
   return (
     <>
-      <Toaster position="top-center" reverseOrder={false} />
+
       <Navbar/>
       <div className="lg:min-h-[calc(100vh-64px)] flex items-center justify-center px-4 py-8 sm:py-0 mt-16 lg:mt-0">
         <div className="w-full max-w-md bg-white rounded-lg p-6 sm:p-8 ">

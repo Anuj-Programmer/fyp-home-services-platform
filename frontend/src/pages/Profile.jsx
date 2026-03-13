@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import Navbar from "@/blocks/Navbar";
 import Footer from "@/blocks/Footer";
 import { uploadToCloudinary } from "@/lib/uploadToCloudinary";
@@ -346,7 +346,6 @@ function Profile() {
 
   return (
     <>
-      <Toaster position="top-center" reverseOrder={false} />
       <Navbar />
       <main className="px-6 lg:px-32 pt-16 pb-16 min-h-screen bg-stone-50 space-y-12">
         <section className="flex flex-col lg:flex-row items-start justify-between gap-8">

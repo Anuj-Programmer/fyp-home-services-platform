@@ -4,6 +4,8 @@ import Footer from "@/blocks/Footer";
 import axios from "axios";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
+import { useSocket } from "../../context/SocketContext";
+import houseVerifiedIcon from "@/assets/houseVerifiedIcon.png";
 import "../../css/landingPage.css";
 
 
@@ -16,72 +18,101 @@ function TechnicianBookings() {
   const [showModal, setShowModal] = useState(false);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { socket, isConnected, notifications, registerUser } = useSocket();
+
+  // Register technician with socket on mount
+  useEffect(() => {
+    try {
+      const technicianData = localStorage.getItem("user");
+      if (technicianData) {
+        const parsedTechnician = JSON.parse(technicianData);
+        if (parsedTechnician._id) {
+          registerUser(parsedTechnician._id);
+          console.log('🔌 Technician registered with WebSocket:', parsedTechnician._id);
+        }
+      }
+    } catch (error) {
+      console.error("Error registering technician:", error);
+    }
+  }, [registerUser]);
 
   // Get current date (for "Today" filter)
   const today = new Date();
   const todayString = `${String(today.getDate()).padStart(2, "0")} ${today.toLocaleString("en-US", { month: "short" })} ${today.getFullYear()}`;
 
-  // Fetch technician bookings from backend with polling every 5 seconds
+  // Fetch technician bookings from backend (initial load only)
+  const fetchTechnicianBookings = async (showLoading = true) => {
+    try {
+      if (showLoading) setLoading(true);
+      const token = Cookies.get("token") || localStorage.getItem("token");
+      const response = await axios.get("/api/bookings/technician-bookings", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.data.success) {
+        // Transform backend data to match frontend format
+        const transformedBookings = response.data.bookings.map((booking) => ({
+          id: booking._id,
+          clientName: `${booking.userInfo.firstname} ${booking.userInfo.lastname}`,
+          clientPhone: booking.userInfo.phone,
+          clientEmail: booking.userInfo.email,
+          bookingDate: new Date(booking.serviceDate).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          }),
+          bookingTime: booking.serviceTime,
+          address: booking.userInfo.address,
+          landmark: booking.userInfo.landMark,
+          serviceType: booking.technicianInfo.servicetype,
+          status: booking.status.charAt(0).toUpperCase() + booking.status.slice(1),
+          verified: booking.userInfo.isHouseVerified || false,
+          note: booking.note,
+        }));
+
+        setBookings(transformedBookings);
+      } else {
+        setBookings([]);
+        toast.error("Failed to fetch bookings");
+      }
+    } catch (error) {
+      console.error("Error fetching bookings:", error);
+      setBookings([]);
+    } finally {
+      if (showLoading) setLoading(false);
+    }
+  };
+
+  // Initial fetch on mount
   useEffect(() => {
-    let isMounted = true;
-    let intervalId;
+    fetchTechnicianBookings(true);
+  }, []);
 
-    const fetchTechnicianBookings = async (showLoading = true) => {
-      try {
-        if (showLoading) setLoading(true);
-        const token = Cookies.get("token") || localStorage.getItem("token");
-        const response = await axios.get("/api/bookings/technician-bookings", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+  // Listen for WebSocket notifications for real-time updates
+  useEffect(() => {
+    if (!socket) return;
 
-        if (response.data.success) {
-          // Transform backend data to match frontend format
-          const transformedBookings = response.data.bookings.map((booking) => ({
-            id: booking._id,
-            clientName: `${booking.userInfo.firstname} ${booking.userInfo.lastname}`,
-            clientPhone: booking.userInfo.phone,
-            clientEmail: booking.userInfo.email,
-            bookingDate: new Date(booking.serviceDate).toLocaleDateString("en-GB", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            }),
-            bookingTime: booking.serviceTime,
-            address: booking.userInfo.address,
-            landmark: booking.userInfo.landMark,
-            serviceType: booking.technicianInfo.servicetype,
-            status: booking.status.charAt(0).toUpperCase() + booking.status.slice(1),
-            verified: booking.userInfo.isHouseVerified || false,
-            note: booking.note,
-          }));
-
-          if (isMounted) setBookings(transformedBookings);
-        } else {
-          if (isMounted) setBookings([]);
-          toast.error("Failed to fetch bookings");
-        }
-      } catch (error) {
-        console.error("Error fetching bookings:", error);
-        if (isMounted) setBookings([]);
-      } finally {
-        if (showLoading && isMounted) setLoading(false);
+    const handleBookingNotification = (data) => {
+      console.log('📬 Received booking notification:', data);
+      // Refresh bookings when notification received
+      fetchTechnicianBookings(false);
+      
+      // Show toast notification
+      if (data.type === 'NEW_BOOKING') {
+        toast.success(data.message || 'New booking received!');
+      } else if (data.type === 'BOOKING_STATUS_UPDATE') {
+        toast.info(data.message || 'Booking status updated');
       }
     };
 
-    // Initial fetch with loading
-    fetchTechnicianBookings(true);
-    // Poll every 5 seconds (without loading spinner)
-    intervalId = setInterval(() => {
-      fetchTechnicianBookings(false);
-    }, 3000);
+    socket.on('booking:notification', handleBookingNotification);
 
     return () => {
-      isMounted = false;
-      if (intervalId) clearInterval(intervalId);
+      socket.off('booking:notification', handleBookingNotification);
     };
-  }, []);
+  }, [socket]);
 
   // Filter bookings based on active tab and search query
   let filteredBookings = bookings;
@@ -159,6 +190,19 @@ function TechnicianBookings() {
           )
         );
         handleCloseModal();
+        
+        // Emit WebSocket event for real-time update
+        if (socket && response.data.booking) {
+          const userId = typeof response.data.booking.user === 'object' 
+            ? response.data.booking.user._id 
+            : response.data.booking.user;
+          socket.emit('booking:statusUpdate', {
+            bookingId: bookingId,
+            userId: userId,
+            status: 'confirmed'
+          });
+          console.log('📡 Emitted booking status update to user:', userId);
+        }
       } else {
         toast.error("Failed to accept booking");
       }
@@ -190,6 +234,19 @@ function TechnicianBookings() {
           )
         );
         handleCloseModal();
+        
+        // Emit WebSocket event for real-time update
+        if (socket && response.data.booking) {
+          const userId = typeof response.data.booking.user === 'object' 
+            ? response.data.booking.user._id 
+            : response.data.booking.user;
+          socket.emit('booking:statusUpdate', {
+            bookingId: bookingId,
+            userId: userId,
+            status: 'declined'
+          });
+          console.log('📡 Emitted booking status update to user:', userId);
+        }
       } else {
         toast.error("Failed to decline booking");
       }
@@ -221,6 +278,19 @@ function TechnicianBookings() {
           )
         );
         handleCloseModal();
+        
+        // Emit WebSocket event for real-time update
+        if (socket && response.data.booking) {
+          const userId = typeof response.data.booking.user === 'object' 
+            ? response.data.booking.user._id 
+            : response.data.booking.user;
+          socket.emit('booking:statusUpdate', {
+            bookingId: bookingId,
+            userId: userId,
+            status: 'inprogress'
+          });
+          console.log('📡 Emitted booking status update to user:', userId);
+        }
       } else {
         toast.error("Failed to start service");
       }
@@ -252,6 +322,19 @@ function TechnicianBookings() {
           )
         );
         handleCloseModal();
+        
+        // Emit WebSocket event for real-time update
+        if (socket && response.data.booking) {
+          const userId = typeof response.data.booking.user === 'object' 
+            ? response.data.booking.user._id 
+            : response.data.booking.user;
+          socket.emit('booking:statusUpdate', {
+            bookingId: bookingId,
+            userId: userId,
+            status: 'completed'
+          });
+          console.log('📡 Emitted booking status update to user:', userId);
+        }
       } else {
         toast.error("Failed to complete service");
       }
@@ -363,8 +446,13 @@ function TechnicianBookings() {
                         key={booking.id}
                         className="border-b hover:bg-stone-50 transition-colors duration-150"
                       >
-                        <td className="px-6 py-4 font-semibold text-neutral-900 w-40 truncate">
-                          {booking.clientName}
+                        <td className="px-6 py-4 font-semibold text-neutral-900 w-40">
+                          <div className="flex items-center gap-2">
+                            <span className="truncate">{booking.clientName}</span>
+                            {booking.verified && (
+                              <img src={houseVerifiedIcon} alt="Verified" className="w-4 h-4 shrink-0" title="House Verified" />
+                            )}
+                          </div>
                       </td>
                       <td className="px-6 py-4 text-stone-700 w-48">
                         <div className="text-sm font-medium">{booking.bookingDate}</div>
@@ -483,7 +571,12 @@ function TechnicianBookings() {
                         Client
                       </p>
                       <p className="text-sm font-semibold text-neutral-900">
-                        {booking.clientName}
+                        <div className="flex items-center gap-2">
+                          {booking.clientName}
+                          {booking.verified && (
+                            <img src={houseVerifiedIcon} alt="Verified" className="w-4 h-4" title="House Verified" />
+                          )}
+                        </div>
                       </p>
                     </div>
                     <span className={`px-2.5 py-1 text-xs font-semibold rounded-full shrink-0 ${getStatusColor(booking.status)}`}>
@@ -645,7 +738,12 @@ function TechnicianBookings() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-stone-50 p-3 rounded-lg">
                   <div>
                     <p className="text-xs text-stone-500 uppercase tracking-wide mb-0.5">Name</p>
-                    <p className="text-sm text-neutral-900 font-medium">{selectedBooking.clientName}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm text-neutral-900 font-medium">{selectedBooking.clientName}</p>
+                      {selectedBooking.verified && (
+                        <img src={houseVerifiedIcon} alt="Verified" className="w-4 h-4" title="House Verified" />
+                      )}
+                    </div>
                   </div>
                   <div>
                     <p className="text-xs text-stone-500 uppercase tracking-wide mb-0.5">Phone</p>

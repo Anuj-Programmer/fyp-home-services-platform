@@ -1,9 +1,11 @@
 require("dotenv").config();
 
 const express = require('express');
+const http = require('http');
 const colors = require('colors');
 const morgan = require('morgan');
 const connectDB = require('./config/db');
+const { initializeSocket } = require('./config/socket');
 const userRoutes = require("./routes/userRoutes");
 const otpRoutes = require("./routes/otpRoutes");
 const technicianRoutes = require("./routes/technicianRoutes")
@@ -37,9 +39,17 @@ app.use("/api/technicians", technicianRoutes)
 app.use("/api/admin", adminRoutes)
 app.use("/api/reviews", reviewRoutes)
 
+// Create HTTP server and initialize Socket.IO
+const server = http.createServer(app);
+const io = initializeSocket(server);
+
+// Make io accessible to routes
+app.set('io', io);
+
 // Start the server
 const port = process.env.PORT || 8080;
 
-app.listen(port, () => {
+server.listen(port, () => {
   console.log(`Server is running in ${process.env.DEV_MODE} mode on port ${port}`.bgCyan.white);
+  console.log(`🔌 WebSocket server is ready`.bgMagenta.white);
 });
