@@ -5,7 +5,8 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
 import { useSocket } from "../../context/SocketContext";
-import houseVerifiedIcon from "@/assets/houseVerifiedIcon.png";
+import BookingChatPopup from "../../components/BookingChatPopup";
+import houseVerifiedIcon from "@/assets/houseVerifiedIcon.svg";
 import "../../css/landingPage.css";
 
 
@@ -18,6 +19,7 @@ function TechnicianBookings() {
   const [showModal, setShowModal] = useState(false);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState(null);
   const { socket, isConnected, notifications, registerUser } = useSocket();
 
   // Register technician with socket on mount
@@ -27,6 +29,7 @@ function TechnicianBookings() {
       if (technicianData) {
         const parsedTechnician = JSON.parse(technicianData);
         if (parsedTechnician._id) {
+          setCurrentUserId(parsedTechnician._id);
           registerUser(parsedTechnician._id);
           console.log('🔌 Technician registered with WebSocket:', parsedTechnician._id);
         }
@@ -55,6 +58,8 @@ function TechnicianBookings() {
         // Transform backend data to match frontend format
         const transformedBookings = response.data.bookings.map((booking) => ({
           id: booking._id,
+          userId: typeof booking.user === 'object' ? booking.user._id : booking.user,
+          technicianId: typeof booking.technician === 'object' ? booking.technician._id : booking.technician,
           clientName: `${booking.userInfo.firstname} ${booking.userInfo.lastname}`,
           clientPhone: booking.userInfo.phone,
           clientEmail: booking.userInfo.email,
@@ -107,10 +112,21 @@ function TechnicianBookings() {
       }
     };
 
+    const handleAutoCancelledBooking = (data) => {
+      console.log('🚫 Booking auto-cancelled:', data);
+      // Refresh bookings when auto-cancellation happens
+      fetchTechnicianBookings(false);
+      
+      // Show toast notification
+      toast.error(`${data.message || 'Booking cancelled'} - You arrived after 15 minutes of scheduled time.`);
+    };
+
     socket.on('booking:notification', handleBookingNotification);
+    socket.on('booking:autoCancelled', handleAutoCancelledBooking);
 
     return () => {
       socket.off('booking:notification', handleBookingNotification);
+      socket.off('booking:autoCancelled', handleAutoCancelledBooking);
     };
   }, [socket]);
 
@@ -348,7 +364,8 @@ function TechnicianBookings() {
   const isServiceTimeReached = (bookingDate, bookingTime) => {
     const now = new Date();
     const bookingDateTime = new Date(bookingDate);
-    const SERVICE_START_BUFFER_MINUTES = 60; 
+    //const SERVICE_START_BUFFER_MINUTES = 60; 
+    const SERVICE_START_BUFFER_MINUTES = 1440; 
 
     // Parse the service time (assuming format like "2:00 PM" or "14:00")
     const timeParts = bookingTime.match(/(\d+):(\d+)\s*(AM|PM)?/i);
@@ -827,6 +844,21 @@ function TechnicianBookings() {
                 </div>
               </div>
 
+              {/* Timing Disclaimer for Confirmed Bookings */}
+              {selectedBooking.status === "Confirmed" && (
+                <div className="bg-amber-50 border-l-4 border-amber-500 rounded-lg p-3">
+                  <p className="text-xs font-semibold text-amber-800 mb-1 flex items-center gap-1">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    ⏰ Important Reminder
+                  </p>
+                  <p className="text-xs text-amber-700 leading-relaxed">
+                    You must start this service by <strong>{selectedBooking.bookingTime}</strong> or within 15 minutes of this time. The booking will be <strong>automatically cancelled</strong> if not started by then.
+                  </p>
+                </div>
+              )}
+
               {/* Notes */}
               <div>
                 <h3 className="text-base font-semibold text-neutral-900 mb-2 flex items-center gap-2">
@@ -887,6 +919,13 @@ function TechnicianBookings() {
           </div>
         </div>
       )}
+
+      <BookingChatPopup
+        bookings={bookings}
+        currentUserId={currentUserId}
+        headerTitle="Chat with Client"
+        partnerNameKey="clientName"
+      />
 
       <Footer />
     </>

@@ -1,4 +1,11 @@
 const socketIO = require('socket.io');
+const Conversation = require('../models/conversationModel');
+const ChatMessage = require('../models/chatMessageModel');
+
+const isConversationParticipant = (conversation, userId) => {
+  const uid = String(userId);
+  return String(conversation.user_id) === uid || String(conversation.technician_id) === uid;
+};
 
 const initializeSocket = (server) => {
   const io = socketIO(server, {
@@ -59,6 +66,85 @@ const initializeSocket = (server) => {
           data: data
         });
         console.log(`📤 Sent booking update to technician ${data.technicianId}: ${data.status}`.blue);
+      }
+    });
+
+    // Join chat room by conversation id
+    socket.on('join_room', async (payload = {}) => {
+      try {
+        const conversationId = payload.conversation_id;
+        const senderId = socket.userId;
+
+        if (!conversationId || !senderId) {
+          socket.emit('chat:error', { message: 'Invalid chat room request' });
+          return;
+        }
+
+        const conversation = await Conversation.findById(conversationId).select('user_id technician_id');
+        if (!conversation) {
+          socket.emit('chat:error', { message: 'Conversation not found' });
+          return;
+        }
+
+        if (!isConversationParticipant(conversation, senderId)) {
+          socket.emit('chat:error', { message: 'You are not allowed in this chat room' });
+          return;
+        }
+
+        const roomName = `conversation_${conversationId}`;
+        socket.join(roomName);
+        socket.emit('chat:joined', { conversation_id: conversationId });
+      } catch (error) {
+        console.error('Error joining chat room:', error);
+        socket.emit('chat:error', { message: 'Unable to join chat room' });
+      }
+    });
+
+    // Persist and broadcast chat message to conversation room
+    socket.on('send_message', async (payload = {}) => {
+      try {
+        const senderId = socket.userId;
+        const conversationId = payload.conversation_id;
+        const bookingId = payload.booking_id || null;
+        const rawMessage = payload.message;
+
+        if (!senderId || !conversationId || typeof rawMessage !== 'string' || !rawMessage.trim()) {
+          socket.emit('chat:error', { message: 'Invalid message payload' });
+          return;
+        }
+
+        const conversation = await Conversation.findById(conversationId).select('user_id technician_id');
+        if (!conversation) {
+          socket.emit('chat:error', { message: 'Conversation not found' });
+          return;
+        }
+
+        if (!isConversationParticipant(conversation, senderId)) {
+          socket.emit('chat:error', { message: 'You are not allowed to send messages in this conversation' });
+          return;
+        }
+
+        const newMessage = await ChatMessage.create({
+          conversation_id: conversationId,
+          booking_id: bookingId,
+          sender_id: senderId,
+          message: rawMessage.trim(),
+          timestamp: new Date(),
+        });
+
+        const messagePayload = {
+          _id: newMessage._id,
+          conversation_id: String(newMessage.conversation_id),
+          booking_id: newMessage.booking_id ? String(newMessage.booking_id) : null,
+          sender_id: String(newMessage.sender_id),
+          message: newMessage.message,
+          timestamp: newMessage.timestamp,
+        };
+
+        io.to(`conversation_${conversationId}`).emit('receive_message', messagePayload);
+      } catch (error) {
+        console.error('Error sending chat message:', error);
+        socket.emit('chat:error', { message: 'Unable to send message' });
       }
     });
 

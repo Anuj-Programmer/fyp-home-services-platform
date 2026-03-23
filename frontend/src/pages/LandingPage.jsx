@@ -4,8 +4,15 @@ import heroicon from "../assets/HeroIcon.png";
 import qualiticon from "../assets/QualityPageIcon.png";
 import welcomeicon from "../assets/Welcome.png";
 import TechnicianCard from "@/blocks/TechnicianCard";
+import plumbingIcon from "../assets/plumberIcon.svg";
+import electricalIcon from "../assets/electricianIcon.svg";
+import carpentryIcon from "../assets/carpenterIcon.svg";
+import repairIcon from "../assets/repairIcon.svg";
+import bathroomIcon from "../assets/bathroomIcon.svg";
+import locksmithIcon from "../assets/icons8-through-60.png";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import "../css/landingPage.css";
 import {
   Wrench,
@@ -28,6 +35,7 @@ import { toast } from "react-hot-toast";
 
 function LandingPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const servicesRef = useRef(null);
   const [professionals, setProfessionals] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -52,6 +60,20 @@ function LandingPage() {
 
     fetchActiveTechnicians();
   }, []);
+
+  useEffect(() => {
+    if (!location.hash) return;
+
+    const sectionId = location.hash.replace("#", "");
+    const section = document.getElementById(sectionId);
+    if (!section) return;
+
+    const timer = setTimeout(() => {
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+
+    return () => clearTimeout(timer);
+  }, [location.hash]);
 
   const scrollToServices = () => {
     if (servicesRef.current) {
@@ -83,9 +105,12 @@ function LandingPage() {
 
       <Navbar/>
       <div className="">
-        <section className="w-full px-6 lg:px-32 py-20 flex flex-col lg:flex-row items-center justify-between gap-12 relative rounded-2xl overflow-hidden">
-          {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-linear-to-r from-blue-900/20 to-transparent pointer-events-none"></div>
+        <div className="relative">
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(30,58,138,0.42)_0%,rgba(30,58,138,0.26)_28%,rgba(255,255,255,0.76)_58%,rgba(255,255,255,0.94)_78%,#ffffff_100%)]"></div>
+          </div>
+
+          <section className="relative z-10 w-full px-6 lg:px-32 py-20 flex flex-col lg:flex-row items-center justify-between gap-12 rounded-2xl">
 
           {/* Left Text Section */}
           <div className="flex-1 space-y-6 relative z-10">
@@ -120,16 +145,17 @@ function LandingPage() {
           <div className="hidden lg:flex flex-1 items-center justify-center relative z-10">
             <img
               src={heroicon}
-              alt="Cleaning service"
+              alt="Home service"
               className="w-full max-w-md rounded-2xl object-cover"
             />
           </div>
-        </section>
+          </section>
 
-        <section
-          ref={servicesRef}
-          className="w-full px-6 lg:px-32 pt-24 pb-20 flex flex-col gap-10 services-section"
-        >
+          <section
+            ref={servicesRef}
+            id="services"
+            className="relative z-10 w-full px-6 lg:px-32 pt-16 pb-20 flex flex-col gap-10 services-section scroll-mt-24"
+          >
           {/* Header Row */}
           <div className="w-full flex flex-col lg:flex-row justify-between items-start gap-10">
             {/* LEFT SIDE TITLE */}
@@ -170,27 +196,30 @@ function LandingPage() {
           <div className="w-full border-b border-neutral-300"></div>
           <div className="flex flex-wrap gap-6 py-4 px-2 items-center justify-center mt-10">
             {[
-              { title: "Plumbing", icon: <Wrench weight="fill" /> },
-              { title: "Electrical", icon: <Lightning weight="fill" /> },
-              { title: "Carpentry", icon: <Wrench weight="fill" /> },
-              { title: "Appliance Repair", icon: <GearSix weight="fill" /> },
-              { title: "Bathroom Remodeling", icon: <Bathtub weight="fill" /> },
-              { title: "Locksmith", icon: <Key weight="fill" /> },
+              { title: "Plumbing", image: plumbingIcon },
+              { title: "Electrical", image: electricalIcon },
+              { title: "Carpentry", image: carpentryIcon },
+              { title: "Appliance Repair", image: repairIcon },
+              { title: "Bathroom Remodeling", image: bathroomIcon },
+              { title: "Locksmith", image: locksmithIcon },
             ].map((service, i) => (
               <div
                 key={i}
-                className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 p-4 rounded-2xl shadow-md hover:shadow-lg transition flex flex-col items-center justify-center gap-2 bg-white"
+                className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 p-4 rounded-2xl shadow-[0_8px_16px_rgba(31,54,127,0.35)] hover:shadow-[0_12px_24px_rgba(31,54,127,0.45)] transition flex flex-col items-center justify-center gap-2 bg-white"
               >
-                <div className="w-10 h-10 flex items-center justify-center text-white rounded-full icon-bg mb-2">
-                  {service.icon}
-                </div>
+                <img 
+                  src={service.image} 
+                  alt={service.title}
+                  className="w-12 h-12 object-contain"
+                />
                 <h3 className="text-xs sm:text-sm font-medium text-center text-gray-800">
                   {service.title}
                 </h3>
               </div>
             ))}
           </div>
-        </section>
+          </section>
+        </div>
         <section className="w-full px-6 lg:px-32 py-20 flex flex-col lg:flex-row items-center justify-between gap-10">
           {/* Text Content */}
           <div className="flex-1 flex flex-col gap-12 text-center lg:text-left  ">
@@ -224,7 +253,7 @@ function LandingPage() {
           </div>
         </section>
 
-        <section className="w-full px-6 lg:px-32 py-20 flex flex-col gap-10">
+        <section id="team" className="w-full px-6 lg:px-32 py-20 flex flex-col gap-10 scroll-mt-24">
           <div className="w-full flex flex-col lg:flex-row justify-between gap-10 text-center lg:text-left items-center lg:items-start">
             {/* Left Title */}
             <h2 className="text-2xl sm:text-4xl lg:text-5xl font-semibold txt-color-primary leading-tight w-full lg:max-w-2xl hidden md:block">
@@ -270,7 +299,7 @@ function LandingPage() {
           <div className="shrink-0 hidden lg:flex">
             <img
               src={welcomeicon}
-              alt="Pro-Cleaning"
+              alt="Home Service 2"
               className="w-115 h-96 rounded-2xl  object-cover"
             />
           </div>
@@ -285,7 +314,7 @@ function LandingPage() {
                 Home Service Company!
               </h2>
               <p className="text-base text-stone-500 leading-6">
-                We make your space shine! Professional and reliable cleaning
+                We make your space shine! Professional and reliable home
                 service company providing top-notch solutions for homes and
                 businesses. Satisfaction guaranteed!
               </p>
@@ -321,7 +350,7 @@ function LandingPage() {
           </div>
         </section>
 
-        <section className="w-full px-6 lg:px-32 py-20 flex flex-col lg:flex-row justify-between gap-16">
+        <section id="contact" className="w-full px-6 lg:px-32 py-20 flex flex-col lg:flex-row justify-between gap-16 scroll-mt-24">
           {/* Left Contact Info */}
           <div className="flex-1 flex flex-col gap-10">
             <h3 className="txt-color-primary text-4xl text-center lg:text-left">
@@ -333,7 +362,7 @@ function LandingPage() {
               {[
                 {
                   title: "Call Us",
-                  value: "+(08) 255 201 888",
+                  value: "+977 9812345678",
                   icon: (
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -353,7 +382,7 @@ function LandingPage() {
                 },
                 {
                   title: "Email Now",
-                  value: "Hello@procleaning.com",
+                  value: "pradhananuj123@gmail.com",
                   icon: (
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -373,7 +402,7 @@ function LandingPage() {
                 },
                 {
                   title: "Address",
-                  value: "7510, Brand Tower, New York, USA",
+                  value: "Herald College, Naxal, Kathmandu",
                   icon: (
                     <svg
                       xmlns="http://www.w3.org/2000/svg"

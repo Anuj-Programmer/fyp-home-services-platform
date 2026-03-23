@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { List, X, Bell, UserCircle } from "phosphor-react";
+import React, { useState, useEffect, useRef } from "react";
+import { List, X, Bell, UserCircle, MagnifyingGlass } from "phosphor-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import "../css/nav.css";
@@ -7,73 +7,103 @@ import Logo from "../assets/Logo.png";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { useSocket } from "../context/SocketContext";
+import { useUser } from "../context/UserContext";
 
 const Navbar = () => {
+  const token = Cookies.get("token") || localStorage.getItem("token");
+  const isAuthenticated = Boolean(token);
+
   const [isOpen, setIsOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [mobileModal, setMobileModal] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading, refreshUser, setUserData, clearUser } = useUser();
 
   const location = useLocation();
   const navigate = useNavigate();
 
   // Get notifications from WebSocket context instead of state
   const { notifications, registerUser, clearNotifications } = useSocket();
-
-  const token = Cookies.get("token") || localStorage.getItem("token");
-  const isAuthenticated = Boolean(token);
   const isAdmin = Boolean(user?.isAdmin);
+  const isNormalAuthenticatedUser =
+    isAuthenticated && !isAdmin && user?.role !== "technician";
+  const navItems = [
+    { label: "Home", path: "/home" },
+    { label: "Services", path: "/services" },
+    { label: "Booking", path: "/bookings" },
+  ];
+  const publicNavItems = [
+    { label: "Services", sectionId: "services" },
+    { label: "Team", sectionId: "team" },
+    { label: "Contact", sectionId: "contact" },
+  ];
+  const resolvedActiveNavIndex = navItems.findIndex(
+    (item) =>
+      location.pathname === item.path ||
+      location.pathname.startsWith(`${item.path}/`),
+  );
+  const [activeNavIndex, setActiveNavIndex] = useState(
+    resolvedActiveNavIndex >= 0 ? resolvedActiveNavIndex : 0,
+  );
+  const resolvedPublicNavIndex =
+    location.pathname === "/"
+      ? publicNavItems.findIndex((item) => location.hash === `#${item.sectionId}`)
+      : -1;
+  const [activePublicNavIndex, setActivePublicNavIndex] = useState(
+    resolvedPublicNavIndex,
+  );
+  const navTransitionTimeoutRef = useRef(null);
 
-  // Fetch current user and register with socket
   useEffect(() => {
-    const fetchCurrentUser = async () => {
-      if (!isAuthenticated) {
-        setLoading(false);
-        return;
-      }
+    if (resolvedActiveNavIndex >= 0) {
+      setActiveNavIndex(resolvedActiveNavIndex);
+    }
+  }, [resolvedActiveNavIndex]);
 
-      try {
-        const { data } = await axios.get("/api/users/current-user", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+  useEffect(() => {
+    setActivePublicNavIndex(resolvedPublicNavIndex);
+  }, [resolvedPublicNavIndex]);
 
-        setUser(data);
-
-        // Register user with WebSocket for real-time notifications
-        if (data._id) {
-          registerUser(data._id);
-        }
-
-        // Optional: Update localStorage as a cache
-        localStorage.setItem("user", JSON.stringify(data));
-      } catch (error) {
-        console.error("Error fetching user:", error);
-
-        // Fallback to localStorage if API fails
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
-          try {
-            const parsedUser = JSON.parse(storedUser);
-            setUser(parsedUser);
-            if (parsedUser._id) {
-              registerUser(parsedUser._id);
-            }
-          } catch (e) {
-            console.error("Invalid user data in storage", e);
-          }
-        }
-      } finally {
-        setLoading(false);
+  useEffect(() => {
+    return () => {
+      if (navTransitionTimeoutRef.current) {
+        clearTimeout(navTransitionTimeoutRef.current);
       }
     };
+  }, []);
 
-    fetchCurrentUser();
-  }, [isAuthenticated, token, registerUser]);
+  const handleDesktopNavTabClick = (event, index, path) => {
+    if (
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey ||
+      event.button !== 0
+    ) {
+      return;
+    }
+
+    if (location.pathname === path) {
+      return;
+    }
+
+    event.preventDefault();
+    setActiveNavIndex(index);
+
+    if (navTransitionTimeoutRef.current) {
+      clearTimeout(navTransitionTimeoutRef.current);
+    }
+
+    navTransitionTimeoutRef.current = setTimeout(() => {
+      navigate(path);
+    }, 180);
+  };
+
+  useEffect(() => {
+    if (!isAuthenticated || !user?._id) return;
+    registerUser(user._id);
+  }, [isAuthenticated, user?._id, registerUser]);
 
   // Hide links only on OTP pages
   const hideNavLinks =
@@ -93,7 +123,7 @@ const Navbar = () => {
   const handleLogout = () => {
     Cookies.remove("token");
     localStorage.clear();
-    setUser(null);
+    clearUser();
     navigate("/");
   };
 
@@ -103,16 +133,7 @@ const Navbar = () => {
         status,
       });
       toast.success(data.message || `Technician ${status}`);
-
-      // Update user data
-      const userData = await axios.get("/api/users/current-user", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      setUser(userData.data);
-      localStorage.setItem("user", JSON.stringify(userData.data));
+      await refreshUser();
       // Socket events will update notifications automatically
     } catch (err) {
       console.error(err);
@@ -134,8 +155,7 @@ const Navbar = () => {
       toast.success(data.message || "All notifications marked as read");
 
       // Update user data
-      setUser(data.data);
-      localStorage.setItem("user", JSON.stringify(data.data));
+      setUserData(data.data);
       // Socket events will update notifications automatically
     } catch (err) {
       console.error(err);
@@ -159,8 +179,7 @@ const Navbar = () => {
       //toast.success(data.message || "All notifications deleted");
 
       // Update user data
-      setUser(data.data);
-      localStorage.setItem("user", JSON.stringify(data.data));
+      setUserData(data.data);
       
       // Clear notifications from SocketContext immediately
       clearNotifications();
@@ -193,37 +212,126 @@ const Navbar = () => {
     }
   };
 
+  const handlePublicNavClick = (sectionId, index) => {
+    setActivePublicNavIndex(index);
+
+    if (location.pathname === "/") {
+      const section = document.getElementById(sectionId);
+      if (section) {
+        section.scrollIntoView({ behavior: "smooth", block: "start" });
+        setIsOpen(false);
+        return;
+      }
+    }
+
+    navigate(`/#${sectionId}`);
+    setIsOpen(false);
+  };
+
   return (
     <>
-      <nav className="text-black border-gray-400 bg-gray-100 fixed top-0 left-0 w-full z-50 shadow-md">
+      <nav className="text-black fixed top-0 left-0 w-full z-50 shadow-md bg-gray-100 md:bg-white/40 md:backdrop-blur-md md:border-b md:border-white/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
-            {/* Logo */}
-            <Link
-              to={
-                isAdmin
-                  ? "/admin"
-                  : user?.role === "technician"
-                    ? "/technician-dashboard"
-                    : isAuthenticated
-                      ? "/home"
-                      : "/"
-              }
-              className="Logo"
-              onClick={handleLogoClick}
-            >
-              <img className="w-40" src={Logo} alt="HomeCare Logo" />
-            </Link>
+            <div className="flex items-center gap-2">
+              {!hideNavLinks && isNormalAuthenticatedUser && !loading && (
+                <button
+                  onClick={() =>
+                    setMobileModal(mobileModal === "nav" ? null : "nav")
+                  }
+                  className="md:hidden p-1.5 hover:bg-gray-200 rounded transition"
+                  aria-label="Open navigation"
+                >
+                  {mobileModal === "nav" ? <X size={22} /> : <List size={22} />}
+                </button>
+              )}
+
+              {/* Logo */}
+              <Link
+                to={
+                  isAdmin
+                    ? "/admin"
+                    : user?.role === "technician"
+                      ? "/technician-dashboard"
+                      : isAuthenticated
+                        ? "/home"
+                        : "/"
+                }
+                className="Logo"
+                onClick={handleLogoClick}
+              >
+                <img className="w-28 sm:w-32 md:w-40" src={Logo} alt="HomeCare Logo" />
+              </Link>
+            </div>
+
+            {!hideNavLinks && isNormalAuthenticatedUser && (
+              <div className="hidden md:flex flex-1 items-center justify-center px-4">
+                <div className="relative flex items-center">
+                  <span
+                    className="pointer-events-none absolute bottom-0 left-0 h-0.5 w-24 rounded-full bg-color-main transition-transform duration-300 ease-out"
+                    style={{ transform: `translateX(${activeNavIndex * 100}%)` }}
+                  />
+                  {navItems.map((item, index) => {
+                    const isActive = location.pathname === item.path;
+                    return (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        onClick={(event) =>
+                          handleDesktopNavTabClick(event, index, item.path)
+                        }
+                        className={`relative z-10 w-24 px-3 py-2 text-center text-sm font-medium transition-colors duration-300 ${
+                          isActive
+                            ? "txt-color-primary"
+                            : "text-gray-600 hover:text-gray-800"
+                        }`}
+                      >
+                        {item.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {!hideNavLinks && !isAuthenticated && (
+              <div className="hidden md:flex flex-1 items-center justify-center px-4">
+                <div className="relative flex items-center">
+                  {publicNavItems.map((item, index) => {
+                    const isActive =
+                      location.pathname === "/" &&
+                      location.hash === `#${item.sectionId}`;
+
+                    return (
+                      <button
+                        key={item.sectionId}
+                        type="button"
+                        onClick={() => handlePublicNavClick(item.sectionId, index)}
+                        className={`relative z-10 w-24 px-3 py-2 text-center text-sm font-medium transition-colors duration-300 ${
+                          isActive
+                            ? "txt-color-primary"
+                            : "text-gray-600 hover:text-gray-800"
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Desktop Links / Actions */}
             {!hideNavLinks && (
-              <div className="hidden md:flex items-center space-x-4 relative">
+              <div className="hidden md:flex items-center space-x-4 relative ml-auto">
+
                 {/* Search bar */}
-                {isAuthenticated && user?.role !== "technician" && !isAdmin && (
+                {isNormalAuthenticatedUser && (
                   <form
                     onSubmit={handleSearchSubmit}
-                    className="hidden lg:flex items-center bg-white border rounded-full px-3 py-1.5 min-w-[220px]"
+                    className="hidden lg:flex items-center gap-2 bg-white border rounded-full px-3 py-1.5 min-w-[220px]"
                   >
+                    <MagnifyingGlass size={18} className="text-gray-500" weight="bold" />
                     <input
                       type="text"
                       value={searchTerm}
@@ -237,18 +345,18 @@ const Navbar = () => {
                 {/* Unauthenticated buttons */}
                 {!isAuthenticated && (
                   <>
-                    <Link to="/register-technician" className="text-base">
+                    <Link to="/register-technician" className="text-[15px] font-medium">
                       Become a Professional
                     </Link>
                     <Link
                       to="/login"
-                      className="px-4 py-2 bg-white-600 rounded-[15px] btn-transparent-slide hover:bg-gray-50 border"
+                      className="px-4 py-2 text-[15px] bg-white-600 rounded-[30px] btn-transparent-slide hover:bg-gray-50 border w-20 text-center"
                     >
                       Login
                     </Link>
                     <Link
                       to="/register"
-                      className="px-4 py-2 rounded-[15px] text-white signup-btn btn-filled-slide"
+                      className="px-4 py-2 text-[15px] rounded-[30px] text-white signup-btn btn-filled-slide text-center w-30"
                     >
                       Sign Up
                     </Link>
@@ -471,8 +579,40 @@ const Navbar = () => {
           </div>
         </div>
 
+        {/* Mobile side nav for normal authenticated users */}
+        {!hideNavLinks && isNormalAuthenticatedUser && mobileModal === "nav" && (
+          <div className="fixed top-16 left-0 right-0 bottom-0 z-40 md:hidden">
+            <button
+              className="absolute inset-0 bg-black/20"
+              onClick={() => setMobileModal(null)}
+              aria-label="Close navigation"
+            />
+            <div className="relative h-full w-72 max-w-[85%] bg-white border-r shadow-xl">
+              <div className="px-5 py-4 border-b">
+                <h2 className="text-base font-semibold text-gray-900">Navigation</h2>
+              </div>
+              <div className="px-3 py-3 space-y-1">
+                {navItems.map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`block px-3 py-2.5 rounded-md text-sm font-medium transition ${
+                      location.pathname === item.path
+                        ? "bg-gray-200 text-gray-900"
+                        : "text-gray-700 hover:bg-gray-100"
+                    }`}
+                    onClick={() => setMobileModal(null)}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Mobile Full-Screen Modals */}
-        {!hideNavLinks && mobileModal && (
+        {!hideNavLinks && mobileModal && mobileModal !== "nav" && (
           <div className="fixed top-16 left-0 right-0 bottom-0 bg-gray-100 z-40 md:hidden overflow-y-auto">
             <div className="flex justify-between items-center px-4 py-3 bg-white border-b sticky top-0">
               <h2 className="text-lg font-semibold">
@@ -513,7 +653,7 @@ const Navbar = () => {
                     />
                     <button
                       type="submit"
-                      className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
+                      className="w-full px-4 py-2 bg-color-main text-white rounded-lg font-semibold hover:bg-blue-700 transition"
                     >
                       Search
                     </button>
@@ -610,6 +750,16 @@ const Navbar = () => {
         {!hideNavLinks && !isAuthenticated && isOpen && (
           <div className="md:hidden bg-white-700">
             <div className="px-2 pt-2 pb-3 space-y-1">
+              {publicNavItems.map((item) => (
+                <button
+                  key={item.sectionId}
+                  type="button"
+                  onClick={() => handlePublicNavClick(item.sectionId)}
+                  className="block w-full text-left px-4 py-2 hover:bg-gray-100 border-b border-gray-400"
+                >
+                  {item.label}
+                </button>
+              ))}
               <Link
                 to="/register-technician"
                 className="block w-full text-left px-4 py-2 hover:bg-gray-100 border-b border-gray-400"

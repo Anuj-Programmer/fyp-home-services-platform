@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import Navbar from "@/blocks/Navbar";
 import Footer from "@/blocks/Footer";
 import TechnicianCard from "@/blocks/TechnicianCard";
-import { MagnifyingGlass, MapPin } from "phosphor-react";
+import { MagnifyingGlass, MapPin, SlidersHorizontal, X } from "phosphor-react";
 import "../css/landingPage.css";
 import axios from "axios";
 import Cookies from "js-cookie";
@@ -32,6 +32,7 @@ function SearchResults() {
   const [minRatingFilter, setMinRatingFilter] = useState("");
   const [maxFeeFilter, setMaxFeeFilter] = useState("");
   const [sortBy, setSortBy] = useState("default");
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const token = Cookies.get("token") || localStorage.getItem("token");
 
@@ -183,140 +184,250 @@ function SearchResults() {
       })()
     : sortedTechnicians;
 
+  const activeFilterCount = [
+    selectedCategory !== "all",
+    Boolean(searchQuery),
+    Boolean(locationQuery),
+    Boolean(minRatingFilter),
+    Boolean(maxFeeFilter),
+  ].filter(Boolean).length;
+
+  const handleClearFilters = () => {
+    setSelectedCategory(categoryFromUrl || "all");
+    setSearchQuery("");
+    setLocationQuery("");
+    setMinRatingFilter("");
+    setMaxFeeFilter("");
+    setSortBy("default");
+  };
+
+  const renderFilterFields = () => (
+    <>
+      <div className="space-y-3">
+        <div className="flex items-center gap-3 rounded-xl border border-stone-200 bg-white px-3 py-2.5 focus-within:border-color-main focus-within:ring-2 focus-within:ring-blue-100">
+          <MagnifyingGlass size={16} className="text-stone-400" />
+          <input
+            type="text"
+            className="w-full text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none"
+            placeholder="Name, service, description"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
+        <div className="flex items-center gap-3 rounded-xl border border-stone-200 bg-white px-3 py-2.5 focus-within:border-color-main focus-within:ring-2 focus-within:ring-blue-100">
+          <MapPin size={16} className="text-stone-400" />
+          <input
+            type="text"
+            className="w-full text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none"
+            placeholder="Filter by location"
+            value={locationQuery}
+            onChange={(e) => setLocationQuery(e.target.value)}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <input
+            type="number"
+            className="w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm text-stone-800 placeholder:text-stone-400 focus:border-color-main focus:outline-none focus:ring-2 focus:ring-blue-100"
+            placeholder="Min rating"
+            min="0"
+            max="5"
+            step="0.1"
+            value={minRatingFilter}
+            onChange={(e) => setMinRatingFilter(e.target.value)}
+          />
+          <input
+            type="number"
+            className="w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm text-stone-800 placeholder:text-stone-400 focus:border-color-main focus:outline-none focus:ring-2 focus:ring-blue-100"
+            placeholder="Max fee"
+            min="0"
+            value={maxFeeFilter}
+            onChange={(e) => setMaxFeeFilter(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="mt-5">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">Category</p>
+        <div className="flex flex-wrap gap-2">
+          {categories.map((category) => (
+            <button
+              key={category.id}
+              onClick={() => setSelectedCategory(category.id)}
+              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                selectedCategory === category.id
+                  ? "border-color-main bg-color-main text-white"
+                  : "border-stone-300 bg-white text-stone-600 hover:border-color-main hover:txt-color-primary"
+              }`}
+            >
+              {category.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+
   console.log("Final filtered technicians:", filteredTechnicians.length);
 
   return (
     <>
       <Navbar />
-      <main className="px-6 lg:px-32 pt-16 pb-16 min-h-screen bg-stone-50 space-y-12">
-        {/* Intro */}
-        <section className="flex flex-col lg:flex-row items-start justify-between gap-8">
-          <div className="space-y-4">
-            <p className="text-sm font-semibold text-color-main uppercase tracking-wide">
-              Search Results
-            </p>
-            <h1 className="text-3xl sm:text-4xl font-bold txt-color-primary">
-              Results for "{searchQueryFromUrl}"
+      <main className="min-h-screen bg-linear-to-b from-stone-50 to-white px-4 py-8 sm:px-6 lg:px-12 xl:px-20">
+        <section className="mx-auto max-w-7xl space-y-8">
+          <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm sm:p-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] txt-color-primary">Search Results</p>
+            <h1 className="mt-2 text-2xl font-bold text-stone-900 sm:text-4xl">
+              Results for "<span className="txt-color-primary">{searchQueryFromUrl}</span>"
             </h1>
-            <p className="text-base text-stone-600 max-w-2xl">
-              Refine your search using filters below to find the perfect match for your home projects.
+            <p className="mt-3 max-w-3xl text-sm text-stone-600 sm:text-base">
+              Explore professionals and refine by service, location, rating, and fee to find the best fit for your work.
             </p>
-          </div>
-
-          <div className="bg-white rounded-3xl shadow-sm border p-5 space-y-4 w-full lg:w-[380px]">
-            <div className="text-sm font-semibold text-stone-500 uppercase tracking-wide">
-              Refine Search
-            </div>
-            <div className="flex items-center gap-3 px-4 py-3 border rounded-xl bg-white">
-              <MagnifyingGlass size={18} className="text-stone-400" />
-              <input
-                type="text"
-                className="flex-1 text-sm focus:outline-none"
-                placeholder="Search by name or service"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <div className="flex items-center gap-3 px-4 py-3 border rounded-xl bg-white">
-              <MapPin size={18} className="text-stone-400" />
-              <input
-                type="text"
-                className="flex-1 text-sm focus:outline-none"
-                placeholder="Filter by location"
-                value={locationQuery}
-                onChange={(e) => setLocationQuery(e.target.value)}
-              />
-            </div>
-            <div className="flex items-center gap-3 px-4 py-3 border rounded-xl bg-white">
-              <input
-                type="number"
-                className="flex-1 text-sm focus:outline-none"
-                placeholder="Min rating (0-5)"
-                min="0"
-                max="5"
-                step="0.1"
-                value={minRatingFilter}
-                onChange={(e) => setMinRatingFilter(e.target.value)}
-              />
-            </div>
-            <div className="flex items-center gap-3 px-4 py-3 border rounded-xl bg-white">
-              <input
-                type="number"
-                className="flex-1 text-sm focus:outline-none"
-                placeholder="Max fee"
-                min="0"
-                value={maxFeeFilter}
-                onChange={(e) => setMaxFeeFilter(e.target.value)}
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* Search Results */}
-        <section className="space-y-6">
-          <div className="flex flex-col lg:flex-row items-start gap-4 justify-between">
-            <div>
-              <h2 className="text-2xl font-semibold txt-color-primary">
-                Search Results
-                <span className="text-lg text-stone-500 font-normal ml-2">
-                  ({displayTechnicians.length} found)
+            <div className="mt-5 flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-700">
+                {displayTechnicians.length} matches
+              </span>
+              {activeFilterCount > 0 && (
+                <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
+                  {activeFilterCount} active filter{activeFilterCount > 1 ? "s" : ""}
                 </span>
-              </h2>
-            </div>
-            <div className="w-full lg:w-auto">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="w-full lg:w-64 px-4 py-2.5 border rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-color-main focus:border-color-main bg-white cursor-pointer"
-              >
-                <option value="default">Default Order</option>
-                <option value="rating_high">Highest Rated</option>
-                <option value="rating_low">Lowest Rated</option>
-                <option value="verified">Verified Technicians</option>
-                <option value="fee_low">Lowest Fee</option>
-                <option value="fee_high">Highest Fee</option>
-              </select>
+              )}
             </div>
           </div>
 
-          {/* <div className="flex flex-wrap gap-2">
-            {categories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition ${
-                  selectedCategory === category.id
-                    ? "bg-color-main text-white border-color-main"
-                    : "text-stone-600 border-stone-300 hover:border-color-main"
-                }`}
+          <section className="grid gap-6 md:grid-cols-12">
+            <aside className="z-20 hidden h-fit rounded-3xl border border-stone-200 bg-white p-5 shadow-sm md:col-span-4 md:sticky md:top-24 md:block lg:col-span-3">
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-stone-800">
+                  <SlidersHorizontal size={18} weight="bold" />
+                  <h2 className="text-sm font-semibold uppercase tracking-wide">Refine Search</h2>
+                </div>
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={handleClearFilters}
+                    className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-stone-600 transition hover:bg-stone-100 hover:text-stone-900"
+                  >
+                    <X size={12} weight="bold" /> Clear
+                  </button>
+                )}
+              </div>
+
+              {renderFilterFields()}
+            </aside>
+
+            <section className="min-w-0 space-y-5 md:col-span-8 lg:col-span-9">
+              <div className="flex flex-col gap-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="text-xl font-semibold text-stone-900 sm:text-2xl">
+                    Search Results
+                    <span className="ml-2 text-base font-normal text-stone-500">({displayTechnicians.length} found)</span>
+                  </h2>
+                  <button
+                    onClick={() => setMobileFiltersOpen(true)}
+                    className="inline-flex items-center gap-2 rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 transition hover:border-color-main hover:txt-color-primary md:hidden"
+                  >
+                    <SlidersHorizontal size={16} weight="bold" />
+                    Filters
+                    {activeFilterCount > 0 && (
+                      <span className="rounded-full bg-color-main px-2 py-0.5 text-xs text-white">
+                        {activeFilterCount}
+                      </span>
+                    )}
+                  </button>
+                </div>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm font-medium text-stone-700 focus:border-color-main focus:outline-none focus:ring-2 focus:ring-blue-100 sm:w-64"
+                >
+                  <option value="default">Default Order</option>
+                  <option value="rating_high">Highest Rated</option>
+                  <option value="rating_low">Lowest Rated</option>
+                  <option value="verified">Verified Technicians</option>
+                  <option value="fee_low">Lowest Fee</option>
+                  <option value="fee_high">Highest Fee</option>
+                </select>
+              </div>
+
+              {error && (
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
+                  <p className="text-sm font-semibold text-red-600">Error: {error}</p>
+                </div>
+              )}
+
+              {loading ? (
+                <div className="grid max-w-6xl grid-cols-[repeat(auto-fit,minmax(270px,270px))] justify-center gap-6 md:justify-start">
+                  {Array.from({ length: 6 }).map((_, idx) => (
+                    <div key={idx} className="h-[340px] animate-pulse rounded-2xl border border-stone-200 bg-stone-100" />
+                  ))}
+                </div>
+              ) : displayTechnicians.length > 0 ? (
+                <div className="grid max-w-6xl grid-cols-[repeat(auto-fit,minmax(270px,270px))] justify-center gap-6 md:justify-start">
+                  {displayTechnicians.map((pro) => (
+                    <TechnicianCard key={pro._id || pro.id} pro={pro} />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex min-h-[220px] flex-col items-center justify-center rounded-2xl border border-stone-200 bg-white px-6 text-center">
+                  <h3 className="text-lg font-semibold text-stone-800">No matching technicians</h3>
+                  <p className="mt-1 text-sm text-stone-500">
+                    Try adjusting your filters or clearing them to see more results.
+                  </p>
+                  {activeFilterCount > 0 && (
+                    <button
+                      onClick={handleClearFilters}
+                      className="mt-4 rounded-xl bg-color-main px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                    >
+                      Clear all filters
+                    </button>
+                  )}
+                </div>
+              )}
+            </section>
+          </section>
+
+          {mobileFiltersOpen && (
+            <div
+              className="fixed inset-0 z-50 bg-black/40 md:hidden"
+              onClick={() => setMobileFiltersOpen(false)}
+            >
+              <aside
+                className="h-full w-[88%] max-w-sm overflow-y-auto bg-white p-5 shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
               >
-                {category.label}
-              </button>
-            ))}
-          </div> */}
-          <hr />
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-stone-800">
+                    <SlidersHorizontal size={18} weight="bold" />
+                    <h2 className="text-sm font-semibold uppercase tracking-wide">Refine Search</h2>
+                  </div>
+                  <button
+                    onClick={() => setMobileFiltersOpen(false)}
+                    className="rounded-lg p-1 text-stone-500 transition hover:bg-stone-100 hover:text-stone-800"
+                    aria-label="Close filters"
+                  >
+                    <X size={18} weight="bold" />
+                  </button>
+                </div>
 
-          {error && (
-            <div className="flex items-center justify-center py-12">
-              <p className="text-red-500 font-semibold">Error: {error}</p>
-            </div>
-          )}
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={handleClearFilters}
+                    className="mb-4 inline-flex items-center gap-1 rounded-full border border-stone-300 px-3 py-1 text-xs font-semibold text-stone-700 transition hover:border-color-main hover:txt-color-primary"
+                  >
+                    <X size={12} weight="bold" /> Clear all
+                  </button>
+                )}
 
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <p className="text-stone-500">Loading results...</p>
-            </div>
-          ) : displayTechnicians.length > 0 ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {displayTechnicians.map((pro) => (
-                <TechnicianCard key={pro._id || pro.id} pro={pro} />
-              ))}
-            </div>
-          ) : (
-            <div className="flex items-center justify-center py-12">
-              <p className="text-stone-500">
-                No technicians match your search criteria. Try adjusting your filters.
-              </p>
+                {renderFilterFields()}
+
+                <button
+                  onClick={() => setMobileFiltersOpen(false)}
+                  className="mt-6 w-full rounded-xl bg-color-main px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+                >
+                  Apply Filters
+                </button>
+              </aside>
             </div>
           )}
         </section>

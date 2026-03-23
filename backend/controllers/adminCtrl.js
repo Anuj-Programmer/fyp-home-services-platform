@@ -4,6 +4,8 @@ const User = require("../models/userModel.js");
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const Technician = require("../models/technicianModel.js");
+const Booking = require("../models/bookingModel.js");
+const Payment = require("../models/paymentModel.js");
 const fs = require("fs");
 const path = require("path");
 
@@ -398,6 +400,56 @@ getAllBookings = async (req, res) => {
   }
 };
 
+// Get admin dashboard statistics
+const getDashboardStats = async (req, res) => {
+  try {
+    // Check if user is admin
+    if (!req.body.isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only admins can access dashboard stats',
+      });
+    }
+
+    // Get counts
+    const totalTechnicians = await Technician.countDocuments({ status: 'active' });
+    const totalUsers = await User.countDocuments({ isAdmin: false });
+    const totalBookings = await Booking.countDocuments();
+
+    // Get this month revenue
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const paidPayments = await Payment.find({
+      status: 'paid',
+    });
+
+    const thisMonthRevenue = paidPayments
+      .filter((payment) => {
+        const paymentDate = new Date(payment.paidAt || payment.createdAt);
+        return paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear;
+      })
+      .reduce((sum, payment) => sum + Number(payment.platformFee || 0), 0);
+
+    return res.status(200).json({
+      success: true,
+      stats: {
+        totalTechnicians,
+        totalUsers,
+        totalBookings,
+        thisMonthRevenue,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching dashboard stats:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching dashboard statistics',
+      error: error.message,
+    });
+  }
+};
 
   module.exports = {
     changeTechnicianStatus,
@@ -407,4 +459,5 @@ getAllBookings = async (req, res) => {
     getAllTechnicians,
     getAllUsers,
     getAllBookings,
+    getDashboardStats,
   };

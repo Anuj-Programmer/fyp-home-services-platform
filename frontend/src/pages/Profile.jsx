@@ -6,6 +6,7 @@ import Footer from "@/blocks/Footer";
 import { uploadToCloudinary } from "@/lib/uploadToCloudinary";
 import "../css/landingPage.css";
 import Cookies from "js-cookie";
+import { useUser } from "../context/UserContext";
 import {
   Trash,
   PencilSimple,
@@ -15,7 +16,6 @@ import {
 } from "phosphor-react";
 
 function Profile() {
-  const [user, setUser] = useState(null);
   const [saving, setSaving] = useState(false);
   const [showCertificateModal, setShowCertificateModal] = useState(false);
   const [uploadingCertificate, setUploadingCertificate] = useState(false);
@@ -41,6 +41,7 @@ function Profile() {
   });
 
   const token = Cookies.get("token") || localStorage.getItem("token");
+  const { user, setUserData, refreshUser } = useUser();
 
   const formatMemberSince = (isoDate) => {
     if (!isoDate) return "—";
@@ -67,29 +68,10 @@ function Profile() {
   });
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const { data } = await axios.get("/api/users/current-user", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setUser(data);
-        setFormData(hydrateFormFromUser(data));
-        localStorage.setItem("user", JSON.stringify(data));
-      } catch (error) {
-        console.error("Error fetching user:", error);
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
-          const parsed = JSON.parse(storedUser);
-          setUser(parsed);
-          setFormData(hydrateFormFromUser(parsed));
-        }
-      }
-    };
-
-    if (token) {
-      fetchUser();
+    if (user) {
+      setFormData(hydrateFormFromUser(user));
     }
-  }, [token]);
+  }, [user]);
 
   // After loading user from localStorage
   const role = user?.role || "user";
@@ -126,8 +108,7 @@ function Profile() {
         }
       );
 
-      setUser(response.data.user);
-      localStorage.setItem("user", JSON.stringify(response.data.user));
+  setUserData(response.data.user);
       toast.success("Profile updated successfully!");
     } catch (error) {
       console.error(error);
@@ -185,8 +166,7 @@ function Profile() {
             },
           }
         );
-        setUser(response.data.user);
-        localStorage.setItem("user", JSON.stringify(response.data.user));
+        setUserData(response.data.user);
         toast.success("Address updated successfully!");
       } else {
         // Add new address
@@ -202,8 +182,7 @@ function Profile() {
             },
           }
         );
-        setUser(response.data.user);
-        localStorage.setItem("user", JSON.stringify(response.data.user));
+        setUserData(response.data.user);
         toast.success("Address added successfully!");
       }
       setShowAddressModal(false);
@@ -226,8 +205,7 @@ function Profile() {
           Authorization: `Bearer ${token}`,
         },
       });
-      setUser(response.data.user);
-      localStorage.setItem("user", JSON.stringify(response.data.user));
+      setUserData(response.data.user);
       toast.success("Address deleted successfully!");
     } catch (error) {
       console.error(error);
@@ -265,8 +243,7 @@ function Profile() {
         houseCertificateUrl: response.secure_url,
         houseCertificateStatus: "pending",
       };
-      setUser(updatedUser);
-      localStorage.setItem("user", JSON.stringify(updatedUser));
+      setUserData(updatedUser);
 
       setShowCertificateModal(false);
     } catch (error) {
@@ -307,12 +284,8 @@ function Profile() {
             },
           }
         );
-        // Refresh user data to get updated address
-        const { data } = await axios.get("/api/users/current-user", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setUser(data);
-        localStorage.setItem("user", JSON.stringify(data));
+        // Refresh shared user data after updating certificate
+        await refreshUser();
       }
 
       toast.success("Certificate uploaded successfully");

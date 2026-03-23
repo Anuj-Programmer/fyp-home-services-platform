@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import io from 'socket.io-client';
 import Cookies from 'js-cookie';
-import axios from 'axios';
 
 const SocketContext = createContext();
 
@@ -18,6 +17,7 @@ export const SocketProvider = ({ children }) => {
   const [isConnected, setIsConnected] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const socketRef = useRef(null);
+  const notificationsHydratedRef = useRef(false);
 
   useEffect(() => {
     // Initialize socket connection
@@ -85,40 +85,42 @@ export const SocketProvider = ({ children }) => {
     };
   }, []);
 
-  // Register user with socket and fetch initial notifications (memoized to prevent unnecessary re-renders)
+  // Register user with socket only; user fetching is handled by UserContext.
   const registerUser = useCallback((userId) => {
     if (socketRef.current && userId) {
       socketRef.current.emit('register', userId);
       localStorage.setItem('userId', userId);
       console.log('👤 User registered with socket:', userId);
+    }
+  }, []);
 
-      // Fetch initial notifications from database
-      const fetchInitialNotifications = async () => {
-        try {
-          const token = Cookies.get('token') || localStorage.getItem('token');
-          if (!token) return;
+  useEffect(() => {
+    if (notificationsHydratedRef.current) return;
 
-          const { data } = await axios.get('/api/users/current-user', {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
+    const token = Cookies.get('token') || localStorage.getItem('token');
+    if (!token) return;
 
-          if (data.notification && Array.isArray(data.notification)) {
-            const formattedNotifications = data.notification.map((notif) => ({
-              id: notif._id || Date.now(),
-              ...notif,
-              timestamp: new Date(notif.createdAt || notif.date || Date.now()),
-            }));
-            setNotifications(formattedNotifications);
-            console.log('📥 Loaded initial notifications:', formattedNotifications.length);
-          }
-        } catch (error) {
-          console.error('Error fetching initial notifications:', error);
-        }
-      };
+    const storedUser = localStorage.getItem('user');
+    if (!storedUser) return;
 
-      fetchInitialNotifications();
+    try {
+      const parsedUser = JSON.parse(storedUser);
+      const initialNotifications = Array.isArray(parsedUser?.notification)
+        ? parsedUser.notification.map((notif) => ({
+            id: notif._id || Date.now(),
+            ...notif,
+            timestamp: new Date(notif.createdAt || notif.date || Date.now()),
+          }))
+        : [];
+
+      if (initialNotifications.length > 0) {
+        setNotifications(initialNotifications);
+        console.log('📥 Loaded initial notifications from cache:', initialNotifications.length);
+      }
+    } catch (error) {
+      console.error('Invalid user data in storage while hydrating notifications', error);
+    } finally {
+      notificationsHydratedRef.current = true;
     }
   }, []);
 

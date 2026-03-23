@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { CheckCircle } from "phosphor-react";
+import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "@/blocks/Navbar";
+import VerifiedIcon from "@/assets/VerifiedIcon.svg";
 import Footer from "@/blocks/Footer";
 import axios from "axios";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
 import { useSocket } from "../context/SocketContext";
+import BookingChatPopup from "../components/BookingChatPopup";
 import "../css/landingPage.css";
 
 const TABS = ["All", "Upcoming", "Pending"  , "Completed"];
+const PLATFORM_FEE = 50;
 
 function Booking() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [bookings, setBookings] = useState([]);
@@ -91,7 +94,8 @@ function Booking() {
           status: booking.status.charAt(0).toUpperCase() + booking.status.slice(1),
           isVerifiedTechnician: booking.technicianInfo.isVerifiedTechnician || false,
           hasReview: booking.hasReview || false,
-          fee: booking.fee || 0
+          fee: booking.fee || 0,
+          paymentStatus: booking.paymentStatus || "unpaid"
         }));
 
         setBookings(transformedBookings);
@@ -121,6 +125,66 @@ function Booking() {
     fetchUserBookings(true);
   }, []);
 
+  // Handle Khalti callback (KPG-2 redirect flow) when returning to /bookings
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const pidx = params.get("pidx");
+    const callbackType = params.get("khalti");
+    const callbackBookingId = params.get("bookingId") || params.get("purchase_order_id");
+    const status = params.get("status");
+
+    if (!pidx || callbackType !== "callback") return;
+
+    const verifyReturnedPayment = async () => {
+      const token = Cookies.get("token") || localStorage.getItem("token");
+      if (!token) {
+        toast.error("Authentication token missing. Please login and check payment status.");
+        navigate("/bookings", { replace: true });
+        return;
+      }
+
+      if (!callbackBookingId) {
+        toast.error("Booking reference missing in payment callback.");
+        navigate("/bookings", { replace: true });
+        return;
+      }
+
+      // Even if callback says completed, final trust should come from lookup verification.
+      if (status && status !== "Completed") {
+        toast.error(`Payment not completed (${status}).`);
+        navigate("/bookings", { replace: true });
+        await fetchUserBookings(false);
+        return;
+      }
+
+      try {
+        const response = await axios.post(
+          `/api/bookings/${callbackBookingId}/verify-khalti-payment`,
+          { pidx },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.data.success) {
+          toast.success("Payment successful and verified");
+        } else {
+          toast.error(response.data.message || "Payment verification failed");
+        }
+      } catch (verificationError) {
+        console.error("Payment verification error:", verificationError);
+        toast.error(verificationError.response?.data?.message || "Payment verification failed");
+      } finally {
+        navigate("/bookings", { replace: true });
+        await fetchUserBookings(false);
+      }
+    };
+
+    verifyReturnedPayment();
+  }, [location.search]);
+
   // Listen for WebSocket notifications for real-time updates
   useEffect(() => {
     if (!socket) return;
@@ -140,10 +204,21 @@ function Booking() {
       }
     };
 
+    const handleAutoCancelledBooking = (data) => {
+      console.log('🚫 Booking auto-cancelled:', data);
+      // Refresh bookings when auto-cancellation happens
+      fetchUserBookings(false);
+      
+      // Show toast notification
+      toast.error(`${data.message || 'Booking cancelled'} - Technician arrived after 15 minutes.`);
+    };
+
     socket.on('booking:notification', handleBookingNotification);
+    socket.on('booking:autoCancelled', handleAutoCancelledBooking);
 
     return () => {
       socket.off('booking:notification', handleBookingNotification);
+      socket.off('booking:autoCancelled', handleAutoCancelledBooking);
     };
   }, [socket]);
 
@@ -354,14 +429,33 @@ function Booking() {
 
     try {
       setIsProcessingPayment(true);
-      // TODO: Integrate with Khalti payment gateway
+
+      const token = Cookies.get("token") || localStorage.getItem("token");
+      if (!token) {
+        throw new Error("Authentication token not found");
+      }
+
+      const response = await axios.post(
+        `/api/bookings/${paymentBooking.id}/initiate-khalti-payment`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const paymentUrl = response.data?.paymentUrl;
+      if (!paymentUrl) {
+        throw new Error(response.data?.message || "Failed to get Khalti payment URL");
+      }
+
       toast.success("Redirecting to Khalti...");
-      // Khalti integration will be implemented here
-      handleClosePaymentModal();
+      setShowPaymentModal(false);
+      window.location.href = paymentUrl;
     } catch (error) {
       console.error("Error processing payment:", error);
-      toast.error("Payment processing failed");
-    } finally {
+      toast.error(error.response?.data?.message || error.message || "Payment processing failed");
       setIsProcessingPayment(false);
     }
   };
@@ -438,7 +532,7 @@ function Booking() {
                           {booking.technicianName}
                         </p>
                         {booking.isVerifiedTechnician && (
-                          <CheckCircle size={16} weight="fill" className="text-blue-600 shrink-0 ml-1" title="Verified Technician" />
+                          <img src={VerifiedIcon} alt="Verified Technician" className="w-4 h-4 shrink-0 ml-1" title="Verified Technician" />
                         )}
                       </div>
                     </div>
@@ -495,8 +589,13 @@ function Booking() {
                           </button>
                           <button 
                             onClick={() => handleOpenPaymentModal(booking)}
-                            className="px-3 py-1.5 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity whitespace-nowrap">
-                            Pay
+                            disabled={booking.paymentStatus === "paid"}
+                            className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-opacity whitespace-nowrap ${
+                              booking.paymentStatus === "paid"
+                                ? "bg-emerald-100 text-emerald-700 cursor-not-allowed"
+                                : "bg-color-main text-white hover:opacity-90"
+                            }`}>
+                            {booking.paymentStatus === "paid" ? "Paid" : "Pay"}
                           </button>
                           <button 
                             onClick={() => !reviewedBookings.has(booking.id) && handleOpenRatingModal(booking)}
@@ -631,8 +730,13 @@ function Booking() {
                           </button>
                           <button 
                             onClick={() => handleOpenPaymentModal(booking)}
-                            className="flex-1 px-3 py-2 bg-color-main text-white text-xs font-semibold rounded-full hover:opacity-90 transition-opacity">
-                            Pay
+                            disabled={booking.paymentStatus === "paid"}
+                            className={`flex-1 px-3 py-2 text-xs font-semibold rounded-full transition-opacity ${
+                              booking.paymentStatus === "paid"
+                                ? "bg-emerald-100 text-emerald-700 cursor-not-allowed"
+                                : "bg-color-main text-white hover:opacity-90"
+                            }`}>
+                            {booking.paymentStatus === "paid" ? "Paid" : "Pay Now"}
                           </button>
                           <button 
                             onClick={() => !reviewedBookings.has(booking.id) && handleOpenRatingModal(booking)}
@@ -760,7 +864,7 @@ function Booking() {
                   </div>
                   {selectedBooking.isVerifiedTechnician && (
                     <div className="flex items-center gap-2 bg-emerald-100 p-3 rounded-lg mt-2">
-                      <CheckCircle size={18} weight="fill" className="text-emerald-600" />
+                      <img src={VerifiedIcon} alt="Verified Technician" className="w-5 h-5" />
                       <span className="text-sm font-medium text-emerald-700">Verified Technician</span>
                     </div>
                   )}
@@ -769,57 +873,106 @@ function Booking() {
 
               {/* Progress Indicator for Confirmed, Inprogress, and Completed Bookings */}
               {(selectedBooking.status === "Confirmed" || selectedBooking.status === "Inprogress" || selectedBooking.status === "Completed") && (
-                <div className="bg-stone-50 p-6 rounded-lg mt-6">
-                  <h3 className="text-sm font-semibold text-stone-700 mb-6 uppercase tracking-wide">Service Progress</h3>
-                  <div className="flex items-center justify-between relative pb-4">
-                    {/* Stage 1: Accepted */}
-                    <div className="flex flex-col items-center z-10">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all ${
-                        getProgressStage(selectedBooking.status) >= 1
-                          ? "bg-emerald-500 text-white"
-                          : "bg-stone-300 text-stone-600"
-                      }`}>
-                        ✓
-                      </div>
-                      <p className="text-xs font-medium text-stone-700 mt-3">Accepted</p>
-                    </div>
+                <div className="mt-6 rounded-2xl border border-stone-200 bg-white p-5 sm:p-6 shadow-sm">
+                  <h3 className="text-sm font-semibold text-stone-700 uppercase tracking-wide">Service Progress</h3>
 
-                    {/* Connector Line 1 */}
-                    <div className={`flex-1 h-1 mx-2 transition-all ${
-                      getProgressStage(selectedBooking.status) >= 2
-                        ? "bg-emerald-500"
-                        : "bg-stone-300"
-                    }`}></div>
-
-                    {/* Stage 2: In Progress */}
-                    <div className="flex flex-col items-center z-10">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all ${
-                        getProgressStage(selectedBooking.status) >= 2
-                          ? "bg-emerald-500 text-white"
-                          : "bg-stone-300 text-stone-600"
-                      }`}>
-                        ○
-                      </div>
-                      <p className="text-xs font-medium text-stone-700 mt-3">In Progress</p>
-                    </div>
-
-                    {/* Connector Line 2 */}
-                    <div className={`flex-1 h-1 mx-2 transition-all ${
-                      getProgressStage(selectedBooking.status) >= 3
-                        ? "bg-emerald-500"
-                        : "bg-stone-300"
-                    }`}></div>
-
-                    {/* Stage 3: Completed */}
-                    <div className="flex flex-col items-center z-10">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all ${
+                  <div className="relative mt-6">
+                    <div className="absolute left-0 right-0 top-4 h-[3px] rounded-full bg-stone-200" />
+                    <div
+                      className={`absolute left-0 top-4 h-[3px] rounded-full bg-emerald-400 transition-all duration-500 ${
                         getProgressStage(selectedBooking.status) >= 3
-                          ? "bg-emerald-500 text-white"
-                          : "bg-stone-300 text-stone-600"
-                      }`}>
-                        ✓
+                          ? "w-full"
+                          : getProgressStage(selectedBooking.status) >= 2
+                            ? "w-1/2"
+                            : "w-0"
+                      }`}
+                    />
+
+                    <div className="relative grid grid-cols-3 gap-2">
+                      <div className="flex flex-col items-center text-center">
+                        <div
+                          className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
+                            getProgressStage(selectedBooking.status) > 1
+                              ? "bg-emerald-100 border-emerald-300 text-emerald-600"
+                              : getProgressStage(selectedBooking.status) === 1
+                                ? "bg-sky-100 border-sky-300 text-sky-600"
+                                : "bg-stone-100 border-stone-300 text-stone-500"
+                          }`}
+                        >
+                          {getProgressStage(selectedBooking.status) > 1 ? (
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : (
+                            <span className="w-2 h-2 rounded-full bg-current" />
+                          )}
+                        </div>
+                        <p
+                          className={`mt-2.5 text-[11px] sm:text-xs font-semibold ${
+                            getProgressStage(selectedBooking.status) >= 1
+                              ? "text-sky-600"
+                              : "text-stone-500"
+                          }`}
+                        >
+                          Accepted
+                        </p>
                       </div>
-                      <p className="text-xs font-medium text-stone-700 mt-3">Completed</p>
+
+                      <div className="flex flex-col items-center text-center">
+                        <div
+                          className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
+                            getProgressStage(selectedBooking.status) > 2
+                              ? "bg-emerald-100 border-emerald-300 text-emerald-600"
+                              : getProgressStage(selectedBooking.status) === 2
+                                ? "bg-sky-100 border-sky-300 text-sky-600"
+                                : "bg-stone-100 border-stone-300 text-stone-500"
+                          }`}
+                        >
+                          {getProgressStage(selectedBooking.status) > 2 ? (
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : (
+                            <span className="w-2 h-2 rounded-full bg-current" />
+                          )}
+                        </div>
+                        <p
+                          className={`mt-2.5 text-[11px] sm:text-xs font-semibold ${
+                            getProgressStage(selectedBooking.status) >= 2
+                              ? "text-sky-600"
+                              : "text-stone-500"
+                          }`}
+                        >
+                          In Progress
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col items-center text-center">
+                        <div
+                          className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
+                            getProgressStage(selectedBooking.status) >= 3
+                              ? "bg-emerald-100 border-emerald-300 text-emerald-600"
+                              : "bg-stone-100 border-stone-300 text-stone-500"
+                          }`}
+                        >
+                          {getProgressStage(selectedBooking.status) >= 3 ? (
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : (
+                            <span className="w-2 h-2 rounded-full bg-current" />
+                          )}
+                        </div>
+                        <p
+                          className={`mt-2.5 text-[11px] sm:text-xs font-semibold ${
+                            getProgressStage(selectedBooking.status) >= 3
+                              ? "text-emerald-600"
+                              : "text-stone-500"
+                          }`}
+                        >
+                          Completed
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1079,8 +1232,11 @@ function Booking() {
                 <div className="h-px bg-stone-200 my-3"></div>
                 <div className="flex justify-between items-center">
                   <span className="text-base font-semibold text-neutral-900">Total Amount</span>
-                  <span className="text-xl font-bold text-color-main">Rs. {paymentBooking.fee + 50}</span>
+                  <span className="text-xl font-bold text-color-main">Rs. {paymentBooking.fee + PLATFORM_FEE}</span>
                 </div>
+                <p className="mt-2 text-xs text-stone-500">
+                  Payment Status: <span className="font-semibold uppercase">{paymentBooking.paymentStatus}</span>
+                </p>
               </div>
 
               {/* Notice */}
@@ -1102,7 +1258,7 @@ function Booking() {
               </button>
               <button
                 onClick={handlePayWithKhalti}
-                disabled={isProcessingPayment}
+                disabled={isProcessingPayment || paymentBooking.paymentStatus === "paid"}
                 className="px-4 py-2.5 bg-color-main text-white font-medium rounded-full hover:opacity-90 transition-opacity text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {isProcessingPayment ? (
@@ -1115,7 +1271,7 @@ function Booking() {
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-7-2h6v-2h-6v2z" />
                     </svg>
-                    Pay with Khalti
+                    {paymentBooking.paymentStatus === "paid" ? "Already Paid" : "Pay with Khalti"}
                   </>
                 )}
               </button>
@@ -1123,6 +1279,13 @@ function Booking() {
           </div>
         </div>
       )}
+
+      <BookingChatPopup
+        bookings={bookings}
+        currentUserId={user?._id}
+        headerTitle="Chat with Provider"
+        partnerNameKey="technicianName"
+      />
 
       <Footer />
     </>

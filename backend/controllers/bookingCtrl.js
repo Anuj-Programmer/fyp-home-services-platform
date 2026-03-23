@@ -1,6 +1,343 @@
 const Booking = require('../models/bookingModel');
 const User = require('../models/userModel');
 const Technician = require('../models/technicianModel');
+const ChatMessage = require('../models/chatMessageModel');
+const Payment = require('../models/paymentModel');
+const { findOrCreateConversation } = require('../utils/conversationService');
+const https = require('https');
+
+const KHALTI_INITIATE_URL = process.env.KHALTI_INITIATE_URL || 'https://dev.khalti.com/api/v2/epayment/initiate/';
+const KHALTI_LOOKUP_URL = process.env.KHALTI_LOOKUP_URL || 'https://dev.khalti.com/api/v2/epayment/lookup/';
+const PLATFORM_FEE_NPR = 50;
+
+// Helper function to calculate service start deadline (serviceTime + 15 minutes)
+const calculateServiceStartDeadline = (serviceDate, serviceTime) => {
+  const bookingDateTime = new Date(serviceDate);
+  
+  // Parse the service time (assuming format like "2:00 PM" or "14:00")
+  const timeParts = serviceTime.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+  if (timeParts) {
+    let hours = parseInt(timeParts[1]);
+    const minutes = parseInt(timeParts[2]);
+    const period = timeParts[3];
+
+    // Convert to 24-hour format if AM/PM is present
+    if (period) {
+      if (period.toUpperCase() === 'PM' && hours !== 12) {
+        hours += 12;
+      } else if (period.toUpperCase() === 'AM' && hours === 12) {
+        hours = 0;
+      }
+    }
+
+    bookingDateTime.setHours(hours, minutes, 0, 0);
+    // Add 15 minutes for the deadline
+    bookingDateTime.setMinutes(bookingDateTime.getMinutes() + 15);
+    
+    return bookingDateTime;
+  }
+  
+  return null;
+};
+
+// Helper function to check and auto-cancel confirmed bookings that are late
+const checkAndAutoCancelLateBookings = async (bookings, io) => {
+  const now = new Date();
+  
+  for (let booking of bookings) {
+    // Check if booking is confirmed and service start deadline has passed
+    if (booking.status === 'confirmed') {
+      const serviceStartDeadline = calculateServiceStartDeadline(booking.serviceDate, booking.serviceTime);
+      
+      if (serviceStartDeadline && now > serviceStartDeadline) {
+        // Auto-cancel the booking
+        booking.status = 'cancelled';
+        booking.cancellationReason = 'auto_cancelled_late_arrival';
+        await booking.save();
+
+        // Push notification to user
+        const user = await User.findById(booking.user);
+        if (user) {
+          user.notification = user.notification || [];
+          user.notification.push({
+            type: 'booking',
+            message: `Your booking with ${booking.technicianInfo.firstname} ${booking.technicianInfo.lastname} has been automatically cancelled because the technician did not arrive within 15 minutes of the scheduled time.`,
+            bookingId: booking._id,
+            date: new Date(),
+            read: false,
+          });
+          await user.save();
+        }
+
+        // Push notification to technician
+        const technician = await Technician.findById(booking.technician);
+        if (technician) {
+          technician.notification = technician.notification || [];
+          technician.notification.push({
+            type: 'booking',
+            message: `Your booking with ${booking.userInfo.firstname} ${booking.userInfo.lastname} has been automatically cancelled due to late arrival (did not start service within 15 minutes of scheduled time).`,
+            bookingId: booking._id,
+            date: new Date(),
+            read: false,
+          });
+          await technician.save();
+        }
+
+        // Emit WebSocket notification for real-time update
+        if (io) {
+          const userIdStr = booking.user.toString();
+          const technicianIdStr = booking.technician.toString();
+          
+          // Notify the user
+          io.to(`user_${userIdStr}`).emit('booking:autoCancelled', {
+            type: 'BOOKING_AUTO_CANCELLED',
+            message: `Your booking with ${booking.technicianInfo.firstname} ${booking.technicianInfo.lastname} has been automatically cancelled - technician arrived after 15 minutes.`,
+            data: {
+              bookingId: booking._id.toString(),
+              userId: userIdStr,
+              technicianId: technicianIdStr,
+              reason: 'late_arrival',
+              serviceDate: booking.serviceDate,
+              serviceTime: booking.serviceTime,
+            }
+          });
+
+          // Notify the technician
+          io.to(`user_${technicianIdStr}`).emit('booking:autoCancelled', {
+            type: 'BOOKING_AUTO_CANCELLED',
+            message: `Your booking with ${booking.userInfo.firstname} ${booking.userInfo.lastname} has been automatically cancelled - you arrived after 15 minutes.`,
+            data: {
+              bookingId: booking._id.toString(),
+              userId: userIdStr,
+              technicianId: technicianIdStr,
+              reason: 'late_arrival',
+              serviceDate: booking.serviceDate,
+              serviceTime: booking.serviceTime,
+            }
+          });
+
+          console.log(`📢 Emitted auto-cancellation notification for booking ${booking._id}`.cyan);
+        }
+        
+        console.log(`⏰ Auto-cancelled booking ${booking._id} - technician late`.red);
+      }
+    }
+  }
+};
+
+// Get payment history for logged-in user
+exports.getUserPaymentHistory = async (req, res) => {
+  try {
+    const userId = req.body.userId;
+
+    const payments = await Payment.find({
+      user: userId,
+      status: 'paid',
+    })
+      .populate('technician', 'firstName lastName serviceType')
+      .populate('booking', 'serviceDate serviceTime')
+      .sort({ paidAt: -1, createdAt: -1 });
+
+    const history = payments.map((payment) => {
+      const technicianName = payment.technician
+        ? `${payment.technician.firstName || ''} ${payment.technician.lastName || ''}`.trim()
+        : 'Technician';
+
+      return {
+        id: payment._id,
+        bookingId: payment.booking?._id || null,
+        technicianId: payment.technician?._id || null,
+        technicianName,
+        serviceType: payment.technician?.serviceType || 'Service',
+        amount: payment.totalAmount,
+        paymentDate: payment.paidAt || payment.verifiedAt || payment.createdAt,
+        serviceDate: payment.booking?.serviceDate || null,
+        serviceTime: payment.booking?.serviceTime || null,
+        status: payment.status,
+        transactionId: payment.transactionId || null,
+      };
+    });
+
+    const totalPaid = history.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+
+    return res.status(200).json({
+      success: true,
+      totalPaid,
+      count: history.length,
+      history,
+    });
+  } catch (error) {
+    console.error('Error fetching user payment history:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching payment history',
+      error: error.message,
+    });
+  }
+};
+
+// Get payment earnings for logged-in technician
+exports.getTechnicianEarnings = async (req, res) => {
+  try {
+    const technicianId = req.body.technicianId;
+
+    const payments = await Payment.find({
+      technician: technicianId,
+      status: 'paid',
+    })
+      .populate('user', 'firstName lastName')
+      .populate('booking', 'serviceDate serviceTime')
+      .sort({ paidAt: -1, createdAt: -1 });
+
+    const history = payments.map((payment) => {
+      const userName = payment.user
+        ? `${payment.user.firstName || ''} ${payment.user.lastName || ''}`.trim()
+        : 'Customer';
+
+      return {
+        id: payment._id,
+        bookingId: payment.booking?._id || null,
+        userId: payment.user?._id || null,
+        customerName: userName,
+        amount: payment.technicianAmount,
+        paymentDate: payment.paidAt || payment.verifiedAt || payment.createdAt,
+        serviceDate: payment.booking?.serviceDate || null,
+        serviceTime: payment.booking?.serviceTime || null,
+        status: payment.status,
+        transactionId: payment.transactionId || null,
+      };
+    });
+
+    const totalEarnings = history.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+
+    return res.status(200).json({
+      success: true,
+      totalEarnings,
+      count: history.length,
+      history,
+    });
+  } catch (error) {
+    console.error('Error fetching technician earnings:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching earnings',
+      error: error.message,
+    });
+  }
+};
+
+// Get admin revenue from platform fees
+exports.getAdminRevenue = async (req, res) => {
+  try {
+    // Check if user is admin
+    if (!req.body.isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only admins can access revenue data',
+      });
+    }
+
+    const payments = await Payment.find({
+      status: 'paid',
+    })
+      .populate('user', 'firstName lastName email')
+      .populate('technician', 'firstName lastName serviceType')
+      .populate('booking', 'serviceDate serviceTime')
+      .sort({ paidAt: -1, createdAt: -1 });
+
+    const revenue = payments.map((payment) => {
+      const userName = payment.user
+        ? `${payment.user.firstName || ''} ${payment.user.lastName || ''}`.trim()
+        : 'Customer';
+
+      const technicianName = payment.technician
+        ? `${payment.technician.firstName || ''} ${payment.technician.lastName || ''}`.trim()
+        : 'Technician';
+
+      return {
+        id: payment._id,
+        bookingId: payment.booking?._id || null,
+        userId: payment.user?._id || null,
+        technicianId: payment.technician?._id || null,
+        customerName: userName,
+        technicianName,
+        serviceType: payment.technician?.serviceType || 'Service',
+        platformFee: payment.platformFee,
+        totalAmount: payment.totalAmount,
+        paidAt: payment.paidAt || payment.verifiedAt || payment.createdAt,
+        serviceDate: payment.booking?.serviceDate || null,
+        serviceTime: payment.booking?.serviceTime || null,
+        transactionId: payment.transactionId || null,
+      };
+    });
+
+    const totalRevenue = revenue.reduce((sum, payment) => sum + Number(payment.platformFee || 0), 0);
+
+    return res.status(200).json({
+      success: true,
+      totalRevenue,
+      count: revenue.length,
+      revenue,
+    });
+  } catch (error) {
+    console.error('Error fetching admin revenue:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching revenue data',
+      error: error.message,
+    });
+  }
+};
+
+const postToKhalti = ({ endpointUrl, payload, secretKey }) => {
+  return new Promise((resolve, reject) => {
+    const requestBody = JSON.stringify(payload);
+    const requestUrl = new URL(endpointUrl);
+
+    const options = {
+      hostname: requestUrl.hostname,
+      port: requestUrl.port || 443,
+      path: `${requestUrl.pathname}${requestUrl.search}`,
+      method: 'POST',
+      headers: {
+        Authorization: `Key ${secretKey}`,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(requestBody),
+      },
+    };
+
+    const req = https.request(options, (response) => {
+      let body = '';
+
+      response.on('data', (chunk) => {
+        body += chunk;
+      });
+
+      response.on('end', () => {
+        let parsedBody = {};
+
+        try {
+          parsedBody = body ? JSON.parse(body) : {};
+        } catch (parseError) {
+          return reject(new Error('Invalid response from Khalti verification API'));
+        }
+
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          return resolve(parsedBody);
+        }
+
+        const error = new Error(parsedBody.detail || parsedBody.message || 'Khalti verification failed');
+        error.statusCode = response.statusCode;
+        error.data = parsedBody;
+        return reject(error);
+      });
+    });
+
+    req.on('error', (error) => reject(error));
+    req.write(requestBody);
+    req.end();
+  });
+};
 
 // Create a new booking
 exports.createBooking = async (req, res) => {
@@ -214,6 +551,10 @@ exports.getUserBookings = async (req, res) => {
       }
     }
 
+    // Check and auto-cancel confirmed bookings that are late (15+ minutes past service time)
+    const io = req.app.get('io');
+    await checkAndAutoCancelLateBookings(bookings, io);
+
     return res.status(200).json({
       success: true,
       bookings,
@@ -274,6 +615,10 @@ exports.getTechnicianBookings = async (req, res) => {
         }
       }
     }
+
+    // Check and auto-cancel confirmed bookings that are late (15+ minutes past service time)
+    const io = req.app.get('io');
+    await checkAndAutoCancelLateBookings(bookings, io);
 
     return res.status(200).json({
       success: true,
@@ -380,7 +725,8 @@ exports.updateBookingStatus = async (req, res) => {
     // Check if trying to set status to 'inprogress'
     if (status === 'inprogress') {
       // Service start time buffer (in minutes) - change this to adjust when technicians can start service
-      const SERVICE_START_BUFFER_MINUTES = 60; 
+      //const SERVICE_START_BUFFER_MINUTES = 60; 
+      const SERVICE_START_BUFFER_MINUTES = 1440; 
       const now = new Date();
       const bookingDateTime = new Date(booking.serviceDate);
       
@@ -415,6 +761,19 @@ exports.updateBookingStatus = async (req, res) => {
       }
     }
 
+    // Check if trying to set status to 'confirmed' - verify deadline hasn't passed
+    if (status === 'confirmed') {
+      const serviceStartDeadline = calculateServiceStartDeadline(booking.serviceDate, booking.serviceTime);
+      const now = new Date();
+      
+      if (serviceStartDeadline && now > serviceStartDeadline) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot confirm booking - service start deadline has passed (more than 15 minutes after scheduled service time)',
+        });
+      }
+    }
+
     const updatedBooking = await Booking.findByIdAndUpdate(
       bookingId,
       { status },
@@ -430,6 +789,20 @@ exports.updateBookingStatus = async (req, res) => {
 
     // Send notification to user if status is confirmed
     if (status === 'confirmed') {
+      const bookingUserId = updatedBooking.user?._id || updatedBooking.user;
+      const bookingTechnicianId = updatedBooking.technician?._id || updatedBooking.technician;
+
+      const conversation = await findOrCreateConversation({
+        userId: bookingUserId,
+        technicianId: bookingTechnicianId,
+        bookingId: updatedBooking._id,
+      });
+
+      if (!updatedBooking.conversation || String(updatedBooking.conversation) !== String(conversation._id)) {
+        updatedBooking.conversation = conversation._id;
+        await updatedBooking.save();
+      }
+
       const user = await User.findById(updatedBooking.user);
       if (user) {
         const bookingDate = new Date(updatedBooking.serviceDate).toLocaleDateString('en-GB', {
@@ -447,6 +820,18 @@ exports.updateBookingStatus = async (req, res) => {
           read: false,
         });
         await user.save();
+      }
+
+      // Seed a first chat message once so both participants know chat is available.
+      const existingChatCount = await ChatMessage.countDocuments({ conversation_id: conversation._id });
+      if (existingChatCount === 0) {
+        await ChatMessage.create({
+          conversation_id: conversation._id,
+          booking_id: updatedBooking._id,
+          sender_id: bookingTechnicianId,
+          message: 'Booking confirmed, you can start chatting',
+          timestamp: new Date(),
+        });
       }
     }
 
@@ -711,6 +1096,303 @@ exports.deleteBooking = async (req, res) => {
       success: false,
       message: 'Error deleting booking',
       error: error.message,
+    });
+  }
+};
+
+// Verify Khalti payment and mark booking as paid
+exports.initiateKhaltiPayment = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const userId = req.body.userId;
+
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found',
+      });
+    }
+
+    if (booking.user.toString() !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not authorized to initiate payment for this booking',
+      });
+    }
+
+    if (booking.status !== 'completed') {
+      return res.status(400).json({
+        success: false,
+        message: 'Payment can only be initiated after service is marked as completed',
+      });
+    }
+
+    if (booking.paymentStatus === 'paid') {
+      return res.status(200).json({
+        success: true,
+        message: 'Booking is already marked as paid',
+        paymentStatus: 'paid',
+      });
+    }
+
+    const secretKey = process.env.KHALTI_SECRET_KEY;
+    if (!secretKey) {
+      return res.status(500).json({
+        success: false,
+        message: 'Khalti secret key is missing on server',
+      });
+    }
+
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    const serviceAmount = Number(booking.fee);
+    const platformFee = PLATFORM_FEE_NPR;
+    const totalAmount = serviceAmount + platformFee;
+    const totalAmountPaisa = Math.round((Number(booking.fee) + PLATFORM_FEE_NPR) * 100);
+    const payload = {
+      return_url: `${clientUrl}/bookings?khalti=callback&bookingId=${bookingId}`,
+      website_url: clientUrl,
+      amount: totalAmountPaisa,
+      purchase_order_id: bookingId,
+      purchase_order_name: `${booking.technicianInfo?.servicetype || 'Service'} Booking Payment`,
+      customer_info: {
+        name: `${booking.userInfo?.firstname || ''} ${booking.userInfo?.lastname || ''}`.trim(),
+        email: booking.userInfo?.email || undefined,
+        phone: booking.userInfo?.phone || undefined,
+      },
+    };
+
+    const khaltiResponse = await postToKhalti({
+      endpointUrl: KHALTI_INITIATE_URL,
+      payload,
+      secretKey,
+    });
+
+    await Payment.findOneAndUpdate(
+      { pidx: khaltiResponse.pidx },
+      {
+        booking: booking._id,
+        user: booking.user,
+        technician: booking.technician,
+        provider: 'khalti',
+        currency: 'NPR',
+        serviceAmount,
+        platformFee,
+        technicianAmount: serviceAmount,
+        adminAmount: platformFee,
+        totalAmount,
+        amountInPaisa: totalAmountPaisa,
+        status: 'initiated',
+        pidx: khaltiResponse.pidx,
+        initiatedAt: new Date(),
+        metadata: {
+          initiateResponse: khaltiResponse,
+        },
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Khalti payment initiated successfully',
+      paymentUrl: khaltiResponse.payment_url,
+      pidx: khaltiResponse.pidx,
+      expiresAt: khaltiResponse.expires_at,
+      amount: totalAmountPaisa,
+    });
+  } catch (error) {
+    console.error('Error initiating Khalti payment:', error);
+
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || 'Error initiating Khalti payment',
+      khalti: error.data,
+    });
+  }
+};
+
+// Verify Khalti payment (lookup) and mark booking as paid
+exports.verifyKhaltiPayment = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { pidx } = req.body;
+    const userId = req.body.userId;
+
+    if (!pidx) {
+      return res.status(400).json({
+        success: false,
+        message: 'pidx is required for payment verification',
+      });
+    }
+
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found',
+      });
+    }
+
+    if (booking.user.toString() !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not authorized to verify this payment',
+      });
+    }
+
+    if (booking.status !== 'completed') {
+      return res.status(400).json({
+        success: false,
+        message: 'Payment can only be completed after service is marked as completed',
+      });
+    }
+
+    if (booking.paymentStatus === 'paid') {
+      return res.status(200).json({
+        success: true,
+        message: 'Booking is already marked as paid',
+        paymentStatus: 'paid',
+      });
+    }
+
+    const expectedAmount = Math.round((Number(booking.fee) + PLATFORM_FEE_NPR) * 100);
+    const serviceAmount = Number(booking.fee);
+    const platformFee = PLATFORM_FEE_NPR;
+    const totalAmount = serviceAmount + platformFee;
+
+    const secretKey = process.env.KHALTI_SECRET_KEY;
+    if (!secretKey) {
+      return res.status(500).json({
+        success: false,
+        message: 'Khalti secret key is missing on server',
+      });
+    }
+
+    const khaltiResponse = await postToKhalti({
+      endpointUrl: KHALTI_LOOKUP_URL,
+      payload: { pidx },
+      secretKey,
+    });
+
+    if (khaltiResponse.status !== 'Completed') {
+      booking.paymentStatus = 'failed';
+      await booking.save();
+
+      await Payment.findOneAndUpdate(
+        { pidx },
+        {
+          booking: booking._id,
+          user: booking.user,
+          technician: booking.technician,
+          provider: 'khalti',
+          currency: 'NPR',
+          serviceAmount,
+          platformFee,
+          technicianAmount: serviceAmount,
+          adminAmount: platformFee,
+          totalAmount,
+          amountInPaisa: expectedAmount,
+          status: 'failed',
+          pidx,
+          khaltiStatus: khaltiResponse.status,
+          verifiedAt: new Date(),
+          failureReason: `Payment not completed. Current status: ${khaltiResponse.status}`,
+          metadata: {
+            lookupResponse: khaltiResponse,
+          },
+        },
+        { new: true, upsert: true, setDefaultsOnInsert: true }
+      );
+
+      return res.status(400).json({
+        success: false,
+        message: `Payment not completed. Current status: ${khaltiResponse.status}`,
+        khalti: khaltiResponse,
+      });
+    }
+
+    if (Number(khaltiResponse.total_amount) !== expectedAmount) {
+      booking.paymentStatus = 'failed';
+      await booking.save();
+
+      await Payment.findOneAndUpdate(
+        { pidx },
+        {
+          booking: booking._id,
+          user: booking.user,
+          technician: booking.technician,
+          provider: 'khalti',
+          currency: 'NPR',
+          serviceAmount,
+          platformFee,
+          technicianAmount: serviceAmount,
+          adminAmount: platformFee,
+          totalAmount,
+          amountInPaisa: expectedAmount,
+          status: 'failed',
+          pidx,
+          khaltiStatus: khaltiResponse.status,
+          verifiedAt: new Date(),
+          failureReason: 'Payment amount mismatch',
+          metadata: {
+            lookupResponse: khaltiResponse,
+          },
+        },
+        { new: true, upsert: true, setDefaultsOnInsert: true }
+      );
+
+      return res.status(400).json({
+        success: false,
+        message: 'Payment amount mismatch',
+        expectedAmount,
+        khalti: khaltiResponse,
+      });
+    }
+
+    booking.paymentStatus = 'paid';
+    await booking.save();
+
+    await Payment.findOneAndUpdate(
+      { pidx },
+      {
+        booking: booking._id,
+        user: booking.user,
+        technician: booking.technician,
+        provider: 'khalti',
+        currency: 'NPR',
+        serviceAmount,
+        platformFee,
+        technicianAmount: serviceAmount,
+        adminAmount: platformFee,
+        totalAmount,
+        amountInPaisa: expectedAmount,
+        status: 'paid',
+        pidx,
+        transactionId: khaltiResponse.transaction_id,
+        khaltiStatus: khaltiResponse.status,
+        verifiedAt: new Date(),
+        paidAt: new Date(),
+        metadata: {
+          lookupResponse: khaltiResponse,
+        },
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Payment verified successfully',
+      paymentStatus: booking.paymentStatus,
+      transactionId: khaltiResponse.transaction_id,
+      khalti: khaltiResponse,
+    });
+  } catch (error) {
+    console.error('Error verifying Khalti payment:', error);
+
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || 'Error verifying Khalti payment',
+      khalti: error.data,
     });
   }
 };

@@ -27,19 +27,26 @@ function AdminPanel() {
       setIsLoading(true);
       const token = Cookies.get("token") || localStorage.getItem("token");
       
+      // Fetch stats from backend
+      const statsResponse = await axios.get("/api/admin/dashboard-stats", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (statsResponse.data && statsResponse.data.success) {
+        setTechniciansCount(statsResponse.data.stats.totalTechnicians);
+        setUsersCount(statsResponse.data.stats.totalUsers);
+        setBookingsCount(statsResponse.data.stats.totalBookings);
+      }
+      
       // Fetch technicians
       const techResponse = await axios.get("/api/technicians/all-get-active-technicians");
       const techData = techResponse.data.technicians || [];
-      setTechnicians(techData.slice(0, 5)); // Show first 5
-      setTechniciansCount(techData.length);
-
-      // For now, we'll use placeholder data for users and bookings
-      // You can implement proper endpoints later
-      setUsersCount(160);
-      setBookingsCount(85);
-      
+      setTechnicians(techData.slice(0, 5));
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
+      toast.error("Failed to load dashboard data");
     } finally {
       setIsLoading(false);
     }
@@ -49,7 +56,6 @@ function AdminPanel() {
     { label: "Total Technicians", value: techniciansCount },
     { label: "Total Users", value: usersCount },
     { label: "Total Bookings", value: bookingsCount },
-    { label: "Revenue (This Month)", value: "$12,340" },
   ];
 
   return (
@@ -199,7 +205,7 @@ function AdminPanel() {
                       </li>
                       <li className="flex justify-between">
                         <span>• Monthly Revenue:</span>
-                        <strong className="txt-color-primary">$12,340</strong>
+                        <strong className="txt-color-primary">View Revenue Page →</strong>
                       </li>
                     </ul>
                   </div>

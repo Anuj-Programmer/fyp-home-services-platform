@@ -12,6 +12,7 @@ const technicianRoutes = require("./routes/technicianRoutes")
 const bookingRoutes = require("./routes/bookingRoutes")
 const adminRoutes = require("./routes/adminRoutes")
 const reviewRoutes = require("./routes/reviewRoutes")
+const chatRoutes = require("./routes/chatRoutes")
 const cors = require('cors');
 
 // Load environment variables
@@ -38,6 +39,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/technicians", technicianRoutes)
 app.use("/api/admin", adminRoutes)
 app.use("/api/reviews", reviewRoutes)
+app.use("/api/chat", chatRoutes)
 
 // Create HTTP server and initialize Socket.IO
 const server = http.createServer(app);

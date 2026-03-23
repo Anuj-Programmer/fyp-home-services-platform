@@ -1,6 +1,6 @@
 import { MapPin, Calendar, Star } from "phosphor-react";
 import { Link } from "react-router-dom";
-import VerifiedIcon from "@/assets/VerifiedIcon.png";
+import VerifiedIcon from "@/assets/VerifiedIcon.svg";
 
 const TechnicianCard = ({ pro, onBookClick }) => {
   return (
@@ -16,7 +16,7 @@ const TechnicianCard = ({ pro, onBookClick }) => {
         {/* RATING BADGE - Top Left (always show) */}
         <div className="absolute top-3 left-3 z-10 bg-color-main text-white rounded-lg px-2.5 py-1 flex items-center gap-1 shadow-md">
           <Star size={14} weight="fill" className="text-white" />
-          <span className="text-[12px]">{(typeof pro.averageRating === 'number' ? pro.averageRating.toFixed(1) : 'N/A')}</span>
+          <span className="text-[12px]">{pro.averageRating && pro.averageRating > 0 ? pro.averageRating.toFixed(1) : 'N/A'}</span>
         </div>
 
       </div>
@@ -44,9 +44,9 @@ const TechnicianCard = ({ pro, onBookClick }) => {
           </div>
 
           {/* LOCATION & DURATION */}
-          <div className="flex items-center gap-1 text-xs text-gray-600">
+          <div className="flex items-center gap-1 text-xs text-gray-600 mt-1">
             <MapPin size={14} weight="fill" className="text-gray-600 shrink-0" />
-            <span>{pro.location || "Location not specified"}</span>
+            <span>{pro.location ? pro.location.charAt(0).toUpperCase() + pro.location.slice(1) : "Location not specified"}</span>
           </div>
         </div>
 

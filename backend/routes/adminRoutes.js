@@ -10,6 +10,7 @@ const {
 	getAllTechnicians,
 	getAllUsers,
 	getAllBookings,
+	getDashboardStats,
 } = require('../controllers/adminCtrl');
 
 
@@ -35,7 +36,8 @@ router.get("/users", authMiddleware, getAllUsers);
 // Get all bookings
 router.get("/bookings", authMiddleware, getAllBookings);
 
-
+// Get dashboard statistics
+router.get("/dashboard-stats", authMiddleware, getDashboardStats);
 
 module.exports = router;
 

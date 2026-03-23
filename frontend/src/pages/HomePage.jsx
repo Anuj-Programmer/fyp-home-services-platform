@@ -4,22 +4,27 @@ import Navbar from "@/blocks/Navbar";
 import Footer from "@/blocks/Footer";
 import heroicon from "../assets/HeroIcon.png";
 import TechnicianCard from "@/blocks/TechnicianCard";
+import plumbingIcon from "../assets/plumberIcon.svg";
+import electricalIcon from "../assets/electricianIcon.svg";
+import carpentryIcon from "../assets/carpenterIcon.svg";
+import repairIcon from "../assets/repairIcon.svg";
+import bathroomIcon from "../assets/bathroomIcon.svg";
+import locksmithIcon from "../assets/icons8-through-60.png";
 import {
-  Wrench,
-  Lightning,
-  GearSix,
-  Bathtub,
   Calendar,
   MapPin,
   Wallet,
   CheckCircle,
-  Key
+  MagnifyingGlass
 } from "phosphor-react";
 import "../css/landingPage.css";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import Cookies from "js-cookie";
+import { toast } from "react-hot-toast";
 import { useSocket } from "@/context/SocketContext";
+
+const heroSearchPlaceholderWords = ["Services", "Names", "Locations"];
 
 function HomePage() {
   const navigate = useNavigate();
@@ -27,6 +32,10 @@ function HomePage() {
   const [recommendedPros, setRecommendedPros] = useState([]);
   const [upcomingBookings, setUpcomingBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [typedPlaceholder, setTypedPlaceholder] = useState("");
+  const [placeholderWordIndex, setPlaceholderWordIndex] = useState(0);
+  const [isDeletingPlaceholder, setIsDeletingPlaceholder] = useState(false);
 
   // Fetch active technicians for recommended section
   useEffect(() => {
@@ -43,7 +52,7 @@ function HomePage() {
           const response = await axios.get(url);
           if (response.data && response.data.success) {
             // Limit to 3 professionals for the recommended section
-            setRecommendedPros(response.data.technicians.slice(0, 3));
+            setRecommendedPros(response.data.technicians.slice(0, 4));
           }
         } catch (error) {
           console.error("Error fetching active technicians:", error);
@@ -83,6 +92,40 @@ function HomePage() {
     fetchUserBookings();
   }, []);
 
+  // Typewriter-style placeholder animation for hero search
+  useEffect(() => {
+    const currentWord = heroSearchPlaceholderWords[placeholderWordIndex];
+    const typingSpeed = isDeletingPlaceholder ? 45 : 150;
+    const holdDelay = 1100;
+    const transitionDelay = 250;
+
+    const timer = setTimeout(() => {
+      if (!isDeletingPlaceholder && typedPlaceholder.length < currentWord.length) {
+        setTypedPlaceholder(currentWord.slice(0, typedPlaceholder.length + 1));
+        return;
+      }
+
+      if (!isDeletingPlaceholder && typedPlaceholder.length === currentWord.length) {
+        setIsDeletingPlaceholder(true);
+        return;
+      }
+
+      if (isDeletingPlaceholder && typedPlaceholder.length > 0) {
+        setTypedPlaceholder(currentWord.slice(0, typedPlaceholder.length - 1));
+        return;
+      }
+
+      setIsDeletingPlaceholder(false);
+      setPlaceholderWordIndex((prev) => (prev + 1) % heroSearchPlaceholderWords.length);
+    }, (!isDeletingPlaceholder && typedPlaceholder.length === currentWord.length)
+      ? holdDelay
+      : (isDeletingPlaceholder && typedPlaceholder.length === 0)
+        ? transitionDelay
+        : typingSpeed);
+
+    return () => clearTimeout(timer);
+  }, [typedPlaceholder, placeholderWordIndex, isDeletingPlaceholder]);
+
   // Listen for real-time booking updates via WebSocket
   useEffect(() => {
     if (!socket) return;
@@ -105,6 +148,18 @@ function HomePage() {
   const handleLogout = () => {
     localStorage.clear();
     navigate("/");
+  };
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+
+    if (!searchTerm.trim()) {
+      toast.error("Please enter a search term");
+      return;
+    }
+
+    navigate(`/search-results?search=${encodeURIComponent(searchTerm)}`);
+    setSearchTerm("");
   };
 
   const quickActions = [
@@ -130,11 +185,18 @@ function HomePage() {
 
   return (
     <>
-      <Navbar />
+      
       <div className="">
+        <div className="relative">
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(30,58,138,0.42)_0%,rgba(30,58,138,0.26)_28%,rgba(255,255,255,0.76)_58%,rgba(255,255,255,0.94)_78%,#ffffff_100%)]">
+
+            </div>
+          </div>
+<Navbar />
         {/* HERO / WELCOME SECTION */}
-        <section className="w-full px-6 lg:px-32 py-16 flex flex-col lg:flex-row items-center justify-between gap-12 relative rounded-2xl overflow-hidden banner-section">
-          <div className="absolute inset-0 bg-linear-to-r from-blue-900/10 to-transparent pointer-events-none" />
+        <section className="relative z-10 w-full px-6 lg:px-32 py-16 flex flex-col lg:flex-row items-center justify-between gap-12 rounded-2xl banner-section">
+            
 
           {/* Left text */}
           <div className="flex-1 space-y-6 relative z-10">
@@ -159,21 +221,29 @@ function HomePage() {
               time, energy, and money.
             </p>
 
-            {/* Quick stats */}
-            <div className="flex flex-wrap gap-6 mt-4">
-              <div className="flex flex-col items-center bg-white/80 border border-neutral-200 rounded-xl shadow-md px-6 py-4 min-w-[120px]">
-                <span className="text-2xl font-bold txt-color-primary mb-1">4.9</span>
-                <span className="text-xs text-stone-500 text-center">Average rating</span>
+            {/* Hero Search */}
+            <form onSubmit={handleSearchSubmit} className="mt-4 w-full max-w-2xl">
+              <div className="rounded-2xl border border-neutral-300 bg-white/95 p-2 shadow-md backdrop-blur-sm focus-within:border-color-main focus-within:ring-2 focus-within:ring-blue-100">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <div className="flex min-w-0 flex-1 items-center gap-3 rounded-xl px-2 py-2">
+                    <MagnifyingGlass size={20} className="shrink-0 text-stone-500" />
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder={`Search using "${typedPlaceholder || " "}"`}
+                      className="w-full min-w-0 bg-transparent text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none sm:text-base"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full rounded-xl bg-color-main px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 sm:w-auto"
+                  >
+                    Search
+                  </button>
+                </div>
               </div>
-              <div className="flex flex-col items-center bg-white/80 border border-neutral-200 rounded-xl shadow-md px-6 py-4 min-w-[120px]">
-                <span className="text-2xl font-bold txt-color-primary mb-1">12+</span>
-                <span className="text-xs text-stone-500 text-center">Services completed</span>
-              </div>
-              <div className="flex flex-col items-center bg-white/80 border border-neutral-200 rounded-xl shadow-md px-6 py-4 min-w-[120px]">
-                <span className="text-2xl font-bold txt-color-primary mb-1">3</span>
-                <span className="text-xs text-stone-500 text-center">Active bookings</span>
-              </div>
-            </div>
+            </form>
           </div>
 
           {/* Right image */}
@@ -184,10 +254,16 @@ function HomePage() {
               className="w-full max-w-md rounded-2xl object-cover"
             />
           </div>
+          
         </section>
 
+        {/* Section Divider */}
+        <div className="w-full px-6 lg:px-32 py-12">
+          <div className="h-px bg-linear-to-r from-transparent via-neutral-300 to-transparent"></div>
+        </div>
+
         {/* QUICK ACTIONS + UPCOMING */}
-        <section className="w-full px-6 lg:px-32 pt-10 pb-16 flex flex-col gap-10">
+        <section className="relative z-10 w-full px-6 lg:px-32 pt-10 pb-16 flex flex-col gap-10">
           <div className="flex flex-col lg:flex-row gap-10">
             {/* Quick Actions */}
             <div className="flex-1">
@@ -285,6 +361,12 @@ function HomePage() {
             </div>
           </div>
         </section>
+        </div>
+
+        {/* Section Divider */}
+        <div className="w-full px-6 lg:px-32 py-12">
+          <div className="h-px bg-linear-to-r from-transparent via-neutral-300 to-transparent"></div>
+        </div>
 
         {/* SERVICES SHORTCUTS */}
         <section className="w-full px-6 lg:px-32 pb-16 flex flex-col gap-8">
@@ -300,21 +382,23 @@ function HomePage() {
 
           <div className="flex flex-wrap gap-6 py-2 px-2 items-center justify-center mt-4">
             {[
-                { id: "plumbing", title: "Plumbing", icon: <Wrench weight="fill" /> },
-                { id: "electrical", title: "Electrical", icon: <Lightning weight="fill" /> },
-                { id: "carpentry", title: "Carpentry", icon: <Wrench weight="fill" /> },
-                { id: "repairs", title: "Appliance Repair", icon: <GearSix weight="fill" /> },
-                { id: "bathroom_remodeling", title: "Bathroom Remodeling", icon: <Bathtub weight="fill" /> },
-                { id: "locksmith", title: "Locksmith", icon: <Key weight="fill" /> },
+                { id: "plumbing", title: "Plumbing", image: plumbingIcon },
+                { id: "electrical", title: "Electrical", image: electricalIcon },
+                { id: "carpentry", title: "Carpentry", image: carpentryIcon },
+                { id: "repairs", title: "Appliance Repair", image: repairIcon },
+                { id: "bathroom_remodeling", title: "Bathroom Remodeling", image: bathroomIcon },
+                { id: "locksmith", title: "Locksmith", image: locksmithIcon },
             ].map((service) => (
               <div
                 key={service.id}
-                className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 p-4 rounded-2xl shadow-md hover:shadow-lg transition flex flex-col items-center justify-center gap-2 bg-white cursor-pointer"
+                className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 p-4 rounded-2xl shadow-[0_8px_16px_rgba(31,54,127,0.35)] hover:shadow-[0_12px_24px_rgba(31,54,127,0.45)] transition flex flex-col items-center justify-center gap-2 bg-white cursor-pointer"
                 onClick={() => navigate(`/services?category=${service.id}`)}
               >
-                <div className="w-10 h-10 flex items-center justify-center text-white rounded-full icon-bg mb-2">
-                  {service.icon}
-                </div>
+                <img 
+                  src={service.image} 
+                  alt={service.title}
+                  className="w-12 h-12 object-contain"
+                />
                 <h3 className="text-xs sm:text-sm font-medium text-center text-gray-800">
                   {service.title}
                 </h3>
@@ -322,6 +406,11 @@ function HomePage() {
             ))}
           </div>
         </section>
+
+        {/* Section Divider */}
+        <div className="w-full px-6 lg:px-32 py-12">
+          <div className="h-px bg-linear-to-r from-transparent via-neutral-300 to-transparent"></div>
+        </div>
 
         {/* RECOMMENDED PROFESSIONALS */}
         <section className="w-full px-6 lg:px-32 pb-20 flex flex-col gap-8">

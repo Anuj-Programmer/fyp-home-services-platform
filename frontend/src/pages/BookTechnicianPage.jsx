@@ -7,8 +7,9 @@ import { Star, ArrowLeft, CurrencyCircleDollar, Wrench, MapPin, CheckCircle } fr
 import Navbar from '@/blocks/Navbar';
 import Footer from '@/blocks/Footer';
 import { useSocket } from '../context/SocketContext';
-import VerifiedIcon from '@/assets/VerifiedIcon.png';
-import houseVerifiedIcon from '@/assets/houseVerifiedIcon.png';
+import { useUser } from '../context/UserContext';
+import VerifiedIcon from '@/assets/VerifiedIcon.svg';
+import houseVerifiedIcon from '@/assets/houseVerifiedIcon.svg';
 
 function BookTechnicianPage() {
   const { id } = useParams();
@@ -23,33 +24,11 @@ function BookTechnicianPage() {
   const [availableSlots, setAvailableSlots] = useState([]);
   const [bookedSlots, setBookedSlots] = useState([]);
   const [bookingLoading, setBookingLoading] = useState(false);
-  const [user, setUser] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [orderNote, setOrderNote] = useState('');
   const [selectedAddress, setSelectedAddress] = useState(null);
-  const { socket, isConnected, registerUser } = useSocket();
-
-  // Fetch current user data and register with WebSocket
-  useEffect(() => {
-    const fetchUser = async () => {
-      if (!token) return;
-      try {
-        const { data } = await axios.get('/api/users/current-user', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setUser(data);
-        
-        // Register user with WebSocket
-        if (data._id) {
-          registerUser(data._id);
-          console.log('🔌 User registered with WebSocket:', data._id);
-        }
-      } catch (error) {
-        console.error('Error fetching user:', error);
-      }
-    };
-    fetchUser();
-  }, [token, registerUser]);
+  const { socket, isConnected } = useSocket();
+  const { user } = useUser();
 
   // Fetch technician details
   useEffect(() => {
@@ -271,6 +250,13 @@ function BookTechnicianPage() {
         return;
       }
       
+      // For Locksmith service, ensure the selected address is house verified
+      if (technician.serviceType === 'Locksmith' && !selectedAddress.isHouseVerified) {
+        toast.error('Locksmith service requires a verified address. Please select a verified address.');
+        setBookingLoading(false);
+        return;
+      }
+      
       const bookingData = {
         technician: id,
         serviceDate: selectedDate,
@@ -469,7 +455,7 @@ function BookTechnicianPage() {
                     {technician.experienceYears} {technician.experienceYears === 1 ? 'year' : 'years'} experience
                   </span>
                   <span className="text-gray-400">•</span>
-                  <span className="text-sm">{technician.location}</span>
+                  <span className="text-sm">{technician.location ? technician.location.charAt(0).toUpperCase() + technician.location.slice(1) : technician.location}</span>
                 </div>
                 <div className="text-[16px] font-semibold text-gray-800">
                   Booking Fee: <span className="text-color-main">Rs. {technician.fee}</span>
@@ -604,9 +590,18 @@ function BookTechnicianPage() {
                   <h3 className="text-sm font-semibold text-gray-700">Select Address</h3>
                   <a href="/profile" className="text-xs font-semibold text-color-main hover:underline">Add Address</a>
                 </div>
+                {technician.serviceType === 'Locksmith' && (
+                  <div className="mb-3 bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                    <p className="text-xs text-yellow-800">
+                      <strong>Note:</strong> Locksmith service requires a house-verified address.
+                    </p>
+                  </div>
+                )}
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {user.addressBook && user.addressBook.length > 0 ? (
-                    user.addressBook.map((address) => (
+                    user.addressBook
+                      .filter((address) => technician.serviceType === 'Locksmith' ? address.isHouseVerified : true)
+                      .map((address) => (
                       <div
                         key={address._id}
                         onClick={() => setSelectedAddress(address)}
@@ -643,7 +638,11 @@ function BookTechnicianPage() {
                       </div>
                     ))
                   ) : (
-                    <p className="text-xs text-gray-500">No addresses found</p>
+                    <p className="text-xs text-gray-500">
+                      {technician.serviceType === 'Locksmith' 
+                        ? 'No verified addresses found. Please add a verified address to book locksmith service.' 
+                        : 'No addresses found'}
+                    </p>
                   )}
                 </div>
               </div>

@@ -11,6 +11,7 @@ function TechnicianDashboard() {
   const [upcomingJobs, setUpcomingJobs] = useState([])
   const [loading, setLoading] = useState(true)
   const [averageRating, setAverageRating] = useState(0)
+  const [thisMonthEarnings, setThisMonthEarnings] = useState(0)
   const [statsCounts, setStatsCounts] = useState({
     completed: 0,
     pending: 0,
@@ -21,7 +22,7 @@ function TechnicianDashboard() {
     { label: "Completed Jobs", value: 24, key: "completed" },
     { label: "Pending Requests", value: 5, key: "pending" },
     { label: "Rating", value: `${averageRating}/5` },
-    { label: "Earnings (This Month)", value: "$2,340" },
+    { label: "Earnings (This Month)", value: `Rs. ${thisMonthEarnings}`, key: "earnings" },
   ]
 
   // Fetch technician profile for average rating
@@ -53,6 +54,42 @@ function TechnicianDashboard() {
     }
 
     fetchTechnicianProfile()
+  }, [])
+
+  // Fetch technician earnings
+  useEffect(() => {
+    const fetchTechnicianEarnings = async () => {
+      try {
+        const token = Cookies.get('token') || localStorage.getItem('token')
+        const response = await axios.get('/api/bookings/technician-earnings', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        if (response.data && response.data.success) {
+          // Get current month and year
+          const now = new Date()
+          const currentMonth = now.getMonth()
+          const currentYear = now.getFullYear()
+
+          // Filter earnings for this month
+          const thisMonthPayments = response.data.history.filter((payment) => {
+            const paymentDate = new Date(payment.paymentDate)
+            return paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear
+          })
+
+          // Calculate total earnings for this month
+          const monthlyTotal = thisMonthPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
+          setThisMonthEarnings(monthlyTotal)
+        }
+      } catch (error) {
+        console.error('Error fetching technician earnings:', error)
+        setThisMonthEarnings(0)
+      }
+    }
+
+    fetchTechnicianEarnings()
   }, [])
 
   // Fetch technician bookings
@@ -132,10 +169,10 @@ function TechnicianDashboard() {
             </p>
             <div className="flex flex-col gap-3">
               <button 
-                onClick={() => navigate('/technician-profile')}
+                onClick={() => navigate('/TechnicianPayments')}
                 className="px-4 py-3 rounded-xl border text-left text-sm font-semibold hover:bg-stone-50 btn-transparent-slide"
               >
-                Manage profile
+                Payment History
               </button>
               {/* <button 
                 onClick={() => navigate('/manage-timing')}
@@ -161,7 +198,7 @@ function TechnicianDashboard() {
             >
               <span className="text-sm text-stone-500">{item.label}</span>
               <strong className="text-2xl font-semibold txt-color-primary">
-                {item.key === 'completed' ? statsCounts.completed : item.key === 'pending' ? statsCounts.pending : item.value}
+                {item.key === 'completed' ? statsCounts.completed : item.key === 'pending' ? statsCounts.pending : item.key === 'earnings' ? thisMonthEarnings : item.value}
               </strong>
             </div>
           ))}

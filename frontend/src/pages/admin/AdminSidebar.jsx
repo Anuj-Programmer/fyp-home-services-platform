@@ -2,17 +2,28 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
+import {
+  Gauge,
+  UsersThree,
+  CalendarCheck,
+  Wrench,
+  Gear,
+  SignOut,
+  Money,
+} from "phosphor-react";
 
 function AdminSidebar() {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
 
   const menuItems = [
-    { name: "Dashboard", icon: "📊", route: "/admin" },
-    { name: "Users", icon: "👥", route: "/AdminUsers" },
-    { name: "Bookings", icon: "📅", route: "/AdminBookings" },
-    { name: "Technicians", icon: "🔧", route: "/AdminTechnicians" },
-    { name: "Profile", icon: "⚙️", route: "/AdminProfile" },
+    { name: "Dashboard", icon: Gauge, route: "/admin" },
+    { name: "Users", icon: UsersThree, route: "/AdminUsers" },
+    { name: "Bookings", icon: CalendarCheck, route: "/AdminBookings" },
+    { name: "Technicians", icon: Wrench, route: "/AdminTechnicians" },
+    { name: "Revenue", icon: Money, route: "/AdminRevenue" },
+    { name: "Profile", icon: Gear, route: "/AdminProfile" },
+    
   ];
 
   // Listen for open event dispatched by each page's mobile header button
@@ -77,20 +88,23 @@ function AdminSidebar() {
 
         {/* Navigation Menu */}
         <nav className="p-4 space-y-1">
-          {menuItems.map((item) => (
-            <button
-              key={item.name}
-              onClick={() => handleNavigate(item.route)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all ${
-                window.location.pathname === item.route
-                  ? "bg-color-main text-white shadow-md"
-                  : "text-stone-700 hover:bg-stone-100"
-              }`}
-            >
-              <span className="text-xl">{item.icon}</span>
-              <span className="font-medium text-sm">{item.name}</span>
-            </button>
-          ))}
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.name}
+                onClick={() => handleNavigate(item.route)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all ${
+                  window.location.pathname === item.route
+                    ? "bg-color-main text-white shadow-md"
+                    : "text-stone-700 hover:bg-stone-100"
+                }`}
+              >
+                <Icon size={20} weight="duotone" />
+                <span className="font-medium text-sm">{item.name}</span>
+              </button>
+            );
+          })}
         </nav>
 
         {/* Logout Button */}
@@ -99,7 +113,7 @@ function AdminSidebar() {
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-red-600 hover:bg-red-50 transition-all"
           >
-            <span className="text-xl">🚪</span>
+            <SignOut size={20} weight="duotone" />
             <span className="font-medium text-sm">Logout</span>
           </button>
         </div>

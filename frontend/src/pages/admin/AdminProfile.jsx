@@ -5,9 +5,9 @@ import AdminSidebar from "@/pages/admin/AdminSidebar";
 import "../../css/landingPage.css";
 import Cookies from "js-cookie";
 import Navbar from "@/blocks/Navbar";
+import { useUser } from "../../context/UserContext";
 
 function AdminProfile() {
-  const [user, setUser] = useState(null);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
@@ -17,6 +17,7 @@ function AdminProfile() {
   });
 
   const token = Cookies.get("token") || localStorage.getItem("token");
+  const { user, setUserData } = useUser();
 
   const formatMemberSince = (isoDate) => {
     if (!isoDate) return "—";
@@ -43,29 +44,10 @@ function AdminProfile() {
   });
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const { data } = await axios.get("/api/users/current-user", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setUser(data);
-        setFormData(hydrateFormFromUser(data));
-        localStorage.setItem("user", JSON.stringify(data));
-      } catch (error) {
-        console.error("Error fetching user:", error);
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
-          const parsed = JSON.parse(storedUser);
-          setUser(parsed);
-          setFormData(hydrateFormFromUser(parsed));
-        }
-      }
-    };
-
-    if (token) {
-      fetchUser();
+    if (user) {
+      setFormData(hydrateFormFromUser(user));
     }
-  }, [token]);
+  }, [user]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -93,8 +75,7 @@ function AdminProfile() {
         }
       );
 
-      setUser(response.data.user);
-      localStorage.setItem("user", JSON.stringify(response.data.user));
+  setUserData(response.data.user);
       toast.success("Profile updated successfully!");
     } catch (error) {
       console.error(error);

@@ -30,6 +30,9 @@ import APUsers from './pages/admin/APUsers.jsx'
 import APBookings from './pages/admin/APBookings.jsx'
 import APTechnician from './pages/admin/APTechnician.jsx'
 import AdminProfile from './pages/admin/AdminProfile.jsx'
+import Payments from './pages/Payments.jsx';
+import TechnicianPayments from './pages/technician/TechnicianPayments.jsx'
+import AdminRevenue from './pages/admin/AdminRevenue.jsx'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -172,6 +175,8 @@ function App() {
          <Route path="/bookings" element={<ProtectedRoute><Booking /></ProtectedRoute>} />
          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
          <Route path="/services" element={<ProtectedRoute><Services /></ProtectedRoute>} />
+         <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
+         <Route path="/TechnicianPayments" element={<ProtectedRoute requireTechnician><TechnicianPayments /></ProtectedRoute>} />
          <Route path="/search-results" element={<ProtectedRoute><SearchResults /></ProtectedRoute>} />
          <Route path="/technician-dashboard" element={<ProtectedRoute requireTechnician><TechnicianDashboard/></ProtectedRoute>} />
          
@@ -211,6 +216,7 @@ function App() {
         <Route path="/AdminBookings" element={<ProtectedRoute requireAdmin><APBookings /></ProtectedRoute>} />
         <Route path="/AdminTechnicians" element={<ProtectedRoute requireAdmin><APTechnician /></ProtectedRoute>} />
         <Route path="/AdminProfile" element={<ProtectedRoute ><AdminProfile /></ProtectedRoute>} />
+        <Route path="/AdminRevenue" element={<ProtectedRoute ><AdminRevenue /></ProtectedRoute>} />
          
          
        </Routes>
