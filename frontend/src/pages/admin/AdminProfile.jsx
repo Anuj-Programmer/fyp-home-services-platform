@@ -104,7 +104,7 @@ function AdminProfile() {
           </button>
           <span className="font-semibold text-stone-800 text-sm">Admin Profile</span>
         </div>
-        <main className="px-4 sm:px-6 lg:px-16 xl:px-28 pt-6 lg:pt-10 pb-16 min-h-screen bg-stone-50 space-y-8 lg:space-y-12">
+        <main className="px-4 sm:px-6 lg:px-16 xl:px-16 pt-6 lg:pt-10 pb-16 min-h-screen bg-stone-50 space-y-8 lg:space-y-12">
           <section className="flex flex-col xl:flex-row items-start justify-between gap-6">
             <div className="space-y-4">
               <p className="text-sm font-semibold text-color-main uppercase tracking-wide">

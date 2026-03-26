@@ -3,6 +3,13 @@ const User = require("../models/userModel.js");
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const Technician = require("../models/technicianModel.js");
+
+const emitAdminDataChanged = (req, changes = []) => {
+  const io = req.app.get('io');
+  if (io && typeof io.emitAdminDataChanged === 'function') {
+    io.emitAdminDataChanged(changes);
+  }
+};
 // Configure email transporter
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -86,6 +93,8 @@ const registerUser = async (req, res) => {
       phone
     });
     const token = jwt.sign({ userId: newUser._id, isAdmin: false }, process.env.JWT_SECRET, { expiresIn: "7d" });
+
+    emitAdminDataChanged(req, ['users', 'dashboard-stats']);
 
     res.status(201).json({ message: "User registered successfully", user: newUser, token, role:"user" });
   } catch (error) {
@@ -379,6 +388,8 @@ const uploadHouseCertificate = async (req, res) => {
       console.log(`📤 Emitted house certificate upload notification to ${admins.length} admin(s)`.green);
     }
 
+    emitAdminDataChanged(req, ['users']);
+
     res.status(200).json({
       message: "Certificate uploaded successfully. Awaiting admin approval.",
       user: {
@@ -562,6 +573,9 @@ const uploadAddressCertificate = async (req, res) => {
         console.log(`📤 Emitted address certificate upload notification to admin ${adminIdStr}`.green);
       }
     }
+
+    emitAdminDataChanged(req, ['users']);
+
     res.status(200).json({
       message: "Address certificate uploaded successfully. Awaiting admin approval.",
       user: {

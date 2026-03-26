@@ -4,34 +4,51 @@ const router = express.Router();
 const OTP = require("../models/otpModel.js");
 const User = require("../models/userModel.js");
 const Technician = require("../models/technicianModel.js");
-const nodemailer = require("nodemailer");
+const { BrevoClient } = require("@getbrevo/brevo");
+// const nodemailer = require("nodemailer"); // SMTP backup import
 const fs = require("fs");
 const path = require("path");
 
 // Validate envs early
-if (!process.env.EMAIL_USER ) {
-  console.error("EMAIL_USER or EMAIL_PASS is not set in environment");
-}else if (!process.env.EMAIL_PASS){
-  console.error("EMAIL_PASS is not set in environment");
+if (!process.env.EMAIL_USER) {
+  console.error("EMAIL_USER is not set in environment");
+}
+if (!process.env.BREVO_API_KEY) {
+  console.error("BREVO_API_KEY is not set in environment");
 }
 
-// Use explicit SMTP config and verify
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true, // use TLS
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
+const brevoClient = new BrevoClient({
+  apiKey: process.env.BREVO_API_KEY,
 });
 
-// verify transporter on startup (async)
-transporter.verify().then(() => {
-  //console.log("Mailer configured and verified");
-}).catch((err) => {
-  console.error("Mailer verification failed:", err);
-});
+const sendBrevoEmail = async ({ toEmail, subject, html, replyTo }) => {
+  const payload = {
+    email: process.env.EMAIL_USER,
+    name: "HomeCare",
+  };
+
+  const sendEmailPayload = {
+    sender: payload,
+    to: [{ email: toEmail }],
+    subject,
+    htmlContent: html,
+  };
+
+  if (replyTo) {
+    sendEmailPayload.replyTo = { email: replyTo };
+  }
+
+  return brevoClient.transactionalEmails.sendTransacEmail(sendEmailPayload);
+};
+
+// SMTP backup (disabled by default)
+// const transporter = nodemailer.createTransport({
+//   service: "gmail",
+//   auth: {
+//     user: process.env.EMAIL_USER,
+//     pass: process.env.EMAIL_PASS,
+//   },
+// });
 
 // ------------------- 1) Send OTP -------------------
 const sendOtp = async (req, res) => {
@@ -59,18 +76,17 @@ const sendOtp = async (req, res) => {
     await OTP.create({ email, otp: otpCode, expiresAt });
 
       // ---- Load Template ----
-    const templatePath = path.join(process.cwd(), "templates", "otpTemplate.html");
+    const templatePath = path.join(__dirname, "..", "templates", "otpTemplate.html");
     let htmlTemplate = fs.readFileSync(templatePath, "utf8");
 
     // Replace the {{OTP}} placeholder
     htmlTemplate = htmlTemplate.replace("{{OTP}}", otpCode);
 
     // Send OTP email
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: email,
+    await sendBrevoEmail({
+      toEmail: email,
       subject: "Your OTP Code",
-      html: htmlTemplate
+      html: htmlTemplate,
     });
 
     res.json({ message: "OTP sent to your email" });
@@ -164,18 +180,17 @@ const sendLoginOtp = async (req, res) => {
     await OTP.create({ email, otp: otpCode, expiresAt });
 
       // ---- Load Template ----
-    const templatePath = path.join(process.cwd(), "templates", "otpTemplate.html");
+    const templatePath = path.join(__dirname, "..", "templates", "otpTemplate.html");
     let htmlTemplate = fs.readFileSync(templatePath, "utf8");
 
     // Replace the {{OTP}} placeholder
     htmlTemplate = htmlTemplate.replace("{{OTP}}", otpCode);
 
     // Send OTP email
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: email,
-          subject: "Your Login OTP",
-          html: htmlTemplate,
+    await sendBrevoEmail({
+      toEmail: email,
+      subject: "Your Login OTP",
+      html: htmlTemplate,
     });
 
     res.json({ message: "OTP sent to your email", role });
@@ -244,11 +259,10 @@ const sendContactMessage = async (req, res) => {
     }
 
     // Send email to your support/admin
-    await transporter.sendMail({
-      from: `"${name}" <${email}>`, // sender info
-      to: process.env.EMAIL_USER,   // your receiving email
+    await sendBrevoEmail({
+      toEmail: process.env.EMAIL_USER,
       subject: "New Contact Form Message",
-      text: message,
+      replyTo: email,
       html: `<p><strong>Name:</strong> ${name}</p>
              <p><strong>Email:</strong> ${email}</p>
              <p><strong>Message:</strong><br/>${message}</p>`,

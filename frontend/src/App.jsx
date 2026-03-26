@@ -33,6 +33,7 @@ import AdminProfile from './pages/admin/AdminProfile.jsx'
 import Payments from './pages/Payments.jsx';
 import TechnicianPayments from './pages/technician/TechnicianPayments.jsx'
 import AdminRevenue from './pages/admin/AdminRevenue.jsx'
+import AdminNotification from './pages/admin/AdminNotification.jsx'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -217,6 +218,7 @@ function App() {
         <Route path="/AdminTechnicians" element={<ProtectedRoute requireAdmin><APTechnician /></ProtectedRoute>} />
         <Route path="/AdminProfile" element={<ProtectedRoute ><AdminProfile /></ProtectedRoute>} />
         <Route path="/AdminRevenue" element={<ProtectedRoute ><AdminRevenue /></ProtectedRoute>} />
+        <Route path="/AdminNotification" element={<ProtectedRoute requireAdmin><AdminNotification /></ProtectedRoute>} />
          
          
        </Routes>

@@ -24,6 +24,10 @@ function Profile() {
   const [addressMenuOpen, setAddressMenuOpen] = useState(null);
   const [uploadingAddressCertificate, setUploadingAddressCertificate] =
     useState(false);
+  const [tempAddressCertificateUrl, setTempAddressCertificateUrl] =
+    useState("");
+  const [addressCertificateUploadError, setAddressCertificateUploadError] =
+    useState("");
   const [addressFormData, setAddressFormData] = useState({
     contactName: "",
     phone: "",
@@ -120,6 +124,8 @@ function Profile() {
 
   const openAddAddressModal = () => {
     setEditingAddress(null);
+    setTempAddressCertificateUrl("");
+    setAddressCertificateUploadError("");
     setAddressFormData({
       contactName: `${formData.firstName} ${formData.lastName}`,
       phone: formData.phone || "",
@@ -132,16 +138,34 @@ function Profile() {
     setShowAddressModal(true);
   };
 
-  const openEditAddressModal = (address) => {
-    setEditingAddress(address);
+  const openEditAddressModal = async (address) => {
+    let sourceAddress = address;
+
+    // Pull latest user data so status in modal reflects current DB value.
+    try {
+      const latestUser = await refreshUser();
+      const latestMatch = latestUser?.addressBook?.find(
+        (item) => item._id === address._id
+      );
+      if (latestMatch) {
+        sourceAddress = latestMatch;
+      }
+    } catch (error) {
+      console.error("Failed to refresh latest address status", error);
+    }
+
+    setEditingAddress(sourceAddress);
+    setTempAddressCertificateUrl("");
+    setAddressCertificateUploadError("");
     setAddressFormData({
-      contactName: address.contactName || "",
-      phone: address.phone || "",
-      address: address.address || "",
-      landMark: address.landMark || "",
-      addressType: address.addressType || "home",
-      houseCertificateUrl: address.houseCertificateUrl || "",
-      houseCertificateStatus: address.houseCertificateStatus || "not_provided",
+      contactName: sourceAddress.contactName || "",
+      phone: sourceAddress.phone || "",
+      address: sourceAddress.address || "",
+      landMark: sourceAddress.landMark || "",
+      addressType: sourceAddress.addressType || "home",
+      houseCertificateUrl: sourceAddress.houseCertificateUrl || "",
+      houseCertificateStatus:
+        sourceAddress.houseCertificateStatus || "not_provided",
     });
     setAddressMenuOpen(null);
     setShowAddressModal(true);
@@ -151,6 +175,12 @@ function Profile() {
     e.preventDefault();
 
     try {
+      const dataToSave = { ...addressFormData };
+      if (tempAddressCertificateUrl) {
+        dataToSave.houseCertificateUrl = tempAddressCertificateUrl;
+        dataToSave.houseCertificateStatus = "pending";
+      }
+
       if (editingAddress) {
         // Update existing address
         const response = await axios.put(
@@ -158,7 +188,7 @@ function Profile() {
           {
             userId: user._id,
             addressId: editingAddress._id,
-            updates: addressFormData,
+            updates: dataToSave,
           },
           {
             headers: {
@@ -174,7 +204,7 @@ function Profile() {
           "/api/users/add-address",
           {
             userId: user._id,
-            address: addressFormData,
+            address: dataToSave,
           },
           {
             headers: {
@@ -186,10 +216,33 @@ function Profile() {
         toast.success("Address added successfully!");
       }
       setShowAddressModal(false);
+      setTempAddressCertificateUrl("");
+      setAddressCertificateUploadError("");
     } catch (error) {
       console.error(error);
       toast.error(error.response?.data?.message || "Failed to save address");
     }
+  };
+
+  const validateAddressCertificateFile = (file) => {
+    const MAX_FILE_SIZE = 5 * 1024 * 1024;
+    const ALLOWED_TYPES = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "application/pdf",
+    ];
+
+    if (!file) {
+      return "Please select a file";
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      return "File size must be under 5MB";
+    }
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return "Only JPG, PNG, WebP, or PDF files are allowed";
+    }
+    return "";
   };
 
   const handleDeleteAddress = async (addressId) => {
@@ -259,39 +312,29 @@ function Profile() {
       const file = e.target.files[0];
       if (!file) return;
 
+      setAddressCertificateUploadError("");
+      const validationError = validateAddressCertificateFile(file);
+      if (validationError) {
+        setAddressCertificateUploadError(validationError);
+        e.target.value = "";
+        return;
+      }
+
       setUploadingAddressCertificate(true);
       const response = await uploadToCloudinary(file);
 
-      // Update the address form data with certificate URL
-      setAddressFormData((prev) => ({
-        ...prev,
-        houseCertificateUrl: response.secure_url,
-        houseCertificateStatus: "pending",
-      }));
-
-      // If editing existing address, immediately save to backend
-      if (editingAddress) {
-        await axios.post(
-          "/api/users/upload-address-certificate",
-          {
-            userId: user._id,
-            addressId: editingAddress._id,
-            certificateUrl: response.secure_url,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        // Refresh shared user data after updating certificate
-        await refreshUser();
-      }
-
-      toast.success("Certificate uploaded successfully");
+      // Keep uploaded certificate temporary; persist only on Add/Update Address
+      setTempAddressCertificateUrl(response.secure_url);
+      toast.success("Certificate uploaded. Click Add/Update Address to save.");
     } catch (error) {
       console.error(error);
-      toast.error(error.response?.data?.message || "Certificate upload failed");
+      const message =
+        error.response?.data?.message ||
+        (error.code === "ERR_NETWORK"
+          ? "Network error while uploading certificate"
+          : "Certificate upload failed");
+      setAddressCertificateUploadError(message);
+      toast.error(message);
     } finally {
       setUploadingAddressCertificate(false);
     }
@@ -788,19 +831,66 @@ function Profile() {
                 <label className="flex flex-col gap-2 text-sm font-medium text-stone-600">
                   <span>House Certificate (Optional)</span>
                   <div className="space-y-3">
-                    {addressFormData.houseCertificateUrl && (
-                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <p className="text-xs font-semibold text-green-700 mb-2">
-                          ✓ Certificate Uploaded
+                    {addressFormData.houseCertificateUrl && !tempAddressCertificateUrl && (
+                      <div
+                        className={`p-3 rounded-lg border ${
+                          addressFormData.houseCertificateStatus === "rejected"
+                            ? "bg-red-50 border-red-200"
+                            : addressFormData.houseCertificateStatus === "pending"
+                              ? "bg-yellow-50 border-yellow-200"
+                              : addressFormData.houseCertificateStatus === "approved"
+                                ? "bg-green-50 border-green-200"
+                                : "bg-stone-50 border-stone-200"
+                        }`}
+                      >
+                        <p
+                          className={`text-xs font-semibold mb-2 ${
+                            addressFormData.houseCertificateStatus === "rejected"
+                              ? "text-red-700"
+                              : addressFormData.houseCertificateStatus === "pending"
+                                ? "text-yellow-700"
+                                : addressFormData.houseCertificateStatus === "approved"
+                                  ? "text-green-700"
+                                  : "text-stone-700"
+                          }`}
+                        >
+                          Certificate Uploaded
                         </p>
-                        <p className="text-xs text-green-600">
+                        <p
+                          className={`text-xs ${
+                            addressFormData.houseCertificateStatus === "rejected"
+                              ? "text-red-600"
+                              : addressFormData.houseCertificateStatus === "pending"
+                                ? "text-yellow-600"
+                                : addressFormData.houseCertificateStatus === "approved"
+                                  ? "text-green-600"
+                                  : "text-stone-600"
+                          }`}
+                        >
                           Status: {addressFormData.houseCertificateStatus}
+                        </p>
+                      </div>
+                    )}
+                    {tempAddressCertificateUrl && (
+                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p className="text-xs font-semibold text-yellow-700 mb-1">
+                          Certificate uploaded (not saved yet)
+                        </p>
+                        <p className="text-xs text-yellow-600">
+                          Click Add/Update Address to apply pending status.
+                        </p>
+                      </div>
+                    )}
+                    {addressCertificateUploadError && (
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <p className="text-xs text-red-700">
+                          {addressCertificateUploadError}
                         </p>
                       </div>
                     )}
                     <input
                       type="file"
-                      accept="image/*,application/pdf"
+                      accept="image/jpeg,image/png,image/webp,application/pdf"
                       onChange={handleAddressCertificateUpload}
                       disabled={uploadingAddressCertificate}
                       className="px-4 py-2 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900 cursor-pointer"
@@ -817,16 +907,26 @@ function Profile() {
               <div className="flex gap-3 justify-end mt-6 pt-4 border-t">
                 <button
                   type="button"
-                  onClick={() => setShowAddressModal(false)}
+                  onClick={() => {
+                    setShowAddressModal(false);
+                    setTempAddressCertificateUrl("");
+                    setAddressCertificateUploadError("");
+                  }}
                   className="px-4 py-2 text-sm font-semibold text-stone-600 hover:text-stone-800"
+                  disabled={uploadingAddressCertificate}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
+                  disabled={uploadingAddressCertificate}
                   className="px-6 py-3 bg-color-main text-white rounded-xl font-semibold btn-filled-slide"
                 >
-                  {editingAddress ? "Update Address" : "Add Address"}
+                  {uploadingAddressCertificate
+                    ? "Uploading..."
+                    : editingAddress
+                      ? "Update Address"
+                      : "Add Address"}
                 </button>
               </div>
             </form>

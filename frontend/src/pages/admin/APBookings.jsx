@@ -1,42 +1,128 @@
 
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import axios from "axios";
 import toast from "react-hot-toast";
 import Navbar from "../../blocks/Navbar";
-import Footer from "../../blocks/Footer";
 import AdminSidebar from "./AdminSidebar";
+import { useSocket } from "../../context/SocketContext";
 
 function APBookings() {
-  const navigate = useNavigate();
+  const { socket } = useSocket();
   const [isLoading, setIsLoading] = useState(true);
   const [bookings, setBookings] = useState([]);
   const [filterStatus, setFilterStatus] = useState("All");
+  const [deletingBookingId, setDeletingBookingId] = useState(null);
+  const [bookingToDelete, setBookingToDelete] = useState(null);
+
+  const formatStatus = (status) => {
+    const normalized = (status || "").toLowerCase();
+
+    if (normalized === "completed") return "Completed";
+    if (normalized === "cancelled") return "Cancelled";
+    if (normalized === "pending") return "Pending";
+    if (normalized === "inprogress" || normalized === "ontheway") return "In Progress";
+    if (normalized === "confirmed") return "Confirmed";
+    if (normalized === "rescheduled") return "Rescheduled";
+    if (normalized === "expired") return "Expired";
+    if (normalized === "declined") return "Declined";
+
+    return status || "Pending";
+  };
+
+  const formatAmount = (value) => {
+    const numeric = Number(value);
+    if (Number.isNaN(numeric)) return "N/A";
+    return `$${numeric}`;
+  };
+
+  const formatDate = (value) => {
+    if (!value) return "N/A";
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return "N/A";
+    return parsed.toLocaleDateString();
+  };
 
   useEffect(() => {
     fetchBookings();
   }, []);
 
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleAdminDataChanged = (payload = {}) => {
+      const changes = Array.isArray(payload.changes) ? payload.changes : [];
+      if (changes.includes("bookings") || changes.includes("dashboard-stats")) {
+        fetchBookings();
+      }
+    };
+
+    socket.on("admin:dataChanged", handleAdminDataChanged);
+
+    return () => {
+      socket.off("admin:dataChanged", handleAdminDataChanged);
+    };
+  }, [socket]);
+
   const fetchBookings = async () => {
     try {
       setIsLoading(true);
       const token = Cookies.get("token") || localStorage.getItem("token");
-      // You can implement the actual endpoint when backend is ready
-      // const response = await axios.get("/api/admin/bookings", { headers: { Authorization: `Bearer ${token}` } });
-      // setBookings(response.data.bookings || []);
-      
-      // For now, placeholder data
-      setBookings([
-        { _id: "1", user: "John Doe", technician: "Mike Johnson", service: "Plumbing", status: "Completed", date: "2024-02-15", amount: "$50" },
-        { _id: "2", user: "Jane Smith", technician: "Sarah Williams", service: "Electrical", status: "Pending", date: "2024-02-18", amount: "$75" },
-        { _id: "3", user: "Mike Johnson", technician: "Tom Brown", service: "HVAC", status: "In Progress", date: "2024-02-19", amount: "$100" },
-        { _id: "4", user: "Alice Cooper", technician: "Mike Johnson", service: "Plumbing", status: "Completed", date: "2024-02-10", amount: "$60" },
-      ]);
+      const response = await axios.get("/api/admin/bookings", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const bookingData = response.data.bookings || [];
+      const formattedBookings = bookingData.map((booking) => {
+        const userName =
+          booking.userInfo?.firstname && booking.userInfo?.lastname
+            ? `${booking.userInfo.firstname} ${booking.userInfo.lastname}`
+            : "N/A";
+
+        const technicianName =
+          booking.technicianInfo?.firstname && booking.technicianInfo?.lastname
+            ? `${booking.technicianInfo.firstname} ${booking.technicianInfo.lastname}`
+            : "N/A";
+
+        return {
+          _id: booking._id,
+          user: userName,
+          technician: technicianName,
+          service: booking.technicianInfo?.servicetype || "N/A",
+          status: formatStatus(booking.status),
+          date: formatDate(booking.serviceDate || booking.createdAt),
+          amount: formatAmount(booking.fee),
+        };
+      });
+
+      setBookings(formattedBookings);
     } catch (error) {
       toast.error("Failed to fetch bookings");
+      console.error("Error fetching bookings:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDeleteBooking = async (bookingId) => {
+    try {
+      setDeletingBookingId(bookingId);
+      const token = Cookies.get("token") || localStorage.getItem("token");
+
+      await axios.delete(`/api/bookings/${bookingId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setBookings((prevBookings) =>
+        prevBookings.filter((booking) => booking._id !== bookingId)
+      );
+      toast.success("Booking deleted successfully");
+      setBookingToDelete(null);
+    } catch (error) {
+      toast.error("Failed to delete booking");
+      console.error("Error deleting booking:", error);
+    } finally {
+      setDeletingBookingId(null);
     }
   };
 
@@ -82,13 +168,13 @@ function APBookings() {
           </div>
 
           <section className="space-y-4 pt-4 lg:pt-8">
-            <p className="text-sm font-semibold text-color-main uppercase tracking-wide">
+            <p className="text-xs sm:text-sm font-semibold text-color-main uppercase tracking-wide">
               Admin Dashboard
             </p>
-            <h1 className="text-3xl sm:text-4xl font-bold txt-color-primary">
+            <h1 className="text-2xl sm:text-3xl font-bold txt-color-primary">
               Bookings Management
             </h1>
-            <p className="text-base text-stone-500 max-w-2xl">
+            <p className="text-sm sm:text-base text-stone-500 max-w-2xl">
               View and manage all platform bookings, check statuses, and resolve issues.
             </p>
           </section>
@@ -99,7 +185,7 @@ function APBookings() {
               <button
                 key={status}
                 onClick={() => setFilterStatus(status)}
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                   filterStatus === status
                     ? "bg-color-main text-white"
                     : "bg-white border border-stone-200 text-stone-700 hover:border-color-main"
@@ -117,22 +203,21 @@ function APBookings() {
               <table className="w-full">
                 <thead className="bg-stone-50 border-b">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Booking ID</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Customer</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Technician</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Service</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Date</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Amount</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-stone-200 bg-white">
+                <tbody className="divide-y divide-stone-200 bg-white text-sm">
                   {isLoading ? (
                     <tr><td colSpan="7" className="px-6 py-8 text-center text-stone-500">Loading bookings...</td></tr>
                   ) : filteredBookings.length > 0 ? (
                     filteredBookings.map((booking) => (
                       <tr key={booking._id} className="hover:bg-stone-50">
-                        <td className="px-6 py-4 font-mono text-sm text-stone-700">{booking._id}</td>
                         <td className="px-6 py-4 text-stone-700">{booking.user}</td>
                         <td className="px-6 py-4 text-stone-700">{booking.technician}</td>
                         <td className="px-6 py-4 text-stone-700">{booking.service}</td>
@@ -141,6 +226,15 @@ function APBookings() {
                           <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(booking.status)}`}>{booking.status}</span>
                         </td>
                         <td className="px-6 py-4 font-medium text-color-main">{booking.amount}</td>
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={() => setBookingToDelete(booking._id)}
+                            disabled={deletingBookingId === booking._id}
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-200 text-red-700 hover:bg-red-50 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                          >
+                            {deletingBookingId === booking._id ? "Deleting..." : "Delete"}
+                          </button>
+                        </td>
                       </tr>
                     ))
                   ) : (
@@ -197,8 +291,13 @@ function APBookings() {
                     <div className="h-px bg-stone-100" />
 
                     <div>
-                      <p className="text-xs text-stone-500 mb-0.5">Booking ID</p>
-                      <p className="text-xs font-mono text-stone-600">{booking._id}</p>
+                      <button
+                        onClick={() => setBookingToDelete(booking._id)}
+                        disabled={deletingBookingId === booking._id}
+                        className="w-full px-3 py-2 rounded-lg text-sm font-semibold border border-red-200 text-red-700 hover:bg-red-50 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {deletingBookingId === booking._id ? "Deleting..." : "Delete Booking"}
+                      </button>
                     </div>
                   </div>
                 ))
@@ -211,6 +310,45 @@ function APBookings() {
           </section>
         </main>
       </div>
+
+      {bookingToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <button
+            type="button"
+            aria-label="Close delete confirmation modal"
+            className="absolute inset-0 bg-black/40"
+            onClick={() => {
+              if (!deletingBookingId) setBookingToDelete(null);
+            }}
+          />
+
+          <div className="relative w-full max-w-md rounded-2xl bg-white shadow-xl border border-stone-200 p-6 space-y-4">
+            <h2 className="text-lg font-bold text-stone-900">Delete Booking</h2>
+            <p className="text-sm text-stone-600">
+              Are you sure you want to delete this booking? This action cannot be undone.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setBookingToDelete(null)}
+                disabled={Boolean(deletingBookingId)}
+                className="px-4 py-2 rounded-lg border border-stone-300 text-stone-700 text-sm font-semibold hover:bg-stone-50 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDeleteBooking(bookingToDelete)}
+                disabled={deletingBookingId === bookingToDelete}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {deletingBookingId === bookingToDelete ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       
     </>
   );

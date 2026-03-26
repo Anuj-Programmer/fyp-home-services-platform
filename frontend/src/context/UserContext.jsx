@@ -42,22 +42,20 @@ export const UserProvider = ({ children }) => {
   }, []);
 
   const fetchUser = useCallback(
-    async ({ force = false } = {}) => {
+    async ({ force = false, silent = false } = {}) => {
       if (!token) {
         clearUser();
         setLoading(false);
         return null;
       }
 
-      if (!force && user) {
-        return user;
-      }
-
       if (inFlightRef.current) {
         return inFlightRef.current;
       }
 
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
       const request = axios
         .get("/api/users/current-user", {
           headers: {
@@ -84,13 +82,15 @@ export const UserProvider = ({ children }) => {
         })
         .finally(() => {
           inFlightRef.current = null;
-          setLoading(false);
+          if (!silent) {
+            setLoading(false);
+          }
         });
 
       inFlightRef.current = request;
       return request;
     },
-    [token, user, setUserData, clearUser],
+    [token, setUserData, clearUser],
   );
 
   const refreshUser = useCallback(async () => {
@@ -104,10 +104,9 @@ export const UserProvider = ({ children }) => {
       return;
     }
 
-    if (!user) {
-      fetchUser();
-    }
-  }, [token, user, fetchUser, clearUser]);
+    // Always sync once from backend on app load/refresh to avoid stale cached user notifications.
+    fetchUser({ force: true, silent: Boolean(user) });
+  }, [token, fetchUser, clearUser]);
 
   const value = {
     user,

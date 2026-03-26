@@ -174,6 +174,18 @@ const initializeSocket = (server) => {
     io.emit(event, data);
   };
 
+  // Helper to notify admin dashboards that server-side data changed.
+  io.emitAdminDataChanged = (changes = []) => {
+    const normalizedChanges = Array.isArray(changes)
+      ? changes.filter((item) => typeof item === 'string' && item.trim())
+      : [];
+
+    io.emit('admin:dataChanged', {
+      changes: normalizedChanges,
+      timestamp: new Date(),
+    });
+  };
+
   // Make online users accessible
   io.getOnlineUsers = () => Array.from(onlineUsers.keys());
 

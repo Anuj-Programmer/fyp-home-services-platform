@@ -1,7 +1,8 @@
 
 const OTP = require("../models/otpModel.js");
 const User = require("../models/userModel.js");
-const nodemailer = require("nodemailer");
+const { BrevoClient } = require("@getbrevo/brevo");
+// const nodemailer = require("nodemailer"); // SMTP backup import
 const jwt = require("jsonwebtoken");
 const Technician = require("../models/technicianModel.js");
 const Booking = require("../models/bookingModel.js");
@@ -9,14 +10,44 @@ const Payment = require("../models/paymentModel.js");
 const fs = require("fs");
 const path = require("path");
 
-// Configure email transporter
-const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS
-    }
+const emitAdminDataChanged = (req, changes = []) => {
+  const io = req.app.get("io");
+  if (io && typeof io.emitAdminDataChanged === "function") {
+    io.emitAdminDataChanged(changes);
+  }
+};
+
+if (!process.env.EMAIL_USER) {
+  console.error("EMAIL_USER is not set in environment");
+}
+if (!process.env.BREVO_API_KEY) {
+  console.error("BREVO_API_KEY is not set in environment");
+}
+
+const brevoClient = new BrevoClient({
+  apiKey: process.env.BREVO_API_KEY,
+});
+
+const sendBrevoEmail = async ({ toEmail, subject, html }) => {
+  return brevoClient.transactionalEmails.sendTransacEmail({
+    sender: {
+      email: process.env.EMAIL_USER,
+      name: "HomeCare",
+    },
+    to: [{ email: toEmail }],
+    subject,
+    htmlContent: html,
   });
+};
+
+// SMTP backup (disabled by default)
+// const transporter = nodemailer.createTransport({
+//   service: "gmail",
+//   auth: {
+//     user: process.env.EMAIL_USER,
+//     pass: process.env.EMAIL_PASS,
+//   },
+// });
 
   const changeTechnicianStatus = async (req, res) => {
     try {
@@ -85,12 +116,10 @@ const transporter = nodemailer.createTransport({
       console.log("Template loaded successfully");
   
       // Send email
-      await transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to: technician.email,
+      await sendBrevoEmail({
+        toEmail: technician.email,
         subject: titleText,
         html: htmlTemplate,
-        text: messageText
       });
 
       // Emit WebSocket event for real-time notification to technician
@@ -110,6 +139,8 @@ const transporter = nodemailer.createTransport({
         console.log(`📤 Emitted technician status update to ${technicianIdStr}`.green);
       }
   
+      emitAdminDataChanged(req, ["technicians", "dashboard-stats"]);
+
       return res.status(200).json({
         success: true,
         message: `Technician status updated to ${status} and email sent.`,
@@ -184,6 +215,8 @@ const changeTechnicianCertificateStatus = async (req, res) => {
       console.log(`📤 Emitted certificate status update to ${technicianIdStr}`.green);
     }
 
+    emitAdminDataChanged(req, ["technicians", "dashboard-stats"]);
+
     return res.status(200).json({
       success: true,
       message: `Technician certificate status updated to ${status}.`,
@@ -255,6 +288,8 @@ const changeHouseVerificationStatus = async (req, res) => {
     }
 
     // Optionally, send email (not required, but can be added)
+
+    emitAdminDataChanged(req, ["users", "dashboard-stats"]);
 
     return res.status(200).json({
       success: true,
@@ -329,6 +364,8 @@ const changeAddressVerificationStatus = async (req, res) => {
       console.log(`📤 Emitted address certificate status update to ${userIdStr}`.green);
     }
 
+    emitAdminDataChanged(req, ["users", "dashboard-stats"]);
+
     return res.status(200).json({
       success: true,
       message: `Address verification status updated to ${status}.`,
@@ -380,11 +417,55 @@ const getAllUsers = async (req, res) => {
   }
 };
 
+const deleteUserByAdmin = async (req, res) => {
+  try {
+    if (!req.body.isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: "Only admins can delete users",
+      });
+    }
+
+    const { userId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (user.isAdmin) {
+      return res.status(400).json({
+        success: false,
+        message: "Admin user cannot be deleted",
+      });
+    }
+
+    await User.findByIdAndDelete(userId);
+
+    emitAdminDataChanged(req, ["users", "dashboard-stats"]);
+
+    return res.status(200).json({
+      success: true,
+      message: "User deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
 getAllBookings = async (req, res) => {
   try {
     const bookings = await Booking.find()
-      .populate("userId", "firstName lastName email")
-      .populate("technicianId", "firstName lastName email")
+      .populate("user", "firstName lastName email")
+      .populate("technician", "firstName lastName email")
       .sort({ createdAt: -1 });
     res.status(200).json({
       success: true,
@@ -451,6 +532,118 @@ const getDashboardStats = async (req, res) => {
   }
 };
 
+const broadcastNotificationToAll = async (req, res) => {
+  try {
+    if (!req.body.isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: "Only admins can broadcast notifications",
+      });
+    }
+
+    const {
+      message,
+      title = "Announcement",
+      type = "admin_broadcast",
+      onClickPath = "",
+      target = "all",
+    } = req.body;
+
+    if (!message || !String(message).trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Notification message is required",
+      });
+    }
+
+    if (!["all", "users", "technicians"].includes(target)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid target. Use 'all', 'users', or 'technicians'.",
+      });
+    }
+
+    const createdAt = new Date();
+    const notificationPayload = {
+      type,
+      title,
+      message: String(message).trim(),
+      onClickPath,
+      createdAt,
+      date: createdAt,
+      read: false,
+      action: "broadcast",
+    };
+
+    let userUpdateResult = { modifiedCount: 0 };
+    let technicianUpdateResult = { modifiedCount: 0 };
+    let users = [];
+    let technicians = [];
+
+    if (target === "all" || target === "users") {
+      [userUpdateResult, users] = await Promise.all([
+        User.updateMany(
+          { isAdmin: false },
+          { $push: { notification: notificationPayload } },
+        ),
+        User.find({ isAdmin: false }).select("_id"),
+      ]);
+    }
+
+    if (target === "all" || target === "technicians") {
+      [technicianUpdateResult, technicians] = await Promise.all([
+        Technician.updateMany(
+          {},
+          { $push: { notification: notificationPayload } },
+        ),
+        Technician.find({}).select("_id"),
+      ]);
+    }
+
+    const io = req.app.get("io");
+    if (io) {
+      users.forEach((user) => {
+        io.to(`user_${String(user._id)}`).emit("booking:notification", {
+          ...notificationPayload,
+          data: {
+            recipientId: String(user._id),
+            recipientType: "user",
+          },
+        });
+      });
+
+      technicians.forEach((technician) => {
+        io.to(`user_${String(technician._id)}`).emit("booking:notification", {
+          ...notificationPayload,
+          data: {
+            recipientId: String(technician._id),
+            recipientType: "technician",
+          },
+        });
+      });
+    }
+
+    emitAdminDataChanged(req, ["notifications"]);
+
+    return res.status(200).json({
+      success: true,
+      message: "Notification broadcasted successfully",
+      counts: {
+        users: userUpdateResult.modifiedCount || 0,
+        technicians: technicianUpdateResult.modifiedCount || 0,
+      },
+      target,
+    });
+  } catch (error) {
+    console.error("Error broadcasting notifications:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
   module.exports = {
     changeTechnicianStatus,
     changeHouseVerificationStatus,
@@ -458,6 +651,8 @@ const getDashboardStats = async (req, res) => {
     changeAddressVerificationStatus,
     getAllTechnicians,
     getAllUsers,
+    deleteUserByAdmin,
     getAllBookings,
     getDashboardStats,
+    broadcastNotificationToAll,
   };

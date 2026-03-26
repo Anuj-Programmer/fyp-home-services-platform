@@ -29,6 +29,14 @@ const bookingSchema = new mongoose.Schema({
         isHouseVerified: Boolean,
     },
     note: { type: String },
+    statusHistory: [
+      {
+        status: { type: String }, // cancelled, completed, rescheduled, etc
+        note: { type: String }, // post-booking note / reason / description
+        by: { type: String }, // 'user', 'technician', 'admin', 'system'
+        date: { type: Date, default: Date.now },
+      },
+    ],
     conversation: { type: mongoose.Schema.Types.ObjectId, ref: 'Conversation', default: null },
     hasReview: { type: Boolean, default: false },
     paymentStatus: { type: String, enum: ['unpaid', 'paid', 'failed'], default: 'unpaid' },

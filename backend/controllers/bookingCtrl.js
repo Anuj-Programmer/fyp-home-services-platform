@@ -10,6 +10,32 @@ const KHALTI_INITIATE_URL = process.env.KHALTI_INITIATE_URL || 'https://dev.khal
 const KHALTI_LOOKUP_URL = process.env.KHALTI_LOOKUP_URL || 'https://dev.khalti.com/api/v2/epayment/lookup/';
 const PLATFORM_FEE_NPR = 50;
 
+const appendStatusHistory = (booking, { status, note, by }) => {
+  const normalizedNote = typeof note === 'string' ? note.trim() : '';
+
+  if (!Array.isArray(booking.statusHistory)) {
+    if (booking.statusHistory && (booking.statusHistory.status || booking.statusHistory.note)) {
+      booking.statusHistory = [booking.statusHistory];
+    } else {
+      booking.statusHistory = [];
+    }
+  }
+
+  booking.statusHistory.push({
+    status,
+    note: normalizedNote,
+    by,
+    date: new Date(),
+  });
+};
+
+const emitAdminDataChanged = (req, changes = []) => {
+  const io = req.app.get('io');
+  if (io && typeof io.emitAdminDataChanged === 'function') {
+    io.emitAdminDataChanged(changes);
+  }
+};
+
 // Helper function to calculate service start deadline (serviceTime + 15 minutes)
 const calculateServiceStartDeadline = (serviceDate, serviceTime) => {
   const bookingDateTime = new Date(serviceDate);
@@ -53,6 +79,11 @@ const checkAndAutoCancelLateBookings = async (bookings, io) => {
         // Auto-cancel the booking
         booking.status = 'cancelled';
         booking.cancellationReason = 'auto_cancelled_late_arrival';
+        appendStatusHistory(booking, {
+          status: 'cancelled',
+          note: 'Automatically cancelled because technician did not start service within 15 minutes of scheduled time.',
+          by: 'system',
+        });
         await booking.save();
 
         // Push notification to user
@@ -489,6 +520,8 @@ exports.createBooking = async (req, res) => {
       console.log(`📢 Broadcasted slots update for technician ${technicianIdStr}`.green);
     }
 
+    emitAdminDataChanged(req, ['bookings', 'dashboard-stats']);
+
     return res.status(201).json({
       success: true,
       message: 'Booking created successfully',
@@ -702,7 +735,8 @@ exports.getBookedSlots = async (req, res) => {
 exports.updateBookingStatus = async (req, res) => {
   try {
     const { bookingId } = req.params;
-    const { status } = req.body;
+    const { status, note } = req.body;
+    const normalizedNote = typeof note === 'string' ? note.trim() : '';
 
     // Validate status
     const validStatuses = ['pending', 'confirmed', 'completed', 'cancelled', 'ontheway', 'inprogress', 'rescheduled','declined'];
@@ -774,9 +808,43 @@ exports.updateBookingStatus = async (req, res) => {
       }
     }
 
+    if (status === 'completed' && req.body.technicianId && !normalizedNote) {
+      return res.status(400).json({
+        success: false,
+        message: 'Completion note is required when completing the service',
+      });
+    }
+
+    const updatePayload = { status };
+
+    if (status === 'completed' || status === 'cancelled') {
+      let actor = 'user';
+      if (req.body.isAdmin) {
+        actor = 'admin';
+      } else if (req.body.technicianId) {
+        actor = 'technician';
+      }
+
+      const existingHistory = Array.isArray(booking.statusHistory)
+        ? booking.statusHistory
+        : booking.statusHistory
+          ? [booking.statusHistory]
+          : [];
+
+      updatePayload.statusHistory = [
+        ...existingHistory,
+        {
+          status,
+          note: normalizedNote,
+          by: actor,
+          date: new Date(),
+        },
+      ];
+    }
+
     const updatedBooking = await Booking.findByIdAndUpdate(
       bookingId,
-      { status },
+      updatePayload,
       { new: true, runValidators: true }
     ).populate('technician').populate('user');
 
@@ -880,6 +948,8 @@ exports.updateBookingStatus = async (req, res) => {
       console.log(`📤 Emitted booking decline slots update for technician ${updatedBooking.technician._id}`.yellow);
     }
 
+    emitAdminDataChanged(req, ['bookings', 'dashboard-stats']);
+
     return res.status(200).json({
       success: true,
       message: 'Booking status updated successfully',
@@ -947,6 +1017,7 @@ exports.cancelBooking = async (req, res) => {
   try {
     const { bookingId } = req.params;
     const { reason } = req.body;
+    const normalizedReason = typeof reason === 'string' ? reason.trim() : '';
 
     const booking = await Booking.findById(bookingId);
     if (!booking) {
@@ -964,7 +1035,31 @@ exports.cancelBooking = async (req, res) => {
       });
     }
 
+    const requesterUserId = req.body.userId ? String(req.body.userId) : null;
+    const requesterTechnicianId = req.body.technicianId ? String(req.body.technicianId) : null;
+    const isUserCancelling = requesterUserId && String(booking.user) === requesterUserId;
+    const isTechnicianCancelling = requesterTechnicianId && String(booking.technician) === requesterTechnicianId;
+
+    if (!isUserCancelling && !isTechnicianCancelling && !req.body.isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not authorized to cancel this booking',
+      });
+    }
+
+    if (!normalizedReason) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cancellation reason is required',
+      });
+    }
+
     booking.status = 'cancelled';
+    appendStatusHistory(booking, {
+      status: 'cancelled',
+      note: normalizedReason,
+      by: req.body.isAdmin ? 'admin' : isTechnicianCancelling ? 'technician' : 'user',
+    });
     const updatedBooking = await booking.save();
 
     // Send notification to user
@@ -973,7 +1068,9 @@ exports.cancelBooking = async (req, res) => {
       user.notification = user.notification || [];
       user.notification.push({
         type: 'booking',
-        message: `You have cancelled your booking with ${booking.technicianInfo.firstname} ${booking.technicianInfo.lastname}.`,
+        message: isUserCancelling
+          ? `You have cancelled your booking with ${booking.technicianInfo.firstname} ${booking.technicianInfo.lastname}.`
+          : `${booking.technicianInfo.firstname} ${booking.technicianInfo.lastname} cancelled your booking.`,
         bookingId: booking._id,
         date: new Date(),
         read: false,
@@ -987,7 +1084,9 @@ exports.cancelBooking = async (req, res) => {
       technician.notification = technician.notification || [];
       technician.notification.push({
         type: 'booking',
-        message: `${booking.userInfo.firstname} ${booking.userInfo.lastname} has cancelled their booking.`,
+        message: isTechnicianCancelling
+          ? `You cancelled the booking with ${booking.userInfo.firstname} ${booking.userInfo.lastname}.`
+          : `${booking.userInfo.firstname} ${booking.userInfo.lastname} has cancelled their booking.`,
         bookingId: booking._id,
         date: new Date(),
         read: false,
@@ -1007,6 +1106,8 @@ exports.cancelBooking = async (req, res) => {
       });
       console.log(`📤 Emitted booking cancellation slots update for technician ${booking.technician}`.yellow);
     }
+
+    emitAdminDataChanged(req, ['bookings', 'dashboard-stats']);
 
     return res.status(200).json({
       success: true,
@@ -1058,6 +1159,8 @@ exports.rescheduleBooking = async (req, res) => {
 
     const updatedBooking = await booking.save();
 
+    emitAdminDataChanged(req, ['bookings']);
+
     return res.status(200).json({
       success: true,
       message: 'Booking rescheduled successfully',
@@ -1085,6 +1188,8 @@ exports.deleteBooking = async (req, res) => {
         message: 'Booking not found',
       });
     }
+
+    emitAdminDataChanged(req, ['bookings', 'dashboard-stats']);
 
     return res.status(200).json({
       success: true,
@@ -1378,6 +1483,8 @@ exports.verifyKhaltiPayment = async (req, res) => {
       },
       { new: true, upsert: true, setDefaultsOnInsert: true }
     );
+
+    emitAdminDataChanged(req, ['revenue', 'dashboard-stats']);
 
     return res.status(200).json({
       success: true,

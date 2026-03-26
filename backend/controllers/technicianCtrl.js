@@ -5,6 +5,13 @@ const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const Technician = require("../models/technicianModel.js")
 
+const emitAdminDataChanged = (req, changes = []) => {
+  const io = req.app.get('io');
+  if (io && typeof io.emitAdminDataChanged === 'function') {
+    io.emitAdminDataChanged(changes);
+  }
+};
+
 // Configure email transporter
 const transporter = nodemailer.createTransport({
     service: "gmail",
@@ -86,6 +93,8 @@ const registerTechnician = async (req, res) => {
         });
         console.log(`📤 Emitted technician registration notification to admin ${adminIdStr}`.green);
       }
+
+      emitAdminDataChanged(req, ['technicians', 'dashboard-stats']);
   
       return res.status(201).json({
         success: true,
@@ -462,6 +471,8 @@ const uploadTechnicianCertificate = async (req, res) => {
       console.log(`📤 Emitted certificate upload notification to ${admins.length} admin(s)`.green);
     }
 
+    emitAdminDataChanged(req, ['technicians']);
+
     res.status(200).json({
       message: "Certificate uploaded successfully. Awaiting admin approval.",
       technician: {
@@ -496,6 +507,8 @@ const updateTechnicianStatus = async (req, res) => {
     // Update status
     technician.status = status;
     await technician.save();
+
+    emitAdminDataChanged(req, ['technicians', 'dashboard-stats']);
 
     res.status(200).json({
       message: `Technician status updated to ${status} successfully`,

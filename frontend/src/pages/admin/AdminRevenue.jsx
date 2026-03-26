@@ -5,8 +5,10 @@ import toast from "react-hot-toast";
 import Navbar from "@/blocks/Navbar";
 import Footer from "@/blocks/Footer";
 import AdminSidebar from "./AdminSidebar";
+import { useSocket } from "../../context/SocketContext";
 
 function AdminRevenue() {
+  const { socket } = useSocket();
   const [loading, setLoading] = useState(true);
   const [revenue, setRevenue] = useState([]);
   const [totalRevenue, setTotalRevenue] = useState(0);
@@ -55,6 +57,23 @@ function AdminRevenue() {
   useEffect(() => {
     fetchAdminRevenue();
   }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleAdminDataChanged = (payload = {}) => {
+      const changes = Array.isArray(payload.changes) ? payload.changes : [];
+      if (changes.includes("revenue") || changes.includes("dashboard-stats")) {
+        fetchAdminRevenue();
+      }
+    };
+
+    socket.on("admin:dataChanged", handleAdminDataChanged);
+
+    return () => {
+      socket.off("admin:dataChanged", handleAdminDataChanged);
+    };
+  }, [socket]);
 
   const formattedTotal = useMemo(
     () =>

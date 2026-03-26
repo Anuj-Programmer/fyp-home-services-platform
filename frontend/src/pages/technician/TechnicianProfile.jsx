@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import Navbar from "@/blocks/Navbar";
@@ -6,6 +6,7 @@ import Footer from "@/blocks/Footer";
 import { uploadToCloudinary } from "@/lib/uploadToCloudinary";
 import "../../css/landingPage.css";
 import Cookies from "js-cookie";
+import { Camera, Trash } from "phosphor-react";
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
@@ -19,6 +20,7 @@ function TechnicianProfile() {
   const [timeError, setTimeError] = useState("");
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const photoInputRef = useRef(null);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -135,6 +137,17 @@ function TechnicianProfile() {
       console.error(error);
       toast.error("Photo upload failed");
     }
+  };
+
+  const handleRemovePhoto = () => {
+    setFormData((prev) => ({
+      ...prev,
+      photoUrl: "",
+    }));
+    if (photoInputRef.current) {
+      photoInputRef.current.value = "";
+    }
+    toast.success("Photo removed");
   };
 
   const handleToggleDay = (day) => {
@@ -433,6 +446,57 @@ function TechnicianProfile() {
             </div>
 
             <form onSubmit={handleSaveProfile} className="space-y-8">
+              <div className="border border-stone-200 rounded-2xl p-4 sm:p-5 bg-stone-50">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  {formData.photoUrl ? (
+                    <img
+                      src={formData.photoUrl}
+                      alt="Profile"
+                      className="h-16 w-16 rounded-full object-cover border border-stone-200"
+                    />
+                  ) : (
+                    <div className="h-16 w-16 rounded-full bg-stone-200 border border-stone-300 flex items-center justify-center text-stone-500 font-semibold text-sm">
+                      Photo
+                    </div>
+                  )}
+
+                  <div className="flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => photoInputRef.current?.click()}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-color-main text-white rounded-md text-sm font-semibold hover:opacity-90 transition"
+                      >
+                        <Camera size={16} weight="bold" />
+                        Change Image
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleRemovePhoto}
+                        disabled={!formData.photoUrl}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-stone-300 text-stone-700 rounded-md text-sm font-semibold hover:bg-stone-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Trash size={16} weight="bold" />
+                        Remove Image
+                      </button>
+                    </div>
+
+                    <p className="mt-2 text-xs text-stone-500">
+                      We support PNGs, JPEGs and GIFs under 2MB
+                    </p>
+                  </div>
+                </div>
+
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/gif"
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                />
+              </div>
+
               {/* Basic Information */}
                 <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
                   <label className="flex flex-col gap-1 text-xs sm:text-sm font-medium text-stone-600">
@@ -540,34 +604,6 @@ function TechnicianProfile() {
                     />
                   </label>
                 </div>
-
-                <label className="flex flex-col gap-1 text-xs sm:text-sm font-medium text-stone-600">
-                  Profile photo
-                  {formData.photoUrl ? (
-                    <div className="flex flex-col gap-2">
-                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <p className="text-xs text-green-700 font-medium mb-3">✓ Photo uploaded</p>
-                        <label className="inline-block px-4 py-2 bg-green-100 text-green-700 rounded-lg text-xs font-semibold cursor-pointer hover:bg-green-200 transition">
-                          Change photo
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handlePhotoUpload}
-                            className="hidden"
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  ) : (
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoUpload}
-                      className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
-                      required
-                    />
-                  )}
-                </label>
 
                 <label className="flex flex-col gap-1 text-xs sm:text-sm font-medium text-stone-600">
                   About you / Bio

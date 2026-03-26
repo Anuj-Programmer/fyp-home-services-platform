@@ -20,6 +20,13 @@ function TechnicianBookings() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [bookingToCancel, setBookingToCancel] = useState(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [bookingToComplete, setBookingToComplete] = useState(null);
+  const [completionNote, setCompletionNote] = useState("");
+  const [actionLoadingId, setActionLoadingId] = useState(null);
   const { socket, isConnected, notifications, registerUser } = useSocket();
 
   // Register technician with socket on mount
@@ -75,6 +82,11 @@ function TechnicianBookings() {
           status: booking.status.charAt(0).toUpperCase() + booking.status.slice(1),
           verified: booking.userInfo.isHouseVerified || false,
           note: booking.note,
+          statusHistory: Array.isArray(booking.statusHistory)
+            ? booking.statusHistory
+            : booking.statusHistory
+              ? [booking.statusHistory]
+              : [],
         }));
 
         setBookings(transformedBookings);
@@ -316,12 +328,13 @@ function TechnicianBookings() {
     }
   };
 
-  const handleCompleteService = async (bookingId) => {
+  const handleCompleteService = async (bookingId, serviceNote) => {
     try {
+      setActionLoadingId(bookingId);
       const token = Cookies.get("token") || localStorage.getItem("token");
       const response = await axios.put(
         `/api/bookings/${bookingId}/status`,
-        { status: "completed" },
+        { status: "completed", note: serviceNote },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -331,12 +344,7 @@ function TechnicianBookings() {
 
       if (response.data.success) {
         toast.success("Service completed successfully!");
-        // Update the booking in the list
-        setBookings(
-          bookings.map((booking) =>
-            booking.id === bookingId ? { ...booking, status: "Completed" } : booking
-          )
-        );
+        await fetchTechnicianBookings(false);
         handleCloseModal();
         
         // Emit WebSocket event for real-time update
@@ -357,7 +365,89 @@ function TechnicianBookings() {
     } catch (error) {
       console.error("Error completing service:", error);
       toast.error(error.response?.data?.message || "Error completing service");
+    } finally {
+      setActionLoadingId(null);
     }
+  };
+
+  const handleOpenCancelModal = (bookingId) => {
+    setBookingToCancel(bookingId);
+    setCancelReason("");
+    setShowCancelModal(true);
+  };
+
+  const handleCloseCancelModal = () => {
+    setShowCancelModal(false);
+    setBookingToCancel(null);
+    setCancelReason("");
+  };
+
+  const confirmCancelBooking = async () => {
+    if (!bookingToCancel) return;
+    if (!cancelReason.trim()) {
+      toast.error("Please provide a cancellation reason");
+      return;
+    }
+
+    try {
+      setActionLoadingId(bookingToCancel);
+      const token = Cookies.get("token") || localStorage.getItem("token");
+      const response = await axios.put(
+        `/api/bookings/${bookingToCancel}/cancel`,
+        { reason: cancelReason.trim() },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.data.success) {
+        toast.success("Booking cancelled successfully!");
+        await fetchTechnicianBookings(false);
+        handleCloseModal();
+        handleCloseCancelModal();
+      } else {
+        toast.error(response.data.message || "Failed to cancel booking");
+      }
+    } catch (error) {
+      console.error("Error cancelling booking:", error);
+      toast.error(error.response?.data?.message || "Error cancelling booking");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleOpenCompleteModal = (bookingId) => {
+    setBookingToComplete(bookingId);
+    setCompletionNote("");
+    setShowCompleteModal(true);
+  };
+
+  const handleCloseCompleteModal = () => {
+    setShowCompleteModal(false);
+    setBookingToComplete(null);
+    setCompletionNote("");
+  };
+
+  const confirmCompleteService = async () => {
+    if (!bookingToComplete) return;
+    if (!completionNote.trim()) {
+      toast.error("Please add a completion note");
+      return;
+    }
+
+    await handleCompleteService(bookingToComplete, completionNote.trim());
+    handleCloseCompleteModal();
+  };
+
+  const getLatestStatusHistoryEntry = (booking, targetStatus) => {
+    if (!booking?.statusHistory?.length) return null;
+    const filtered = booking.statusHistory.filter(
+      (entry) => (entry?.status || "").toLowerCase() === targetStatus.toLowerCase()
+    );
+    if (!filtered.length) return null;
+    return filtered.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))[0];
   };
 
   // Check if the service time slot has been reached (15 minutes before scheduled time)
@@ -532,7 +622,7 @@ function TechnicianBookings() {
                                 View Details
                               </button>
                               <button
-                                onClick={() => handleCompleteService(booking.id)}
+                                onClick={() => handleOpenCompleteModal(booking.id)}
                                 className="px-3 py-1.5 border border-emerald-600 text-emerald-600 text-xs font-semibold rounded-full hover:bg-emerald-50 transition-colors whitespace-nowrap"
                               >
                                 Complete
@@ -685,7 +775,7 @@ function TechnicianBookings() {
                           View Details
                         </button>
                         <button
-                          onClick={() => handleCompleteService(booking.id)}
+                          onClick={() => handleOpenCompleteModal(booking.id)}
                           className="flex-1 px-3 py-2 border border-emerald-600 text-emerald-600 text-xs font-semibold rounded-full hover:bg-emerald-50 transition-colors"
                         >
                           Complete
@@ -727,11 +817,11 @@ function TechnicianBookings() {
           onClick={handleCloseModal}
         >
           <div
-            className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
             onClick={e => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="sticky top-0 bg-linear-to-r bg-white text-color-primary px-6 py-3 flex items-center justify-between border-b">
+            <div className="sticky top-0 bg-linear-to-r bg-white text-color-primary px-6 py-3 flex items-center justify-between border-b rounded-t-2xl">
               <h2 className="text-lg font-semibold">Booking Details</h2>
               <button
                 onClick={handleCloseModal}
@@ -743,7 +833,7 @@ function TechnicianBookings() {
             </div>
 
             {/* Modal Body */}
-            <div className="p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto overscroll-contain p-4 pr-3 space-y-4 [scrollbar-width:thin] [scrollbar-color:#cbd5e1_transparent]">
               {/* Client Information */}
               <div>
                 <h3 className="text-base font-semibold text-neutral-900 mb-2 flex items-center gap-2">
@@ -871,10 +961,32 @@ function TechnicianBookings() {
                   <p className="text-sm text-neutral-900 leading-relaxed">{selectedBooking.note}</p>
                 </div>
               </div>
+
+              {selectedBooking.status === "Cancelled" && getLatestStatusHistoryEntry(selectedBooking, "cancelled")?.note && (
+                <div>
+                  <h3 className="text-base font-semibold text-neutral-900 mb-2">Cancellation Reason</h3>
+                  <div className="bg-red-50 border border-red-200 p-3 rounded-lg">
+                    <p className="text-sm text-red-800 leading-relaxed">
+                      {getLatestStatusHistoryEntry(selectedBooking, "cancelled")?.note}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {selectedBooking.status === "Completed" && getLatestStatusHistoryEntry(selectedBooking, "completed")?.note && (
+                <div>
+                  <h3 className="text-base font-semibold text-neutral-900 mb-2">Service Completion Note</h3>
+                  <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-lg">
+                    <p className="text-sm text-emerald-800 leading-relaxed">
+                      {getLatestStatusHistoryEntry(selectedBooking, "completed")?.note}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Modal Footer */}
-            <div className="bg-stone-50 px-4 py-3 border-t flex gap-2 justify-end">
+            <div className="bg-stone-50 px-4 py-3 border-t flex gap-2 justify-end rounded-b-2xl">
               <button
                 onClick={handleCloseModal}
                 className="px-4 py-1.5 bg-stone-200 text-stone-700 font-normal rounded-lg hover:bg-stone-300 transition-colors text-sm"
@@ -909,12 +1021,98 @@ function TechnicianBookings() {
                 </button>
               )}
               {selectedBooking.status === "Inprogress" && (
+                <>
+                  <button 
+                    onClick={() => handleOpenCancelModal(selectedBooking.id)}
+                    className="px-4 py-1.5 border border-red-600 text-red-600 font-normal rounded-lg hover:bg-red-50 transition-colors text-sm">
+                    Cancel Booking
+                  </button>
+                  <button 
+                    onClick={() => handleOpenCompleteModal(selectedBooking.id)}
+                    className="px-4 py-1.5 bg-emerald-600 text-white font-normal rounded-lg hover:bg-emerald-700 transition-colors text-sm">
+                    Complete Service
+                  </button>
+                </>
+              )}
+              {selectedBooking.status === "Confirmed" && (
                 <button 
-                  onClick={() => handleCompleteService(selectedBooking.id)}
-                  className="px-4 py-1.5 bg-emerald-600 text-white font-normal rounded-lg hover:bg-emerald-700 transition-colors text-sm">
-                  Complete Service
+                  onClick={() => handleOpenCancelModal(selectedBooking.id)}
+                  className="px-4 py-1.5 border border-red-600 text-red-600 font-normal rounded-lg hover:bg-red-50 transition-colors text-sm">
+                  Cancel Booking
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCancelModal && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-sm p-4"
+          onClick={handleCloseCancelModal}
+        >
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b flex items-center justify-between rounded-t-2xl">
+              <h2 className="text-lg font-semibold text-neutral-900">Cancel Booking</h2>
+              <button onClick={handleCloseCancelModal} className="text-stone-600 hover:text-stone-900 text-2xl leading-none">×</button>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-stone-600 mb-3">
+                Add a clear reason for cancellation. This will be visible in booking details.
+              </p>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="Enter cancellation reason"
+                rows={4}
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-color-main focus:border-transparent"
+              />
+            </div>
+            <div className="bg-stone-50 px-6 py-4 border-t flex gap-3 justify-end rounded-b-2xl">
+              <button onClick={handleCloseCancelModal} className="px-4 py-2 bg-stone-200 text-stone-700 rounded-lg text-sm">Close</button>
+              <button
+                onClick={confirmCancelBooking}
+                disabled={actionLoadingId === bookingToCancel}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 disabled:opacity-50"
+              >
+                {actionLoadingId === bookingToCancel ? "Cancelling..." : "Confirm Cancel"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCompleteModal && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-sm p-4"
+          onClick={handleCloseCompleteModal}
+        >
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b flex items-center justify-between rounded-t-2xl">
+              <h2 className="text-lg font-semibold text-neutral-900">Complete Service</h2>
+              <button onClick={handleCloseCompleteModal} className="text-stone-600 hover:text-stone-900 text-2xl leading-none">×</button>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-stone-600 mb-3">
+                Add a summary of the work completed. The customer can view this note.
+              </p>
+              <textarea
+                value={completionNote}
+                onChange={(e) => setCompletionNote(e.target.value)}
+                placeholder="Describe what was done"
+                rows={4}
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-color-main focus:border-transparent"
+              />
+            </div>
+            <div className="bg-stone-50 px-6 py-4 border-t flex gap-3 justify-end rounded-b-2xl">
+              <button onClick={handleCloseCompleteModal} className="px-4 py-2 bg-stone-200 text-stone-700 rounded-lg text-sm">Close</button>
+              <button
+                onClick={confirmCompleteService}
+                disabled={actionLoadingId === bookingToComplete}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {actionLoadingId === bookingToComplete ? "Completing..." : "Mark Completed"}
+              </button>
             </div>
           </div>
         </div>

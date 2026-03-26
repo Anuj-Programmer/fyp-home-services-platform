@@ -7,9 +7,11 @@ import Navbar from "../../blocks/Navbar";
 import Footer from "../../blocks/Footer";
 import AdminSidebar from "./AdminSidebar";
 import "../../css/landingPage.css";
+import { useSocket } from "../../context/SocketContext";
 
 function AdminPanel() {
   const navigate = useNavigate();
+  const { socket } = useSocket();
   const [isLoading, setIsLoading] = useState(true);
   
   // State for dashboard data
@@ -21,6 +23,29 @@ function AdminPanel() {
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleAdminDataChanged = (payload = {}) => {
+      const changes = Array.isArray(payload.changes) ? payload.changes : [];
+      if (
+        changes.includes("dashboard-stats") ||
+        changes.includes("technicians") ||
+        changes.includes("users") ||
+        changes.includes("bookings") ||
+        changes.includes("revenue")
+      ) {
+        fetchDashboardData();
+      }
+    };
+
+    socket.on("admin:dataChanged", handleAdminDataChanged);
+
+    return () => {
+      socket.off("admin:dataChanged", handleAdminDataChanged);
+    };
+  }, [socket]);
 
   const fetchDashboardData = async () => {
     try {
@@ -40,10 +65,17 @@ function AdminPanel() {
         setBookingsCount(statsResponse.data.stats.totalBookings);
       }
       
-      // Fetch technicians
-      const techResponse = await axios.get("/api/technicians/all-get-active-technicians");
+      // Fetch technicians using the same admin endpoint as APTechnician
+      const techResponse = await axios.get("/api/admin/technicians", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       const techData = techResponse.data.technicians || [];
-      setTechnicians(techData.slice(0, 5));
+      const newestTechnicians = [...techData]
+        .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+        .slice(0, 5);
+      setTechnicians(newestTechnicians);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
       toast.error("Failed to load dashboard data");
@@ -143,12 +175,15 @@ function AdminPanel() {
                                 <td className="px-6 py-4">
                                   <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-full bg-color-main flex items-center justify-center text-white font-semibold text-sm">
-                                      {tech.firstname?.[0]}{tech.lastname?.[0]}
+                                      {(tech.firstName || tech.firstname)?.[0]}
+                                      {(tech.lastName || tech.lastname)?.[0]}
                                     </div>
-                                    <span className="font-medium text-stone-900">{tech.firstname} {tech.lastname}</span>
+                                    <span className="font-medium text-stone-900">
+                                      {tech.firstName || tech.firstname} {tech.lastName || tech.lastname}
+                                    </span>
                                   </div>
                                 </td>
-                                <td className="px-6 py-4 text-stone-700">{tech.servicetype}</td>
+                                <td className="px-6 py-4 text-stone-700">{tech.serviceType || tech.servicetype}</td>
                               </tr>
                             ))
                           ) : (
@@ -170,11 +205,14 @@ function AdminPanel() {
                           >
                             <div className="flex items-center gap-3 min-w-0">
                               <div className="w-9 h-9 rounded-full bg-color-main flex items-center justify-center text-white font-semibold text-xs shrink-0">
-                                {tech.firstname?.[0]}{tech.lastname?.[0]}
+                                {(tech.firstName || tech.firstname)?.[0]}
+                                {(tech.lastName || tech.lastname)?.[0]}
                               </div>
-                              <span className="font-medium text-stone-900 text-sm truncate">{tech.firstname} {tech.lastname}</span>
+                              <span className="font-medium text-stone-900 text-sm truncate">
+                                {tech.firstName || tech.firstname} {tech.lastName || tech.lastname}
+                              </span>
                             </div>
-                            <span className="text-xs text-stone-500 shrink-0">{tech.servicetype}</span>
+                            <span className="text-xs text-stone-500 shrink-0">{tech.serviceType || tech.servicetype}</span>
                           </div>
                         ))
                       ) : (

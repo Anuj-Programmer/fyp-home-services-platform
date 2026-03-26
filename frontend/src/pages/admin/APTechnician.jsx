@@ -7,9 +7,11 @@ import toast from "react-hot-toast";
 import Navbar from "../../blocks/Navbar";
 import Footer from "../../blocks/Footer";
 import AdminSidebar from "./AdminSidebar";
+import { useSocket } from "../../context/SocketContext";
 
 function APTechnician() {
   const navigate = useNavigate();
+  const { socket } = useSocket();
   const [activeTab, setActiveTab] = useState("All");
   const [isLoading, setIsLoading] = useState(true);
   const [technicians, setTechnicians] = useState([]);
@@ -24,6 +26,23 @@ function APTechnician() {
   useEffect(() => {
     fetchTechnicians();
   }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleAdminDataChanged = (payload = {}) => {
+      const changes = Array.isArray(payload.changes) ? payload.changes : [];
+      if (changes.includes("technicians") || changes.includes("dashboard-stats")) {
+        fetchTechnicians();
+      }
+    };
+
+    socket.on("admin:dataChanged", handleAdminDataChanged);
+
+    return () => {
+      socket.off("admin:dataChanged", handleAdminDataChanged);
+    };
+  }, [socket]);
 
   const fetchTechnicians = async () => {
     try {

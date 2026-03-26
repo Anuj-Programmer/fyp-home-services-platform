@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { List, X, Bell, UserCircle, MagnifyingGlass } from "phosphor-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
@@ -24,7 +24,47 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   // Get notifications from WebSocket context instead of state
-  const { notifications, registerUser, clearNotifications } = useSocket();
+  const {
+    notifications: socketNotifications,
+    registerUser,
+    clearNotifications,
+  } = useSocket();
+  const notifications = useMemo(() => {
+    const dbNotifications = Array.isArray(user?.notification) ? user.notification : [];
+    const combined = [...socketNotifications, ...dbNotifications];
+    const seen = new Set();
+
+    return combined
+      .map((notification, index) => {
+        const eventTime =
+          notification?.date ||
+          notification?.createdAt ||
+          notification?.timestamp ||
+          null;
+        const uniqueKey =
+          notification?._id ||
+          notification?.id ||
+          `${notification?.type || "notif"}-${notification?.message || ""}-${notification?.bookingId || ""}-${eventTime || index}`;
+
+        return {
+          ...notification,
+          id: notification?.id || notification?._id || uniqueKey,
+          __key: String(uniqueKey),
+        };
+      })
+      .filter((notification) => {
+        if (seen.has(notification.__key)) {
+          return false;
+        }
+        seen.add(notification.__key);
+        return true;
+      })
+      .sort((a, b) => {
+        const dateA = new Date(a.date || a.createdAt || a.timestamp || 0);
+        const dateB = new Date(b.date || b.createdAt || b.timestamp || 0);
+        return dateB - dateA;
+      });
+  }, [socketNotifications, user?.notification]);
   const isAdmin = Boolean(user?.isAdmin);
   const isNormalAuthenticatedUser =
     isAuthenticated && !isAdmin && user?.role !== "technician";
@@ -481,9 +521,11 @@ const Navbar = () => {
                             className="w-full text-left px-4 py-2 hover:bg-gray-50"
                             onClick={() => {
                               navigate(
-                                user?.role === "technician"
-                                  ? "/technician-profile"
-                                  : "/profile",
+                                isAdmin
+                                  ? "/AdminProfile"
+                                  : user?.role === "technician"
+                                    ? "/technician-profile"
+                                    : "/profile",
                               );
                               setShowProfileMenu(false);
                             }}
@@ -706,9 +748,11 @@ const Navbar = () => {
                     className="w-full text-left px-4 py-3 bg-white border rounded-lg hover:bg-gray-50"
                     onClick={() => {
                       navigate(
-                        user?.role === "technician"
-                          ? "/technician-profile"
-                          : "/profile",
+                        isAdmin
+                          ? "/AdminProfile"
+                          : user?.role === "technician"
+                            ? "/technician-profile"
+                            : "/profile",
                       );
                       setMobileModal(null);
                     }}

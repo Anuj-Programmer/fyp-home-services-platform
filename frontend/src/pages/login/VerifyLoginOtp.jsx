@@ -4,12 +4,14 @@ import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/blocks/Navbar";
 import Cookies from "js-cookie";
+import { useUser } from "../../context/UserContext";
 
 function VerifyLoginOtp() {
   const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { setUserData } = useUser();
 
   useEffect(() => {
     const storedEmail = localStorage.getItem("email");
@@ -83,6 +85,7 @@ function VerifyLoginOtp() {
         ...data.user,
         role: data.role,
       };
+      setUserData(userWithRole);
       localStorage.setItem("user", JSON.stringify(userWithRole));
       localStorage.setItem("otpVerified", "true");
 

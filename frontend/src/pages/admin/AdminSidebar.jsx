@@ -10,6 +10,7 @@ import {
   Gear,
   SignOut,
   Money,
+  Bell
 } from "phosphor-react";
 
 function AdminSidebar() {
@@ -22,6 +23,7 @@ function AdminSidebar() {
     { name: "Bookings", icon: CalendarCheck, route: "/AdminBookings" },
     { name: "Technicians", icon: Wrench, route: "/AdminTechnicians" },
     { name: "Revenue", icon: Money, route: "/AdminRevenue" },
+    { name: "Notifications", icon: Bell, route: "/AdminNotification" },
     { name: "Profile", icon: Gear, route: "/AdminProfile" },
     
   ];

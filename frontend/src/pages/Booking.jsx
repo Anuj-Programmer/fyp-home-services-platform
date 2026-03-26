@@ -36,6 +36,7 @@ function Booking() {
   // Cancellation modal state
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState(null);
+  const [cancelReason, setCancelReason] = useState("");
   
   // Payment modal state
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -95,7 +96,12 @@ function Booking() {
           isVerifiedTechnician: booking.technicianInfo.isVerifiedTechnician || false,
           hasReview: booking.hasReview || false,
           fee: booking.fee || 0,
-          paymentStatus: booking.paymentStatus || "unpaid"
+          paymentStatus: booking.paymentStatus || "unpaid",
+          statusHistory: Array.isArray(booking.statusHistory)
+            ? booking.statusHistory
+            : booking.statusHistory
+              ? [booking.statusHistory]
+              : [],
         }));
 
         setBookings(transformedBookings);
@@ -334,6 +340,7 @@ function Booking() {
   // Open cancellation confirmation modal
   const handleOpenCancelModal = (bookingId) => {
     setBookingToCancel(bookingId);
+    setCancelReason("");
     setShowCancelModal(true);
   };
 
@@ -341,11 +348,17 @@ function Booking() {
   const handleCloseCancelModal = () => {
     setShowCancelModal(false);
     setBookingToCancel(null);
+    setCancelReason("");
   };
 
   // Confirm and cancel booking
   const confirmCancelBooking = async () => {
     if (!bookingToCancel) return;
+
+    if (!cancelReason.trim()) {
+      toast.error("Please provide a cancellation reason");
+      return;
+    }
 
     try {
       setCancellingBookingId(bookingToCancel);
@@ -353,7 +366,7 @@ function Booking() {
       
       const response = await axios.put(
         `/api/bookings/${bookingToCancel}/cancel`,
-        {},
+        { reason: cancelReason.trim() },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -363,15 +376,7 @@ function Booking() {
 
       if (response.data.success) {
         toast.success("Booking cancelled successfully");
-        
-        // Update the bookings list
-        setBookings(prevBookings =>
-          prevBookings.map(booking =>
-            booking.id === bookingToCancel
-              ? { ...booking, status: "Cancelled" }
-              : booking
-          )
-        );
+        await fetchUserBookings(false);
         
         // Emit WebSocket event for real-time update
         if (socket && response.data.booking) {
@@ -410,6 +415,15 @@ function Booking() {
       default:
         return 0;
     }
+  };
+
+  const getLatestStatusHistoryEntry = (booking, targetStatus) => {
+    if (!booking?.statusHistory?.length) return null;
+    const filtered = booking.statusHistory.filter(
+      (entry) => (entry?.status || "").toLowerCase() === targetStatus.toLowerCase()
+    );
+    if (!filtered.length) return null;
+    return filtered.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))[0];
   };
 
   // Payment modal handlers
@@ -818,11 +832,11 @@ function Booking() {
           onClick={handleCloseModal}
         >
           <div
-            className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
             onClick={e => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="sticky top-0 bg-white text-color-primary px-6 py-4 flex items-center justify-between border-b">
+            <div className="sticky top-0 bg-white text-color-primary px-6 py-4 flex items-center justify-between border-b rounded-t-2xl">
               <h2 className="text-xl font-semibold">Booking Details</h2>
               <button
                 onClick={handleCloseModal}
@@ -834,7 +848,7 @@ function Booking() {
             </div>
 
             {/* Modal Body */}
-            <div className="p-6">
+            <div className="flex-1 overflow-y-auto overscroll-contain p-6 pr-4 [scrollbar-width:thin] [scrollbar-color:#cbd5e1_transparent]">
               {/* Technician Information */}
               <div>
                 <h3 className="text-base font-semibold text-neutral-900 mb-3 flex items-center gap-2">
@@ -1009,10 +1023,32 @@ function Booking() {
                   </div>
                 </div>
               </div>
+
+              {selectedBooking.status === "Cancelled" && getLatestStatusHistoryEntry(selectedBooking, "cancelled")?.note && (
+                <div className="mt-6">
+                  <h3 className="text-base font-semibold text-neutral-900 mb-3">Cancellation Reason</h3>
+                  <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
+                    <p className="text-sm text-red-800 leading-relaxed">
+                      {getLatestStatusHistoryEntry(selectedBooking, "cancelled")?.note}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {selectedBooking.status === "Completed" && getLatestStatusHistoryEntry(selectedBooking, "completed")?.note && (
+                <div className="mt-6">
+                  <h3 className="text-base font-semibold text-neutral-900 mb-3">Service Completion Note</h3>
+                  <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-lg">
+                    <p className="text-sm text-emerald-800 leading-relaxed">
+                      {getLatestStatusHistoryEntry(selectedBooking, "completed")?.note}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Modal Footer */}
-            <div className="bg-stone-50 px-6 py-4 border-t flex gap-3 justify-end">
+            <div className="bg-stone-50 px-6 py-4 border-t flex gap-3 justify-end rounded-b-2xl">
               <button
                 onClick={handleCloseModal}
                 className="px-4 py-2 bg-stone-200 text-stone-700 font-medium rounded-lg hover:bg-stone-300 transition-colors text-sm"
@@ -1149,10 +1185,23 @@ function Booking() {
               <p className="text-center text-stone-600 text-sm">
                 Are you sure you want to cancel this booking? This action cannot be undone.
               </p>
+
+              <div className="mt-4">
+                <label className="block text-sm font-semibold text-neutral-900 mb-2">
+                  Cancellation reason
+                </label>
+                <textarea
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="Why are you cancelling this booking?"
+                  rows={3}
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm text-neutral-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-color-main focus:border-transparent"
+                />
+              </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="bg-stone-50 px-6 py-4 border-t flex gap-3 justify-end">
+            <div className="bg-stone-50 px-6 py-4 border-t flex gap-3 justify-end rounded-b-2xl">
               <button
                 onClick={handleCloseCancelModal}
                 className="px-4 py-2 bg-stone-200 text-stone-700 font-medium rounded-lg hover:bg-stone-300 transition-colors text-sm"

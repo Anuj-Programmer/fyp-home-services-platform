@@ -9,8 +9,10 @@ const {
 	changeAddressVerificationStatus,
 	getAllTechnicians,
 	getAllUsers,
+	deleteUserByAdmin,
 	getAllBookings,
 	getDashboardStats,
+	broadcastNotificationToAll,
 } = require('../controllers/adminCtrl');
 
 
@@ -33,11 +35,17 @@ router.get("/technicians", authMiddleware, getAllTechnicians);
 // Get all users /api/admin/users
 router.get("/users", authMiddleware, getAllUsers);
 
+// Delete user /api/admin/users/:userId
+router.delete("/users/:userId", authMiddleware, deleteUserByAdmin);
+
 // Get all bookings
 router.get("/bookings", authMiddleware, getAllBookings);
 
 // Get dashboard statistics
 router.get("/dashboard-stats", authMiddleware, getDashboardStats);
+
+// Broadcast notification to all users and technicians
+router.post('/broadcast-notification', authMiddleware, broadcastNotificationToAll);
 
 module.exports = router;
 

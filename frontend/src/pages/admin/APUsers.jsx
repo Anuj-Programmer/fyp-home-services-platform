@@ -7,9 +7,11 @@ import toast from "react-hot-toast";
 import Navbar from "../../blocks/Navbar";
 import Footer from "../../blocks/Footer";
 import AdminSidebar from "./AdminSidebar";
+import { useSocket } from "../../context/SocketContext";
 
 function APUsers() {
   const navigate = useNavigate();
+  const { socket } = useSocket();
   const [activeTab, setActiveTab] = useState("All");
   const [isLoading, setIsLoading] = useState(true);
   const [users, setUsers] = useState([]);
@@ -17,10 +19,29 @@ function APUsers() {
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [deletingUserId, setDeletingUserId] = useState(null);
 
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleAdminDataChanged = (payload = {}) => {
+      const changes = Array.isArray(payload.changes) ? payload.changes : [];
+      if (changes.includes("users") || changes.includes("dashboard-stats")) {
+        fetchUsers();
+      }
+    };
+
+    socket.on("admin:dataChanged", handleAdminDataChanged);
+
+    return () => {
+      socket.off("admin:dataChanged", handleAdminDataChanged);
+    };
+  }, [socket]);
 
   const fetchUsers = async () => {
     try {
@@ -93,6 +114,27 @@ function APUsers() {
       toast.error(error.response?.data?.message || `Failed to ${status} address`);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete?._id) return;
+
+    try {
+      setDeletingUserId(userToDelete._id);
+      const token = Cookies.get("token") || localStorage.getItem("token");
+
+      await axios.delete(`/api/admin/users/${userToDelete._id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setUsers((prevUsers) => prevUsers.filter((user) => user._id !== userToDelete._id));
+      toast.success("User deleted successfully");
+      setUserToDelete(null);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to delete user");
+    } finally {
+      setDeletingUserId(null);
     }
   };
 
@@ -213,7 +255,13 @@ function APUsers() {
                               View Certificate
                             </button>
                           ) : (
-                            <button className="text-sm text-color-main hover:underline">View</button>
+                            <button
+                              onClick={() => setUserToDelete(item)}
+                              disabled={deletingUserId === item._id}
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-200 text-red-700 hover:bg-red-50 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                            >
+                              {deletingUserId === item._id ? "Deleting..." : "Delete"}
+                            </button>
                           )}
                         </td>
                       </tr>
@@ -282,7 +330,13 @@ function APUsers() {
                         View Certificate
                       </button>
                     ) : (
-                      <button className="text-sm font-semibold text-color-main hover:underline">View</button>
+                      <button
+                        onClick={() => setUserToDelete(item)}
+                        disabled={deletingUserId === item._id}
+                        className="w-full px-3 py-2 rounded-lg text-sm font-semibold border border-red-200 text-red-700 hover:bg-red-50 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {deletingUserId === item._id ? "Deleting..." : "Delete User"}
+                      </button>
                     )}
                   </div>
                 ))
@@ -431,6 +485,45 @@ function APUsers() {
                 ) : (
                   "Approve"
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {userToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <button
+            type="button"
+            aria-label="Close delete user modal"
+            className="absolute inset-0 bg-black/40"
+            onClick={() => {
+              if (!deletingUserId) setUserToDelete(null);
+            }}
+          />
+
+          <div className="relative w-full max-w-md rounded-2xl bg-white shadow-xl border border-stone-200 p-6 space-y-4">
+            <h2 className="text-lg font-bold text-stone-900">Delete User</h2>
+            <p className="text-sm text-stone-600">
+              Are you sure you want to delete {userToDelete.firstName} {userToDelete.lastName}? This action cannot be undone.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setUserToDelete(null)}
+                disabled={Boolean(deletingUserId)}
+                className="px-4 py-2 rounded-lg border border-stone-300 text-stone-700 text-sm font-semibold hover:bg-stone-50 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteUser}
+                disabled={deletingUserId === userToDelete._id}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {deletingUserId === userToDelete._id ? "Deleting..." : "Delete"}
               </button>
             </div>
           </div>

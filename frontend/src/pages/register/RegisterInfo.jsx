@@ -4,6 +4,7 @@ import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/blocks/Navbar";
 import Cookies from "js-cookie";
+import { useUser } from "../../context/UserContext";
 
 function RegisterInfo() {
   const [firstName, setFirstName] = useState("");
@@ -12,6 +13,7 @@ function RegisterInfo() {
   const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
+  const { setUserData } = useUser();
 
   const navigate = useNavigate();
 
@@ -59,6 +61,7 @@ function RegisterInfo() {
       role: data.role || "user", // default to "user"
     };
 
+    setUserData(userWithRole);
     localStorage.setItem("user", JSON.stringify(userWithRole));
 
       // Redirect to dashboard or home page
