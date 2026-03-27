@@ -94,10 +94,12 @@ const sendBrevoEmail = async ({ toEmail, subject, html }) => {
           ? "Your Technician Account Has Been Approved"
           : "Your Technician Application Has Been Rejected";
 
+      const loginUrl = `${process.env.CLIENT_URL || "http://localhost:5173"}/login`;
+
       const actionButton = 
         status === "approved"
           ? `<p style="margin: 0; margin-top: 40px;">
-              <a href="http://localhost:5173/login" style="display: inline-block; padding: 12px 30px; background: #1A2D6F; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600;">Log In Now</a>
+              <a href="${loginUrl}" style="display: inline-block; padding: 12px 30px; background: #1A2D6F; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600;">Log In Now</a>
             </p>`
           : `<p style="margin: 0; margin-top: 40px; color: #666666; font-size: 14px;">
               If you have any questions, please contact our support team.
