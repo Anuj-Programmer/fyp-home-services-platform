@@ -45,7 +45,7 @@ function LandingPage() {
     const fetchActiveTechnicians = async () => {
       try {
         setLoading(true);
-        const response = await apiClient.get("/api/technicians/all-get-active-technicians");
+        const response = await apiClient.get("/api/technicians/get-active-technicians");
         if (response.data && response.data.success) {
           setProfessionals(response.data.technicians);
         }
