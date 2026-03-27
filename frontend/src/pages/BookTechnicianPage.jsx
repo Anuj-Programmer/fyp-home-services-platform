@@ -27,6 +27,9 @@ function BookTechnicianPage() {
   const [showModal, setShowModal] = useState(false);
   const [orderNote, setOrderNote] = useState('');
   const [selectedAddress, setSelectedAddress] = useState(null);
+  const [hasPendingPayment, setHasPendingPayment] = useState(false);
+  const [pendingPaymentCount, setPendingPaymentCount] = useState(0);
+  const [checkingPendingPayments, setCheckingPendingPayments] = useState(false);
   const { socket, isConnected } = useSocket();
   const { user } = useUser();
 
@@ -82,6 +85,48 @@ function BookTechnicianPage() {
 
     fetchTechnicianReviews();
   }, [id, token]);
+
+  // Check if user has any completed but unpaid bookings.
+  useEffect(() => {
+    const fetchPendingPayments = async () => {
+      if (!token) {
+        setHasPendingPayment(false);
+        setPendingPaymentCount(0);
+        return;
+      }
+
+      try {
+        setCheckingPendingPayments(true);
+        const response = await axios.get('/api/bookings/user-bookings', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.data?.success) {
+          const completedUnpaidBookings = (response.data.bookings || []).filter(
+            (booking) =>
+              String(booking.status || '').toLowerCase() === 'completed' &&
+              String(booking.paymentStatus || '').toLowerCase() !== 'paid',
+          );
+
+          setPendingPaymentCount(completedUnpaidBookings.length);
+          setHasPendingPayment(completedUnpaidBookings.length > 0);
+        } else {
+          setHasPendingPayment(false);
+          setPendingPaymentCount(0);
+        }
+      } catch (error) {
+        console.error('Error checking pending payments:', error);
+        setHasPendingPayment(false);
+        setPendingPaymentCount(0);
+      } finally {
+        setCheckingPendingPayments(false);
+      }
+    };
+
+    fetchPendingPayments();
+  }, [token]);
 
   // Fetch booked slots from backend
   const fetchBookedSlots = async () => {
@@ -212,6 +257,11 @@ function BookTechnicianPage() {
 
   // Handle booking - validate and open modal
   const handleBookNow = () => {
+    if (hasPendingPayment) {
+      toast.error('Please pay your pending completed booking before creating a new booking.');
+      return;
+    }
+
     if (!selectedDate || !selectedTime) {
       toast.error('Please select both date and time');
       return;
@@ -438,6 +488,23 @@ function BookTechnicianPage() {
           {/* Right: Booking Panel */}
           <div className="md:w-1/2 w-full flex flex-col gap-8">
             <div className="bg-white rounded-xl shadow p-8 flex flex-col gap-6 sticky top-24">
+              {hasPendingPayment && (
+                <div className="rounded-xl border border-amber-300 bg-amber-50 p-4">
+                  <h3 className="text-sm font-semibold text-amber-800">Payment Required Before New Booking</h3>
+                  <p className="mt-1 text-sm text-amber-700">
+                    You have {pendingPaymentCount} completed booking{pendingPaymentCount > 1 ? 's' : ''} with unpaid status.
+                    Please complete payment first to continue booking.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/bookings')}
+                    className="mt-3 inline-flex items-center rounded-lg bg-amber-600 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-700 transition"
+                  >
+                    Go to Bookings and Pay
+                  </button>
+                </div>
+              )}
+
               {/* Technician Header */}
               <div className="border-b border-gray-200 pb-6">
                 <div className="flex items-center gap-2 mb-2">
@@ -538,15 +605,32 @@ function BookTechnicianPage() {
               )}
               <button
                 onClick={handleBookNow}
-                disabled={bookingLoading || !selectedDate || !selectedTime}
+                disabled={
+                  bookingLoading ||
+                  !selectedDate ||
+                  !selectedTime ||
+                  hasPendingPayment ||
+                  checkingPendingPayments
+                }
                 className={`w-full py-4 px-6 rounded-lg font-bold text-lg text-white transition mt-2 ${
-                  bookingLoading || !selectedDate || !selectedTime
+                  bookingLoading || !selectedDate || !selectedTime || hasPendingPayment || checkingPendingPayments
                     ? 'bg-gray-400 cursor-not-allowed'
                     : 'bg-color-main hover:bg-blue-700 btn-filled-slide'
                 }`}
               >
-                {bookingLoading ? 'Processing...' : 'Book Now'}
+                {checkingPendingPayments
+                  ? 'Checking payment status...'
+                  : hasPendingPayment
+                    ? 'Pay Pending Dues First'
+                    : bookingLoading
+                      ? 'Processing...'
+                      : 'Book Now'}
               </button>
+              {hasPendingPayment && (
+                <p className="text-xs text-red-600 -mt-3">
+                  New booking is disabled until all completed bookings are paid.
+                </p>
+              )}
             </div>
           </div>
         </div>
