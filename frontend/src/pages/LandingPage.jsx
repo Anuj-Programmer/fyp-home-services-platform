@@ -57,6 +57,7 @@ function LandingPage() {
         setLoading(false);
       }
     };
+    //pseudo push 
 
     fetchActiveTechnicians();
   }, []);
