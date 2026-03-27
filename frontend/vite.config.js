@@ -10,10 +10,6 @@ export default defineConfig({
     },
   },
   server: {
-    proxy: {
-      // Proxy all requests starting with /api to your backend
-      '/api': 'http://127.0.0.1:8080',
-    },
     host: true,
   },
 });

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import { apiClient } from "@/lib/api";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/blocks/Navbar";
@@ -71,7 +71,7 @@ function TechnicianOtpPage() {
     }
 
     try {
-      const { data } = await axios.post("/api/otp/verify", { email, otp });
+      const { data } = await apiClient.post("/api/otp/verify", { email, otp });
 
       toast.success(data.message || "OTP verified successfully!");
       localStorage.setItem("technicianOtpVerified", "true");

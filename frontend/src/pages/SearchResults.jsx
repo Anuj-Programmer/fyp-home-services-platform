@@ -5,7 +5,7 @@ import Footer from "@/blocks/Footer";
 import TechnicianCard from "@/blocks/TechnicianCard";
 import { MagnifyingGlass, MapPin, SlidersHorizontal, X } from "phosphor-react";
 import "../css/landingPage.css";
-import axios from "axios";
+import { apiClient } from "@/lib/api";
 import Cookies from "js-cookie";
 
 const categories = [
@@ -77,7 +77,7 @@ function SearchResults() {
           console.log("Fetching technicians with params:", params);
           console.log("Search query:", searchQueryFromUrl);
 
-          const response = await axios.get("/api/technicians/search-technician", {
+          const response = await apiClient.get("/api/technicians/search-technician", {
             params,
             headers: {
               Authorization: `Bearer ${token}`

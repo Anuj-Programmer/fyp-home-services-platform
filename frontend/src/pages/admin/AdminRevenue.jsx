@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import { apiClient } from "@/lib/api";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import Navbar from "@/blocks/Navbar";
@@ -25,7 +25,7 @@ function AdminRevenue() {
         return;
       }
 
-      const response = await axios.get("/api/bookings/admin-revenue", {
+      const response = await apiClient.get("/api/bookings/admin-revenue", {
         headers: {
           Authorization: `Bearer ${token}`,
         },

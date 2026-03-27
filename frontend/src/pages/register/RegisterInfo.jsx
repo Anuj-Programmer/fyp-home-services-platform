@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import { apiClient } from "@/lib/api";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/blocks/Navbar";
@@ -39,13 +39,13 @@ function RegisterInfo() {
     setLoading(true);
 
     try {
-      const { data } = await axios.post("/api/users/register", {
+      const { data } = await apiClient.post("/api/users/register", {
         email,
         firstName,
         lastName,
         phone,
         address,
-      },{withCredentials: true});
+      });
 
       toast.success(data.message || "Registration completed!");
 

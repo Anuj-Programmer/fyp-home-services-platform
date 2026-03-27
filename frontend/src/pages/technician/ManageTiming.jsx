@@ -1,7 +1,7 @@
 import Navbar from '@/blocks/Navbar'
 import Footer from '@/blocks/Footer'
 import { useState } from 'react'
-import axios from 'axios'
+import { apiClient } from '@/lib/api'
 import toast from 'react-hot-toast'
 import '../../css/landingPage.css'
 import Cookies from 'js-cookie'
@@ -51,7 +51,7 @@ function ManageTiming() {
 
       const technicianId = user?.id || user?._id
 
-      const { data } = await axios.put(
+      const { data } = await apiClient.put(
         '/api/technicians/availability',
         { availability, technicianId },
         {

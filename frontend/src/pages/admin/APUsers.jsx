@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
-import axios from "axios";
+import { apiClient } from "@/lib/api";
 import toast from "react-hot-toast";
 import Navbar from "../../blocks/Navbar";
 import Footer from "../../blocks/Footer";
@@ -47,7 +47,7 @@ function APUsers() {
     try {
       setIsLoading(true);
       const token = Cookies.get("token") || localStorage.getItem("token");
-      const response = await axios.get("/api/admin/users", { headers: { Authorization: `Bearer ${token}` } });
+      const response = await apiClient.get("/api/admin/users", { headers: { Authorization: `Bearer ${token}` } });
       setUsers(response.data.users || []);
     } catch (error) {
       toast.error("Failed to fetch users");
@@ -100,7 +100,7 @@ function APUsers() {
       setIsSubmitting(true);
       const token = Cookies.get("token") || localStorage.getItem("token");
       
-      const response = await axios.patch(
+      const response = await apiClient.patch(
         `/api/admin/user/${selectedAddress.userId}/address/${selectedAddress._id}/verification-status`,
         { status }, // "approved" or "rejected"
         { headers: { Authorization: `Bearer ${token}` } }
@@ -124,7 +124,7 @@ function APUsers() {
       setDeletingUserId(userToDelete._id);
       const token = Cookies.get("token") || localStorage.getItem("token");
 
-      await axios.delete(`/api/admin/users/${userToDelete._id}`, {
+      await apiClient.delete(`/api/admin/users/${userToDelete._id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import axios from "axios";
+import { apiClient } from "@/lib/api";
 import toast from "react-hot-toast";
 import Navbar from "@/blocks/Navbar";
 import Footer from "@/blocks/Footer";
@@ -245,7 +245,7 @@ function TechnicianProfile() {
         payload.userId = user._id;
       }
 
-      const { data } = await axios.put(
+      const { data } = await apiClient.put(
         "/api/technicians/update-technician-profile",
         payload,
         {
@@ -290,7 +290,7 @@ function TechnicianProfile() {
       const response = await uploadToCloudinary(file);
 
       // Send certificate URL to backend
-      const { data } = await axios.post(
+      const { data } = await apiClient.post(
         "/api/technicians/upload-certificate",
         {
           technicianId: user._id,
@@ -364,7 +364,7 @@ function TechnicianProfile() {
     try {
       setUpdatingStatus(true);
 
-      const { data } = await axios.put(
+      const { data } = await apiClient.put(
         "/api/technicians/update-status",
         {
           technicianId: user._id,

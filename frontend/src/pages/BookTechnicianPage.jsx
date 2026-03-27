@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { apiClient } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 import Cookies from 'js-cookie';
 import { Star, ArrowLeft, CurrencyCircleDollar, Wrench, MapPin, CheckCircle } from 'phosphor-react';
@@ -37,7 +37,7 @@ function BookTechnicianPage() {
   useEffect(() => {
     const fetchTechnician = async () => {
       try {
-        const { data } = await axios.get(`/api/technicians/get-technician/${id}`);
+        const { data } = await apiClient.get(`/api/technicians/get-technician/${id}`);
         setTechnician(data.technician);
         setLoading(false);
       } catch (error) {
@@ -58,7 +58,7 @@ function BookTechnicianPage() {
 
     const fetchTechnicianReviews = async () => {
       try {
-        const response = await axios.get(`/api/reviews/technician/${id}`, {
+        const response = await apiClient.get(`/api/reviews/technician/${id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -97,7 +97,7 @@ function BookTechnicianPage() {
 
       try {
         setCheckingPendingPayments(true);
-        const response = await axios.get('/api/bookings/user-bookings', {
+        const response = await apiClient.get('/api/bookings/user-bookings', {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -132,7 +132,7 @@ function BookTechnicianPage() {
   const fetchBookedSlots = async () => {
     if (!selectedDate || !id) return;
     try {
-      const { data } = await axios.get(`/api/bookings/booked-slots/${id}/${selectedDate}`);
+      const { data } = await apiClient.get(`/api/bookings/booked-slots/${id}/${selectedDate}`);
       setBookedSlots(data.bookedSlots || []);
       console.log('📋 Fetched booked slots:', data.bookedSlots);
     } catch (error) {
@@ -324,7 +324,7 @@ function BookTechnicianPage() {
           email: technician.email,
         },
       };
-      const response = await axios.post('/api/bookings/create', bookingData, {
+      const response = await apiClient.post('/api/bookings/create', bookingData, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

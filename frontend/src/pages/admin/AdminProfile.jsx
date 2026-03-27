@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import { apiClient } from "@/lib/api";
 import toast from "react-hot-toast";
 import AdminSidebar from "@/pages/admin/AdminSidebar";
 import "../../css/landingPage.css";
@@ -59,7 +59,7 @@ function AdminProfile() {
     setSaving(true);
 
     try {
-      const response = await axios.put(
+      const response = await apiClient.put(
         "/api/users/update-profile",
         {
           userId: user?._id,

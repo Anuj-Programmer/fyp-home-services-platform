@@ -5,7 +5,7 @@ import Footer from "@/blocks/Footer";
 import TechnicianCard from "@/blocks/TechnicianCard";
 import { FunnelSimple, MagnifyingGlass, MapPin } from "phosphor-react";
 import "../css/landingPage.css";
-import axios from "axios";
+import { apiClient } from "@/lib/api";
 
 const categories = [
   { id: "all", label: "All services" },
@@ -50,7 +50,7 @@ function Services() {
           if (address && ["chitwan", "pokhara", "kathmandu"].includes(address)) {
             url += `?address=${address}`;
           }
-          const response = await axios.get(url);
+          const response = await apiClient.get(url);
           if (response.data && response.data.success) {
             setTechnicians(response.data.technicians);
           }

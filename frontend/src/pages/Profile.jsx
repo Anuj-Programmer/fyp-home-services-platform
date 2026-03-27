@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import { apiClient } from "@/lib/api";
 import toast from "react-hot-toast";
 import Navbar from "@/blocks/Navbar";
 import Footer from "@/blocks/Footer";
@@ -96,7 +96,7 @@ function Profile() {
     setSaving(true);
 
     try {
-      const response = await axios.put(
+      const response = await apiClient.put(
         "/api/users/update-profile",
         {
           userId: user?._id,
@@ -183,7 +183,7 @@ function Profile() {
 
       if (editingAddress) {
         // Update existing address
-        const response = await axios.put(
+        const response = await apiClient.put(
           "/api/users/update-address",
           {
             userId: user._id,
@@ -200,7 +200,7 @@ function Profile() {
         toast.success("Address updated successfully!");
       } else {
         // Add new address
-        const response = await axios.post(
+        const response = await apiClient.post(
           "/api/users/add-address",
           {
             userId: user._id,
@@ -249,7 +249,7 @@ function Profile() {
     if (!confirm("Are you sure you want to delete this address?")) return;
 
     try {
-      const response = await axios.delete("/api/users/delete-address", {
+      const response = await apiClient.delete("/api/users/delete-address", {
         data: {
           userId: user._id,
           addressId: addressId,
@@ -275,7 +275,7 @@ function Profile() {
       const response = await uploadToCloudinary(file);
 
       // Send certificate URL to backend
-      const { data } = await axios.post(
+      const { data } = await apiClient.post(
         "/api/users/upload-certificate",
         {
           userId: user._id,

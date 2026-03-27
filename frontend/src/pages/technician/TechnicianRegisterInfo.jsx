@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { apiClient } from "@/lib/api";
 import toast from "react-hot-toast";
 import Navbar from "@/blocks/Navbar";
 import { uploadToCloudinary } from "@/lib/uploadToCloudinary";
@@ -86,7 +86,7 @@ function TechnicianRegisterInfo() {
 
     setLoading(true);
     try {
-      const { data } = await axios.post("/api/technicians/registerTechnician", {
+      const { data } = await apiClient.post("/api/technicians/registerTechnician", {
         email,
         firstName,
         lastName,

@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import "../css/nav.css";
 import Logo from "../assets/Logo.png";
-import axios from "axios";
+import { apiClient } from "@/lib/api";
 import toast from "react-hot-toast";
 import { useSocket } from "../context/SocketContext";
 import { useUser } from "../context/UserContext";
@@ -169,7 +169,7 @@ const Navbar = () => {
 
   const handleTechnicianStatus = async (technicianId, status) => {
     try {
-      const { data } = await axios.patch(`/api/admin/${technicianId}/status`, {
+      const { data } = await apiClient.patch(`/api/admin/${technicianId}/status`, {
         status,
       });
       toast.success(data.message || `Technician ${status}`);
@@ -183,7 +183,7 @@ const Navbar = () => {
 
   const handleMarkAllAsRead = async () => {
     try {
-      const { data } = await axios.post(
+      const { data } = await apiClient.post(
         "/api/users/mark-all-notifications",
         { userId: user?._id },
         {
@@ -207,7 +207,7 @@ const Navbar = () => {
 
   const handleDeleteAllNotifications = async () => {
     try {
-      const { data } = await axios.post(
+      const { data } = await apiClient.post(
         "/api/users/delete-all-notifications",
         { userId: user?._id },
         {

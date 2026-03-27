@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
+import { apiClient } from "@/lib/api";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/blocks/Navbar";
@@ -20,7 +20,7 @@ function LoginPage() {
   setMessage("");
 
   try {
-    const { data } = await axios.post("/api/otp/login/send", { email });
+    const { data } = await apiClient.post("/api/otp/login/send", { email });
 
     if (data && data.message) {
       // ✅ OTP sent successfully

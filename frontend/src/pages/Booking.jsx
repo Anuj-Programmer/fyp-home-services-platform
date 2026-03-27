@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "@/blocks/Navbar";
 import VerifiedIcon from "@/assets/VerifiedIcon.svg";
 import Footer from "@/blocks/Footer";
-import axios from "axios";
+import { apiClient } from "@/lib/api";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
 import { useSocket } from "../context/SocketContext";
@@ -70,7 +70,7 @@ function Booking() {
     try {
       if (showLoading) setLoading(true);
       const token = Cookies.get("token") || localStorage.getItem("token");
-      const response = await axios.get("/api/bookings/user-bookings", {
+      const response = await apiClient.get("/api/bookings/user-bookings", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -164,7 +164,7 @@ function Booking() {
       }
 
       try {
-        const response = await axios.post(
+        const response = await apiClient.post(
           `/api/bookings/${callbackBookingId}/verify-khalti-payment`,
           { pidx },
           {
@@ -309,7 +309,7 @@ function Booking() {
       setSubmittingReview(true);
       const token = Cookies.get("token") || localStorage.getItem("token");
       
-      await axios.post(
+      await apiClient.post(
         `/api/reviews/${ratingBooking.id}`,
         {
           bookingId: ratingBooking.id,
@@ -364,7 +364,7 @@ function Booking() {
       setCancellingBookingId(bookingToCancel);
       const token = Cookies.get("token") || localStorage.getItem("token");
       
-      const response = await axios.put(
+      const response = await apiClient.put(
         `/api/bookings/${bookingToCancel}/cancel`,
         { reason: cancelReason.trim() },
         {
@@ -449,7 +449,7 @@ function Booking() {
         throw new Error("Authentication token not found");
       }
 
-      const response = await axios.post(
+      const response = await apiClient.post(
         `/api/bookings/${paymentBooking.id}/initiate-khalti-payment`,
         {},
         {

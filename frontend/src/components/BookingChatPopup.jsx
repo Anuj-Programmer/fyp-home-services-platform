@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import axios from "axios";
+import { apiClient } from "@/lib/api";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import { useSocket } from "../context/SocketContext";
@@ -86,7 +86,7 @@ function BookingChatPopup({
       const token = Cookies.get("token") || localStorage.getItem("token");
       if (!token) return;
 
-      const response = await axios.get(`/api/chat/conversations/${bookingId}/messages`, {
+      const response = await apiClient.get(`/api/chat/conversations/${bookingId}/messages`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -117,7 +117,7 @@ function BookingChatPopup({
         const token = Cookies.get("token") || localStorage.getItem("token");
         if (!token) return;
 
-        const response = await axios.post(
+        const response = await apiClient.post(
           "/api/chat/conversations/find-or-create",
           {
             user_id: participants.userId,

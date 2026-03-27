@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { apiClient } from "@/lib/api";
 import toast from "react-hot-toast";
 import Navbar from "@/blocks/Navbar";
 import Logo from "../../assets/faviconLogo.png";
@@ -18,7 +18,7 @@ function TechnicianRegisterEmail() {
 
     setLoading(true);
     try {
-      const { data } = await axios.post("/api/otp/send", { email });
+      const { data } = await apiClient.post("/api/otp/send", { email });
       toast.success(data.message || "OTP sent successfully");
 
       if (data?.message === "OTP sent to your email") {

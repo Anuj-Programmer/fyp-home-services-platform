@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "@/blocks/Navbar";
 import Footer from "@/blocks/Footer";
-import axios from "axios";
+import { apiClient } from "@/lib/api";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
 import { useSocket } from "../../context/SocketContext";
@@ -55,7 +55,7 @@ function TechnicianBookings() {
     try {
       if (showLoading) setLoading(true);
       const token = Cookies.get("token") || localStorage.getItem("token");
-      const response = await axios.get("/api/bookings/technician-bookings", {
+      const response = await apiClient.get("/api/bookings/technician-bookings", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -199,7 +199,7 @@ function TechnicianBookings() {
   const handleAcceptBooking = async (bookingId) => {
     try {
       const token = Cookies.get("token") || localStorage.getItem("token");
-      const response = await axios.put(
+      const response = await apiClient.put(
         `/api/bookings/${bookingId}/status`,
         { status: "confirmed" },
         {
@@ -243,7 +243,7 @@ function TechnicianBookings() {
   const handleDeclineBooking = async (bookingId) => {
     try {
       const token = Cookies.get("token") || localStorage.getItem("token");
-      const response = await axios.put(
+      const response = await apiClient.put(
         `/api/bookings/${bookingId}/status`,
         { status: "declined" },
         {
@@ -287,7 +287,7 @@ function TechnicianBookings() {
   const handleStartService = async (bookingId) => {
     try {
       const token = Cookies.get("token") || localStorage.getItem("token");
-      const response = await axios.put(
+      const response = await apiClient.put(
         `/api/bookings/${bookingId}/status`,
         { status: "inprogress" },
         {
@@ -332,7 +332,7 @@ function TechnicianBookings() {
     try {
       setActionLoadingId(bookingId);
       const token = Cookies.get("token") || localStorage.getItem("token");
-      const response = await axios.put(
+      const response = await apiClient.put(
         `/api/bookings/${bookingId}/status`,
         { status: "completed", note: serviceNote },
         {
@@ -392,7 +392,7 @@ function TechnicianBookings() {
     try {
       setActionLoadingId(bookingToCancel);
       const token = Cookies.get("token") || localStorage.getItem("token");
-      const response = await axios.put(
+      const response = await apiClient.put(
         `/api/bookings/${bookingToCancel}/cancel`,
         { reason: cancelReason.trim() },
         {

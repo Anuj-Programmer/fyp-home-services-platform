@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import Cookies from "js-cookie";
-import axios from "axios";
+import { apiClient } from "@/lib/api";
 import toast from "react-hot-toast";
 import Navbar from "../../blocks/Navbar";
 import AdminSidebar from "./AdminSidebar";
@@ -68,7 +68,7 @@ function APBookings() {
     try {
       setIsLoading(true);
       const token = Cookies.get("token") || localStorage.getItem("token");
-      const response = await axios.get("/api/admin/bookings", {
+      const response = await apiClient.get("/api/admin/bookings", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -109,7 +109,7 @@ function APBookings() {
       setDeletingBookingId(bookingId);
       const token = Cookies.get("token") || localStorage.getItem("token");
 
-      await axios.delete(`/api/bookings/${bookingId}`, {
+      await apiClient.delete(`/api/bookings/${bookingId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

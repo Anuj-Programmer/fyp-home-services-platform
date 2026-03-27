@@ -3,7 +3,7 @@ import Footer from '@/blocks/Footer'
 import { useNavigate } from 'react-router-dom'
 import React, { useState, useEffect } from 'react'
 import '../../css/landingPage.css'
-import axios from 'axios'
+import { apiClient } from '@/lib/api'
 import Cookies from 'js-cookie'
 
 function TechnicianDashboard() {
@@ -38,7 +38,7 @@ function TechnicianDashboard() {
         }
 
         const token = Cookies.get('token') || localStorage.getItem('token')
-        const response = await axios.get(`/api/technicians/get-technician/${user._id}`, {
+        const response = await apiClient.get(`/api/technicians/get-technician/${user._id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -61,7 +61,7 @@ function TechnicianDashboard() {
     const fetchTechnicianEarnings = async () => {
       try {
         const token = Cookies.get('token') || localStorage.getItem('token')
-        const response = await axios.get('/api/bookings/technician-earnings', {
+        const response = await apiClient.get('/api/bookings/technician-earnings', {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -98,7 +98,7 @@ function TechnicianDashboard() {
       try {
         setLoading(true)
         const token = Cookies.get('token') || localStorage.getItem('token')
-        const response = await axios.get('/api/bookings/technician-bookings', {
+        const response = await apiClient.get('/api/bookings/technician-bookings', {
           headers: {
             Authorization: `Bearer ${token}`,
           },

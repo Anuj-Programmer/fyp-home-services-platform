@@ -19,7 +19,7 @@ import {
 } from "phosphor-react";
 import "../css/landingPage.css";
 import { Link } from "react-router-dom";
-import axios from "axios";
+import { apiClient } from "@/lib/api";
 import Cookies from "js-cookie";
 import { toast } from "react-hot-toast";
 import { useSocket } from "@/context/SocketContext";
@@ -49,7 +49,7 @@ function HomePage() {
           if (address && ["chitwan", "pokhara", "kathmandu"].includes(address)) {
             url += `?address=${address}`;
           }
-          const response = await axios.get(url);
+          const response = await apiClient.get(url);
           if (response.data && response.data.success) {
             // Limit to 3 professionals for the recommended section
             setRecommendedPros(response.data.technicians.slice(0, 4));
@@ -69,7 +69,7 @@ function HomePage() {
   const fetchUserBookings = async () => {
     try {
       const token = Cookies.get("token") || localStorage.getItem("token");
-      const response = await axios.get("/api/bookings/user-bookings", {
+      const response = await apiClient.get("/api/bookings/user-bookings", {
         headers: {
           Authorization: `Bearer ${token}`,
         },

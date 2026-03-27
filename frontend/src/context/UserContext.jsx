@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import axios from "axios";
+import { apiClient } from "@/lib/api";
 import Cookies from "js-cookie";
 
 const UserContext = createContext();
@@ -56,7 +56,7 @@ export const UserProvider = ({ children }) => {
       if (!silent) {
         setLoading(true);
       }
-      const request = axios
+      const request = apiClient
         .get("/api/users/current-user", {
           headers: {
             Authorization: `Bearer ${token}`,

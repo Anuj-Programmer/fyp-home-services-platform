@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import { apiClient } from '@/lib/api';
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import Navbar from "@/blocks/Navbar";
@@ -22,7 +22,7 @@ function TechnicianPayments() {
         return;
       }
 
-      const response = await axios.get("/api/bookings/technician-earnings", {
+      const response = await apiClient.get("/api/bookings/technician-earnings", {
         headers: {
           Authorization: `Bearer ${token}`,
         },

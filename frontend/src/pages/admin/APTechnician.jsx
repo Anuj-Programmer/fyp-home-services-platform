@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
-import axios from "axios";
+import { apiClient } from "@/lib/api";
 import toast from "react-hot-toast";
 import Navbar from "../../blocks/Navbar";
 import Footer from "../../blocks/Footer";
@@ -50,7 +50,7 @@ function APTechnician() {
       const token = Cookies.get("token") || localStorage.getItem("token");
       
       // Fetch all technicians
-      const response = await axios.get("/api/admin/technicians", {
+      const response = await apiClient.get("/api/admin/technicians", {
         headers: { Authorization: `Bearer ${token}` }
       });
       const techData = response.data.technicians || [];
@@ -79,7 +79,7 @@ function APTechnician() {
       
       if (modalType === "account") {
         // Account Approval Flow
-        await axios.patch(
+        await apiClient.patch(
           `/api/admin/${selectedTechnician._id}/status`,
           { status: "approved" },
           { headers: { Authorization: `Bearer ${token}` } }
@@ -87,7 +87,7 @@ function APTechnician() {
         toast.success("Technician account approved successfully");
       } else if (modalType === "certificate") {
         // Certificate Verification Flow
-        await axios.patch(
+        await apiClient.patch(
           `/api/admin/technician/${selectedTechnician._id}/certificate-status`,
           { status: "approved" },
           { headers: { Authorization: `Bearer ${token}` } }
@@ -115,7 +115,7 @@ function APTechnician() {
       
       if (modalType === "account") {
         // Account Rejection Flow
-        await axios.patch(
+        await apiClient.patch(
           `/api/admin/${selectedTechnician._id}/status`,
           { status: "rejected" },
           { headers: { Authorization: `Bearer ${token}` } }
@@ -123,7 +123,7 @@ function APTechnician() {
         toast.success("Technician account rejected");
       } else if (modalType === "certificate") {
         // Certificate Rejection Flow
-        await axios.patch(
+        await apiClient.patch(
           `/api/admin/technician/${selectedTechnician._id}/certificate-status`,
           { status: "rejected" },
           { headers: { Authorization: `Bearer ${token}` } }
@@ -150,7 +150,7 @@ function APTechnician() {
       const token = Cookies.get("token") || localStorage.getItem("token");
       
       // Delete technician
-      await axios.delete(
+      await apiClient.delete(
         `/api/admin/technicians/${technicianToDelete._id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );

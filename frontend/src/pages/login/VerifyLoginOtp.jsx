@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import { apiClient } from "@/lib/api";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/blocks/Navbar";
@@ -71,7 +71,7 @@ function VerifyLoginOtp() {
 
     setLoading(true);
     try {
-      const { data } = await axios.post("/api/otp/login/verify", {
+      const { data } = await apiClient.post("/api/otp/login/verify", {
         email,
         otp,
       });

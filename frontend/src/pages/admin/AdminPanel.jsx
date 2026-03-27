@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { apiClient } from "@/lib/api";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import Navbar from "../../blocks/Navbar";
@@ -53,7 +53,7 @@ function AdminPanel() {
       const token = Cookies.get("token") || localStorage.getItem("token");
       
       // Fetch stats from backend
-      const statsResponse = await axios.get("/api/admin/dashboard-stats", {
+      const statsResponse = await apiClient.get("/api/admin/dashboard-stats", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -66,7 +66,7 @@ function AdminPanel() {
       }
       
       // Fetch technicians using the same admin endpoint as APTechnician
-      const techResponse = await axios.get("/api/admin/technicians", {
+      const techResponse = await apiClient.get("/api/admin/technicians", {
         headers: {
           Authorization: `Bearer ${token}`,
         },

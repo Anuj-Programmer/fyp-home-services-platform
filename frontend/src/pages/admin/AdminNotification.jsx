@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import axios from "axios";
+import { apiClient } from "@/lib/api";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import Navbar from "../../blocks/Navbar";
@@ -59,7 +59,7 @@ function AdminNotification() {
         onClickPath: formData.onClickPath.trim(),
       };
 
-      const { data } = await axios.post(
+      const { data } = await apiClient.post(
         "/api/admin/broadcast-notification",
         payload,
         {

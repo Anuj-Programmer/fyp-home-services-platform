@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Star } from "phosphor-react";
 import Navbar from "@/blocks/Navbar";
 import Footer from "@/blocks/Footer";
-import axios from "axios";
+import { apiClient } from "@/lib/api";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
 import "../../css/landingPage.css";
@@ -43,7 +43,7 @@ function TechnicianReview() {
       try {
         if (showLoading) setLoading(true);
         const token = Cookies.get("token") || localStorage.getItem("token");
-        const response = await axios.get(
+        const response = await apiClient.get(
           `/api/reviews/technician/${technician._id}`,
           {
             headers: {

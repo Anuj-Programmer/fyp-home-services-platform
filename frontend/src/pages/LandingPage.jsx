@@ -29,7 +29,7 @@ import {
   Check,
 } from "phosphor-react";
 import Footer from "@/blocks/Footer";
-import axios from "axios";
+import { apiClient } from "@/lib/api";
 import { toast } from "react-hot-toast";
 
 
@@ -45,7 +45,7 @@ function LandingPage() {
     const fetchActiveTechnicians = async () => {
       try {
         setLoading(true);
-        const response = await axios.get("/api/technicians/all-get-active-technicians");
+        const response = await apiClient.get("/api/technicians/all-get-active-technicians");
         if (response.data && response.data.success) {
           setProfessionals(response.data.technicians);
         }
@@ -90,7 +90,7 @@ function LandingPage() {
     };
 
     try {
-      const response = await axios.post("/api/otp/contact", formData);
+      const response = await apiClient.post("/api/otp/contact", formData);
       if (response.data && response.data.message) {
         toast.success("Message sent successfully!");
         e.target.reset();
