@@ -466,6 +466,7 @@ function Booking() {
 
       toast.success("Redirecting to Khalti...");
       setShowPaymentModal(false);
+      // Use window.open to allow user to return via browser back button
       window.location.href = paymentUrl;
     } catch (error) {
       console.error("Error processing payment:", error);
@@ -1291,7 +1292,7 @@ function Booking() {
               {/* Notice */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <p className="text-xs text-blue-700">
-                  <strong>Note:</strong> Please ensure all booking details are correct before proceeding with payment.
+                  <strong>Note:</strong> Please ensure all booking details are correct before proceeding. To cancel payment after redirect, use your browser's back button or close the Khalti payment page.
                 </p>
               </div>
             </div>

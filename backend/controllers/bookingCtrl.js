@@ -1273,29 +1273,32 @@ exports.initiateKhaltiPayment = async (req, res) => {
       secretKey,
     });
 
-    await Payment.findOneAndUpdate(
-      { pidx: khaltiResponse.pidx },
-      {
-        booking: booking._id,
-        user: booking.user,
-        technician: booking.technician,
-        provider: 'khalti',
-        currency: 'NPR',
-        serviceAmount,
-        platformFee,
-        technicianAmount: serviceAmount,
-        adminAmount: platformFee,
-        totalAmount,
-        amountInPaisa: totalAmountPaisa,
-        status: 'initiated',
-        pidx: khaltiResponse.pidx,
-        initiatedAt: new Date(),
-        metadata: {
-          initiateResponse: khaltiResponse,
-        },
+    // Delete any previous "initiated" payments for this booking to avoid duplicate key errors
+    // This handles the case where user went back and is trying to pay again
+    await Payment.deleteMany({
+      booking: booking._id,
+      status: 'initiated'
+    });
+
+    await Payment.create({
+      booking: booking._id,
+      user: booking.user,
+      technician: booking.technician,
+      provider: 'khalti',
+      currency: 'NPR',
+      serviceAmount,
+      platformFee,
+      technicianAmount: serviceAmount,
+      adminAmount: platformFee,
+      totalAmount,
+      amountInPaisa: totalAmountPaisa,
+      status: 'initiated',
+      pidx: khaltiResponse.pidx,
+      initiatedAt: new Date(),
+      metadata: {
+        initiateResponse: khaltiResponse,
       },
-      { new: true, upsert: true, setDefaultsOnInsert: true }
-    );
+    });
 
     return res.status(200).json({
       success: true,
