@@ -463,6 +463,43 @@ const deleteUserByAdmin = async (req, res) => {
   }
 };
 
+const deleteTechnician = async (req, res) => {
+  try {
+    if (!req.body.isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: "Only admins can delete technicians",
+      });
+    }
+
+    const { technicianId } = req.params;
+
+    const technician = await Technician.findById(technicianId);
+    if (!technician) {
+      return res.status(404).json({
+        success: false,
+        message: "Technician not found",
+      });
+    }
+
+    await Technician.findByIdAndDelete(technicianId);
+
+    emitAdminDataChanged(req, ["technicians", "dashboard-stats"]);
+
+    return res.status(200).json({
+      success: true,
+      message: "Technician deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting technician:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
 getAllBookings = async (req, res) => {
   try {
     const bookings = await Booking.find()
@@ -654,6 +691,7 @@ const broadcastNotificationToAll = async (req, res) => {
     getAllTechnicians,
     getAllUsers,
     deleteUserByAdmin,
+    deleteTechnician,
     getAllBookings,
     getDashboardStats,
     broadcastNotificationToAll,

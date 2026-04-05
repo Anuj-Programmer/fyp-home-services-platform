@@ -10,6 +10,7 @@ const {
 	getAllTechnicians,
 	getAllUsers,
 	deleteUserByAdmin,
+	deleteTechnician,
 	getAllBookings,
 	getDashboardStats,
 	broadcastNotificationToAll,
@@ -37,6 +38,9 @@ router.get("/users", authMiddleware, getAllUsers);
 
 // Delete user /api/admin/users/:userId
 router.delete("/users/:userId", authMiddleware, deleteUserByAdmin);
+
+// Delete technician /api/admin/technicians/:technicianId
+router.delete("/technicians/:technicianId", authMiddleware, deleteTechnician);
 
 // Get all bookings
 router.get("/bookings", authMiddleware, getAllBookings);
