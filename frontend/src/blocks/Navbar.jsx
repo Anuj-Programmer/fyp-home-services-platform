@@ -152,7 +152,7 @@ const Navbar = () => {
     location.pathname === "/register-details" ||
     location.pathname === "/verify-otp-technician" ||
     location.pathname === "/register-technician-details";
-  const isLandingPage = location.pathname === "/";
+  const useUnifiedPublicMobileNavStyle = !isAuthenticated;
 
   const handleLogoClick = () => {
     localStorage.removeItem("otpVerified");
@@ -793,40 +793,40 @@ const Navbar = () => {
         {/* Mobile Menu - Unauthenticated */}
         {!hideNavLinks && !isAuthenticated && isOpen && (
           <div className="md:hidden">
-            <div className={isLandingPage ? "border-t border-blue-100 bg-linear-to-b from-white via-blue-50/70 to-white px-3 pb-4 pt-3 shadow-[0_10px_26px_rgba(15,23,42,0.08)]" : "bg-white-700"}>
-              <div className={isLandingPage ? "space-y-2" : "px-2 pt-2 pb-3 space-y-1"}>
-                {publicNavItems.map((item) => (
+            <div className={useUnifiedPublicMobileNavStyle ? "border-t border-blue-100 bg-linear-to-b from-white via-blue-50/70 to-white px-3 pb-4 pt-3 shadow-[0_10px_26px_rgba(15,23,42,0.08)]" : "bg-white-700"}>
+              <div className={useUnifiedPublicMobileNavStyle ? "space-y-2" : "px-2 pt-2 pb-3 space-y-1"}>
+                {publicNavItems.map((item, index) => (
                   <button
                     key={item.sectionId}
                     type="button"
-                    onClick={() => handlePublicNavClick(item.sectionId)}
-                    className={isLandingPage ? "flex w-full items-center justify-between rounded-xl border border-blue-100 bg-white px-4 py-3 text-left text-sm font-medium text-slate-700 shadow-sm transition hover:bg-blue-50 hover:text-color-main" : "block w-full text-left px-4 py-2 hover:bg-gray-100 border-b border-gray-400"}
+                    onClick={() => handlePublicNavClick(item.sectionId, index)}
+                    className={useUnifiedPublicMobileNavStyle ? "flex w-full items-center justify-between rounded-xl border border-blue-100 bg-white px-4 py-3 text-left text-sm font-medium text-slate-700 shadow-sm transition hover:bg-blue-50 hover:text-color-main" : "block w-full text-left px-4 py-2 hover:bg-gray-100 border-b border-gray-400"}
                   >
                     <span>{item.label}</span>
-                    {isLandingPage && <span className="text-slate-400">&gt;</span>}
+                    {useUnifiedPublicMobileNavStyle && <span className="text-slate-400">&gt;</span>}
                   </button>
                 ))}
 
                 <Link
                   to="/register-technician"
                   onClick={() => setIsOpen(false)}
-                  className={isLandingPage ? "mt-1 block w-full rounded-xl bg-color-main px-4 py-3 text-center text-sm font-semibold text-white shadow-[0_10px_22px_rgba(30,58,138,0.26)] transition hover:brightness-105" : "block w-full text-left px-4 py-2 hover:bg-gray-100 border-b border-gray-400"}
+                  className={useUnifiedPublicMobileNavStyle ? "mt-1 block w-full rounded-xl bg-color-main px-4 py-3 text-center text-sm font-semibold text-white shadow-[0_10px_22px_rgba(30,58,138,0.26)] transition hover:brightness-105" : "block w-full text-left px-4 py-2 hover:bg-gray-100 border-b border-gray-400"}
                 >
                   Become a Professional
                 </Link>
 
-                <div className={isLandingPage ? "grid grid-cols-2 gap-2 pt-1" : ""}>
+                <div className={useUnifiedPublicMobileNavStyle ? "grid grid-cols-2 gap-2 pt-1" : ""}>
                   <Link
                     to="/login"
                     onClick={() => setIsOpen(false)}
-                    className={isLandingPage ? "block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-center text-sm font-medium text-slate-700 transition hover:bg-slate-50" : "block w-full text-left px-4 py-2 hover:bg-gray-100 border-b border-gray-400"}
+                    className={useUnifiedPublicMobileNavStyle ? "block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-center text-sm font-medium text-slate-700 transition hover:bg-slate-50" : "block w-full text-left px-4 py-2 hover:bg-gray-100 border-b border-gray-400"}
                   >
                     Login
                   </Link>
                   <Link
                     to="/register"
                     onClick={() => setIsOpen(false)}
-                    className={isLandingPage ? "block w-full rounded-xl border border-color-main bg-white px-4 py-2.5 text-center text-sm font-semibold text-color-main transition hover:bg-blue-50" : "block w-full text-left px-4 py-2 hover:bg-gray-100"}
+                    className={useUnifiedPublicMobileNavStyle ? "block w-full rounded-xl border border-color-main bg-white px-4 py-2.5 text-center text-sm font-semibold text-color-main transition hover:bg-blue-50" : "block w-full text-left px-4 py-2 hover:bg-gray-100"}
                   >
                     Sign Up
                   </Link>

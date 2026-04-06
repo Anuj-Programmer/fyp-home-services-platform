@@ -63,18 +63,42 @@ function LandingPage() {
   }, []);
 
   useEffect(() => {
-    if (!location.hash) return;
+    const pendingSection = sessionStorage.getItem("pendingLandingSection") || "";
+    const sectionId =
+      location.state?.scrollToSection ||
+      location.hash.replace("#", "") ||
+      pendingSection;
+    if (!sectionId) return;
 
-    const sectionId = location.hash.replace("#", "");
-    const section = document.getElementById(sectionId);
-    if (!section) return;
+    let timer = null;
 
-    const timer = setTimeout(() => {
-      section.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 80);
+    const scrollWithRetry = (retries = 10) => {
+      const section = document.getElementById(sectionId);
 
-    return () => clearTimeout(timer);
-  }, [location.hash]);
+      if (section) {
+        const navbarOffset = 76;
+        const targetTop = section.getBoundingClientRect().top + window.scrollY - navbarOffset;
+        window.scrollTo({
+          top: Math.max(targetTop, 0),
+          behavior: "smooth",
+        });
+        sessionStorage.removeItem("pendingLandingSection");
+        return;
+      }
+
+      if (retries > 0) {
+        timer = setTimeout(() => scrollWithRetry(retries - 1), 120);
+      }
+    };
+
+    timer = setTimeout(() => scrollWithRetry(), 120);
+
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
+  }, [location.hash, location.state]);
 
   const scrollToServices = () => {
     if (servicesRef.current) {
