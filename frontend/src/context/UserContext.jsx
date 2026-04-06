@@ -41,6 +41,15 @@ export const UserProvider = ({ children }) => {
     localStorage.removeItem("user");
   }, []);
 
+  const clearSession = useCallback(() => {
+    Cookies.remove("token");
+    Cookies.remove("userId");
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("userId");
+    setUser(null);
+  }, []);
+
   const fetchUser = useCallback(
     async ({ force = false, silent = false } = {}) => {
       if (!token) {
@@ -68,6 +77,13 @@ export const UserProvider = ({ children }) => {
         })
         .catch((error) => {
           console.error("Error fetching user:", error);
+
+          const status = error?.response?.status;
+          if (status === 401 || status === 404) {
+            clearSession();
+            return null;
+          }
+
           const storedUser = localStorage.getItem("user");
           if (storedUser) {
             try {
@@ -90,7 +106,7 @@ export const UserProvider = ({ children }) => {
       inFlightRef.current = request;
       return request;
     },
-    [token, setUserData, clearUser],
+    [token, setUserData, clearUser, clearSession],
   );
 
   const refreshUser = useCallback(async () => {

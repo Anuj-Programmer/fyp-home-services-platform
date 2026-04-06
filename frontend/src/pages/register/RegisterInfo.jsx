@@ -64,7 +64,7 @@ function RegisterInfo() {
     const otpVerified = localStorage.getItem("otpVerified");
     
 
-    if (!storedEmail || !otpVerified) {
+    if (!storedEmail || otpVerified !== "true") {
       toast.error("You must verify your email first!");
       navigate("/register");
     } else {

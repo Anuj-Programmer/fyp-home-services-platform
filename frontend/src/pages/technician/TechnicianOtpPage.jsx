@@ -7,6 +7,8 @@ import Navbar from "@/blocks/Navbar";
 function TechnicianOtpPage() {
   const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
   const [email, setEmail] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendingOtp, setResendingOtp] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,6 +26,16 @@ function TechnicianOtpPage() {
       navigate("/register-technician-details");
     }
   }, [navigate]);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+
+    const timerId = setInterval(() => {
+      setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => clearInterval(timerId);
+  }, [resendCooldown]);
 
   const handleOtpChange = (value, index) => {
     if (!/^[0-9]?$/.test(value)) return;
@@ -85,6 +97,24 @@ function TechnicianOtpPage() {
     }
   };
 
+  const handleResendOtp = async () => {
+    if (!email || resendCooldown > 0 || resendingOtp) return;
+
+    setResendingOtp(true);
+    try {
+      const { data } = await apiClient.post("/api/otp/send", { email });
+      toast.success(data?.message || "OTP resent successfully");
+      setOtpDigits(["", "", "", "", "", ""]);
+      setResendCooldown(30);
+      document.getElementById("tech-otp-0")?.focus();
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Unable to resend OTP right now");
+    } finally {
+      setResendingOtp(false);
+    }
+  };
+
   return (
     <>
       <Navbar />
@@ -121,6 +151,22 @@ function TechnicianOtpPage() {
             >
               Verify OTP
             </button>
+
+            <div className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-center space-y-2">
+              <p className="text-xs text-stone-600">Didn't receive the code?</p>
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                disabled={resendingOtp || resendCooldown > 0}
+                className="w-full sm:w-auto px-4 py-2 text-sm font-semibold rounded-lg border border-color-main txt-color-primary hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {resendingOtp
+                  ? "Resending..."
+                  : resendCooldown > 0
+                    ? `Resend OTP in ${resendCooldown}s`
+                    : "Resend OTP"}
+              </button>
+            </div>
           </form>
         </div>
       </div>

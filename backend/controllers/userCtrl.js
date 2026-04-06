@@ -79,9 +79,18 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Check if user already exists
+    // Check if user/admin already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ message: "User already exists" });
+
+    // Cross-collection check: block if a technician account exists,
+    // except when technician status is rejected (allowed to register as user).
+    const existingTechnician = await Technician.findOne({ email });
+    if (existingTechnician && existingTechnician.status !== "rejected") {
+      return res.status(400).json({
+        message: "Email already registered as technician. Please log in instead.",
+      });
+    }
 
     // Create new user
     const newUser = await User.create({

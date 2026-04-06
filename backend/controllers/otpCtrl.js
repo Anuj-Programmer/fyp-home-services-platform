@@ -62,12 +62,23 @@ const sendOtp = async (req, res) => {
     // Check Technician collection
     const existingTechnician = await Technician.findOne({ email });
 
-    // If email exists in either collection, block registration
-    if (existingUser || existingTechnician) {
+    // Block if email already exists as user/admin
+    if (existingUser) {
       return res.status(409).json({
         message: "Email already registered. Please log in instead."
       });
     }
+
+    // Allow rejected technicians to register as normal users.
+    // For all other technician states, keep blocking registration.
+    if (existingTechnician && existingTechnician.status !== "rejected") {
+      return res.status(409).json({
+        message: "Email already registered. Please log in instead."
+      });
+    }
+
+    // Replace any previous OTP for this email so re-tries/back-outs never get stuck.
+    await OTP.deleteMany({ email });
 
     // Generate OTP
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -172,6 +183,9 @@ const sendLoginOtp = async (req, res) => {
       // Allow login for 'approved', 'active', 'inactive'
       role = "technician";
     }
+
+    // Replace any previous OTP for this email so login retries are always clean.
+    await OTP.deleteMany({ email });
 
     // Generate OTP
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();

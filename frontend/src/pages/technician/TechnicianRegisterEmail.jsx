@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "@/lib/api";
 import toast from "react-hot-toast";
@@ -9,6 +9,12 @@ function TechnicianRegisterEmail() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Starting registration should always reset stale state from abandoned OTP flows.
+    localStorage.removeItem("technicianOtpVerified");
+    localStorage.removeItem("technicianEmail");
+  }, []);
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
