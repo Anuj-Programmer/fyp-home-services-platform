@@ -9,6 +9,59 @@ import Cookies from "js-cookie";
 import { Camera, Trash } from "phosphor-react";
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+const LOCATION_OPTIONS = ["chitwan", "pokhara", "kathmandu"];
+
+const normalizePhone = (value) => value.replace(/[\s-]/g, "").replace(/^\+977/, "");
+
+const validateName = (label, value) => {
+  const trimmed = value.trim();
+  if (trimmed.length < 2) return `${label} must be at least 2 letters`;
+  if (trimmed.length > 30) return `${label} must be at most 30 characters`;
+  if (!/^[A-Za-z][A-Za-z' -]*$/.test(trimmed)) {
+    return `${label} can only include letters, spaces, apostrophes, and hyphens`;
+  }
+  return "";
+};
+
+const validatePhone = (value) => {
+  const normalized = normalizePhone(value);
+  if (!/^\d{10}$/.test(normalized)) return "Phone number must be exactly 10 digits";
+  if (!/^9/.test(normalized)) return "Phone number must start with 9";
+  return "";
+};
+
+const validateTechnicianProfileForm = (data) => {
+  const experience = Number(data.experienceYears);
+  const fee = Number(data.fee);
+  const description = data.description?.trim() || "";
+
+  const errors = {
+    firstName: validateName("First name", data.firstName || ""),
+    lastName: validateName("Last name", data.lastName || ""),
+    phone: validatePhone(data.phone || ""),
+    location: LOCATION_OPTIONS.includes(data.location)
+      ? ""
+      : "Please select a valid location",
+    experienceYears:
+      Number.isInteger(experience) && experience >= 0 && experience <= 50
+        ? ""
+        : "Experience must be a whole number between 0 and 50 years",
+    fee:
+      Number.isInteger(fee) && fee >= 100 && fee <= 20000
+        ? ""
+        : "Service fee must be between 100 and 20000",
+    photoUrl: data.photoUrl ? "" : "Profile photo is required",
+    description:
+      description.length >= 30 && description.length <= 400
+        ? ""
+        : "Bio must be between 30 and 400 characters",
+  };
+
+  return {
+    errors,
+    isValid: Object.values(errors).every((error) => !error),
+  };
+};
 
 function TechnicianProfile() {
   const [user, setUser] = useState(null);
@@ -22,6 +75,16 @@ function TechnicianProfile() {
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const photoInputRef = useRef(null);
   const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    phone: "",
+    location: "",
+    experienceYears: "",
+    fee: "",
+    photoUrl: "",
+    description: "",
+  });
+  const [formErrors, setFormErrors] = useState({
     firstName: "",
     lastName: "",
     phone: "",
@@ -121,6 +184,9 @@ function TechnicianProfile() {
       ...prev,
       [name]: finalValue
     }));
+    if (formErrors[name]) {
+      setFormErrors((prev) => ({ ...prev, [name]: "" }));
+    }
   };
 
   const handlePhotoUpload = async (e) => {
@@ -132,6 +198,7 @@ function TechnicianProfile() {
         ...prev,
         photoUrl: response.secure_url,
       }));
+      setFormErrors((prev) => ({ ...prev, photoUrl: "" }));
       toast.success("Photo uploaded successfully");
     } catch (error) {
       console.error(error);
@@ -217,26 +284,40 @@ function TechnicianProfile() {
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
-    setSaving(true);
+
+    const { errors, isValid } = validateTechnicianProfileForm(formData);
+    setFormErrors(errors);
+    if (!isValid) {
+      const firstError = Object.values(errors).find(Boolean);
+      toast.error(firstError || "Please correct the form fields");
+      return;
+    }
 
     // Check if at least one day is available
     const hasAvailability = Object.values(availability).some(day => day.isAvailable);
     if (!hasAvailability) {
       toast.error("Please set availability for at least one day of the week");
-      setSaving(false);
       return;
     }
 
+    const invalidDay = DAYS.find((day) => availability[day].isAvailable && validateTimeRange(day));
+    if (invalidDay) {
+      toast.error(`${invalidDay}: ${validateTimeRange(invalidDay)}`);
+      return;
+    }
+
+    setSaving(true);
+
     try {
       const payload = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        phone: formData.phone,
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        phone: normalizePhone(formData.phone),
         location: formData.location,
         experienceYears: formData.experienceYears === "" ? 0 : Number(formData.experienceYears),
         fee: formData.fee === "" ? 0 : Number(formData.fee),
         photoUrl: formData.photoUrl,
-        description: formData.description,
+        description: formData.description.trim(),
         availability: availability,
       };
 
@@ -341,16 +422,9 @@ function TechnicianProfile() {
     return "bg-amber-100 text-amber-700";
   };
 
-  const isProfileComplete = 
-    formData.firstName && 
-    formData.lastName && 
-    formData.phone && 
-    formData.location && 
-    formData.experienceYears && 
-    formData.fee && 
-    formData.photoUrl && 
-    formData.description && 
-    Object.values(availability).some(day => day.isAvailable);
+  const { isValid: isFormValid } = validateTechnicianProfileForm(formData);
+  const isProfileComplete =
+    isFormValid && Object.values(availability).some((day) => day.isAvailable);
 
   const handleStatusModalOpen = () => {
     if (!isProfileComplete) {
@@ -485,6 +559,9 @@ function TechnicianProfile() {
                     <p className="mt-2 text-xs text-stone-500">
                       We support PNGs, JPEGs and GIFs under 2MB
                     </p>
+                    {formErrors.photoUrl && (
+                      <p className="mt-1 text-xs text-red-600">{formErrors.photoUrl}</p>
+                    )}
                   </div>
                 </div>
 
@@ -506,9 +583,20 @@ function TechnicianProfile() {
                       name="firstName"
                       value={formData.firstName}
                       onChange={handleInputChange}
+                      onBlur={() =>
+                        setFormErrors((prev) => ({
+                          ...prev,
+                          firstName: validateName("First name", formData.firstName),
+                        }))
+                      }
                       className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    minLength={2}
+                    maxLength={30}
                     required
                   />
+                  {formErrors.firstName && (
+                    <p className="text-xs text-red-600">{formErrors.firstName}</p>
+                  )}
                 </label>
                   <label className="flex flex-col gap-1 text-xs sm:text-sm font-medium text-stone-600">
                     Last name
@@ -517,9 +605,20 @@ function TechnicianProfile() {
                       name="lastName"
                       value={formData.lastName}
                       onChange={handleInputChange}
+                      onBlur={() =>
+                        setFormErrors((prev) => ({
+                          ...prev,
+                          lastName: validateName("Last name", formData.lastName),
+                        }))
+                      }
                       className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    minLength={2}
+                    maxLength={30}
                     required
                   />
+                  {formErrors.lastName && (
+                    <p className="text-xs text-red-600">{formErrors.lastName}</p>
+                  )}
                 </label>
               </div>
 
@@ -531,10 +630,19 @@ function TechnicianProfile() {
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
+                    onBlur={() =>
+                      setFormErrors((prev) => ({
+                        ...prev,
+                        phone: validatePhone(formData.phone),
+                      }))
+                    }
                     className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
                     placeholder="+977-"
                     required
                   />
+                  {formErrors.phone && (
+                    <p className="text-xs text-red-600">{formErrors.phone}</p>
+                  )}
                 </label>
                 <label className="flex flex-col gap-1 text-xs sm:text-sm font-medium text-stone-600">
                   Location / Service area
@@ -542,6 +650,14 @@ function TechnicianProfile() {
                     name="location"
                     value={formData.location}
                     onChange={handleInputChange}
+                    onBlur={() =>
+                      setFormErrors((prev) => ({
+                        ...prev,
+                        location: LOCATION_OPTIONS.includes(formData.location)
+                          ? ""
+                          : "Please select a valid location",
+                      }))
+                    }
                     className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
                     required
                   >
@@ -550,6 +666,9 @@ function TechnicianProfile() {
                     <option value="pokhara">Pokhara</option>
                     <option value="kathmandu">Kathmandu Valley</option>
                   </select>
+                  {formErrors.location && (
+                    <p className="text-xs text-red-600">{formErrors.location}</p>
+                  )}
                 </label>
               </div>
 
@@ -574,15 +693,30 @@ function TechnicianProfile() {
                       value={formData.experienceYears}
                       onChange={(e) => {
                         setFormData(prev => ({ ...prev, experienceYears: e.target.value }));
+                        if (formErrors.experienceYears) {
+                          setFormErrors((prev) => ({ ...prev, experienceYears: "" }));
+                        }
                       }}
                       onBlur={(e) => {
                         const numVal = e.target.value === "" ? "" : parseInt(e.target.value, 10);
                         setFormData(prev => ({ ...prev, experienceYears: numVal }));
+                        setFormErrors((prev) => ({
+                          ...prev,
+                          experienceYears:
+                            Number.isInteger(numVal) && numVal >= 0 && numVal <= 50
+                              ? ""
+                              : "Experience must be a whole number between 0 and 50 years",
+                        }));
                       }}
                       className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
                       placeholder="e.g. 5"
+                      min="0"
+                      max="50"
                       required
                     />
+                    {formErrors.experienceYears && (
+                      <p className="text-xs text-red-600">{formErrors.experienceYears}</p>
+                    )}
                   </label>
                   <label className="flex flex-col gap-1 text-xs sm:text-sm font-medium text-stone-600">
                     Service fee (₹)
@@ -593,15 +727,30 @@ function TechnicianProfile() {
                       value={formData.fee}
                       onChange={(e) => {
                         setFormData(prev => ({ ...prev, fee: e.target.value }));
+                        if (formErrors.fee) {
+                          setFormErrors((prev) => ({ ...prev, fee: "" }));
+                        }
                       }}
                       onBlur={(e) => {
                         const numVal = e.target.value === "" ? "" : parseInt(e.target.value, 10);
                         setFormData(prev => ({ ...prev, fee: numVal }));
+                        setFormErrors((prev) => ({
+                          ...prev,
+                          fee:
+                            Number.isInteger(numVal) && numVal >= 100 && numVal <= 20000
+                              ? ""
+                              : "Service fee must be between 100 and 20000",
+                        }));
                       }}
                       className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
                       placeholder="e.g. 500"
+                      min="100"
+                      max="20000"
                       required
                     />
+                    {formErrors.fee && (
+                      <p className="text-xs text-red-600">{formErrors.fee}</p>
+                    )}
                   </label>
                 </div>
 
@@ -611,11 +760,25 @@ function TechnicianProfile() {
                     name="description"
                     value={formData.description}
                     onChange={handleInputChange}
+                    onBlur={() => {
+                      const len = formData.description.trim().length;
+                      setFormErrors((prev) => ({
+                        ...prev,
+                        description:
+                          len >= 30 && len <= 400
+                            ? ""
+                            : "Bio must be between 30 and 400 characters",
+                      }));
+                    }}
                     className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900 resize-none"
                     placeholder="Tell customers about your experience, expertise, and what makes you unique..."
                     rows="4"
+                    maxLength={400}
                     required
                   />
+                  {formErrors.description && (
+                    <p className="text-xs text-red-600">{formErrors.description}</p>
+                  )}
                 </label>
               </div>
 

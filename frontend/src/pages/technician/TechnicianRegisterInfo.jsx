@@ -16,6 +16,67 @@ const serviceOptions = [
 
 const locationOptions = ["chitwan", "pokhara", "kathmandu"];
 
+const MAX_UPLOAD_SIZE = 5 * 1024 * 1024;
+const ALLOWED_UPLOAD_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/pdf",
+];
+
+const normalizePhone = (value) => value.replace(/[\s-]/g, "").replace(/^\+977/, "");
+
+const validateName = (label, value) => {
+  const trimmed = value.trim();
+  if (trimmed.length < 2) return `${label} must be at least 2 letters`;
+  if (trimmed.length > 30) return `${label} must be at most 30 characters`;
+  if (!/^[A-Za-z][A-Za-z' -]*$/.test(trimmed)) {
+    return `${label} can only include letters, spaces, apostrophes, and hyphens`;
+  }
+  return "";
+};
+
+const validatePhone = (value) => {
+  const normalized = normalizePhone(value);
+  if (!/^\d{10}$/.test(normalized)) return "Phone number must be exactly 10 digits";
+  if (!/^9/.test(normalized)) return "Phone number must start with 9";
+  return "";
+};
+
+const validateUploadFile = (file, label) => {
+  if (!file) return `${label} is required`;
+  if (!ALLOWED_UPLOAD_TYPES.includes(file.type)) {
+    return "Only JPG, PNG, WebP, or PDF files are allowed";
+  }
+  if (file.size > MAX_UPLOAD_SIZE) {
+    return "File size must be under 5MB";
+  }
+  return "";
+};
+
+const validateTechnicianRegistration = (data) => {
+  const experience = Number(data.experienceYears);
+  const errors = {
+    firstName: validateName("First name", data.firstName),
+    lastName: validateName("Last name", data.lastName),
+    phone: validatePhone(data.phone),
+    location: locationOptions.includes(data.location) ? "" : "Please select a valid location",
+    serviceType: serviceOptions.includes(data.serviceType) ? "" : "Please select a valid service type",
+    experienceYears:
+      Number.isInteger(experience) && experience >= 0 && experience <= 50
+        ? ""
+        : "Experience must be a whole number between 0 and 50 years",
+    identityDocumentUrl: data.identityDocumentUrl
+      ? ""
+      : "Identity document is required",
+  };
+
+  return {
+    errors,
+    isValid: Object.values(errors).every((error) => !error),
+  };
+};
+
 function TechnicianRegisterInfo() {
   const [formData, setFormData] = useState({
     firstName: "",
@@ -31,6 +92,15 @@ function TechnicianRegisterInfo() {
   const [uploadingIdentity, setUploadingIdentity] = useState(false);
   const [uploadingCertificate, setUploadingCertificate] = useState(false);
   const [email, setEmail] = useState("");
+  const [errors, setErrors] = useState({
+    firstName: "",
+    lastName: "",
+    phone: "",
+    location: "",
+    serviceType: "",
+    experienceYears: "",
+    identityDocumentUrl: "",
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -49,6 +119,9 @@ function TechnicianRegisterInfo() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -61,41 +134,26 @@ function TechnicianRegisterInfo() {
     }
 
 
-    const {
-      firstName,
-      lastName,
-      phone,
-      location,
-      identityDocumentUrl,
-      experienceYears,
-      serviceType,
-      certificateUrl,
-    } = formData;
-
-    if (
-      !firstName.trim() ||
-      !lastName.trim() ||
-      !phone.trim() ||
-      !location ||
-      !identityDocumentUrl ||
-      experienceYears === "" ||
-      !serviceType
-    ) {
-      return toast.error("Please fill in all required fields");
+    const { errors: formErrors, isValid } = validateTechnicianRegistration(formData);
+    setErrors(formErrors);
+    if (!isValid) {
+      const firstError = Object.values(formErrors).find(Boolean);
+      toast.error(firstError || "Please correct the form fields");
+      return;
     }
 
     setLoading(true);
     try {
       const { data } = await apiClient.post("/api/technicians/registerTechnician", {
         email,
-        firstName,
-        lastName,
-        phone,
-        location,
-        identityDocumentUrl,
-        experienceYears: Number(experienceYears),
-        serviceType,
-        certificateUrl: certificateUrl || null,
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        phone: normalizePhone(formData.phone),
+        location: formData.location,
+        identityDocumentUrl: formData.identityDocumentUrl,
+        experienceYears: Number(formData.experienceYears),
+        serviceType: formData.serviceType,
+        certificateUrl: formData.certificateUrl || null,
       });
 
       toast.success(
@@ -122,6 +180,12 @@ function TechnicianRegisterInfo() {
     try {
       const file = e.target.files[0];
       if (!file) return;
+
+      const uploadError = validateUploadFile(file, "Identity document");
+      if (uploadError) {
+        toast.error(uploadError);
+        return;
+      }
       
       setUploadingIdentity(true);
       const response = await uploadToCloudinary(file);
@@ -129,6 +193,7 @@ function TechnicianRegisterInfo() {
         ...prev,
         identityDocumentUrl: response.secure_url,
       }));
+      setErrors((prev) => ({ ...prev, identityDocumentUrl: "" }));
       toast.success("Identity document uploaded successfully");
     } catch (error) {
       console.error(error);
@@ -142,6 +207,12 @@ function TechnicianRegisterInfo() {
     try {
       const file = e.target.files[0];
       if (!file) return;
+
+      const uploadError = validateUploadFile(file, "Certificate");
+      if (uploadError) {
+        toast.error(uploadError);
+        return;
+      }
       
       setUploadingCertificate(true);
       const response = await uploadToCloudinary(file);
@@ -170,9 +241,21 @@ function TechnicianRegisterInfo() {
                 name="firstName"
                 value={formData.firstName}
                 onChange={handleChange}
+                onBlur={() =>
+                  setErrors((prev) => ({
+                    ...prev,
+                    firstName: validateName("First name", formData.firstName),
+                  }))
+                }
                 placeholder="Enter first name"
                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                minLength={2}
+                maxLength={30}
+                required
               />
+              {errors.firstName && (
+                <p className="mt-1 text-xs text-red-600">{errors.firstName}</p>
+              )}
             </div>
             <div>
               <label className="block text-gray-700 mb-1">Last Name</label>
@@ -180,9 +263,21 @@ function TechnicianRegisterInfo() {
                 name="lastName"
                 value={formData.lastName}
                 onChange={handleChange}
+                onBlur={() =>
+                  setErrors((prev) => ({
+                    ...prev,
+                    lastName: validateName("Last name", formData.lastName),
+                  }))
+                }
                 placeholder="Enter last name"
                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                minLength={2}
+                maxLength={30}
+                required
               />
+              {errors.lastName && (
+                <p className="mt-1 text-xs text-red-600">{errors.lastName}</p>
+              )}
             </div>
             <div>
               <label className="block text-gray-700 mb-1">Phone Number</label>
@@ -191,9 +286,19 @@ function TechnicianRegisterInfo() {
                 type="tel"
                 value={formData.phone}
                 onChange={handleChange}
+                onBlur={() =>
+                  setErrors((prev) => ({
+                    ...prev,
+                    phone: validatePhone(formData.phone),
+                  }))
+                }
                 placeholder="Enter phone number"
                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
               />
+              {errors.phone && (
+                <p className="mt-1 text-xs text-red-600">{errors.phone}</p>
+              )}
             </div>
             <div>
               <label className="block text-gray-700 mb-1">Location</label>
@@ -201,7 +306,16 @@ function TechnicianRegisterInfo() {
                 name="location"
                 value={formData.location}
                 onChange={handleChange}
+                onBlur={() =>
+                  setErrors((prev) => ({
+                    ...prev,
+                    location: locationOptions.includes(formData.location)
+                      ? ""
+                      : "Please select a valid location",
+                  }))
+                }
                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
               >
                 {locationOptions.map((option) => (
                   <option key={option} value={option}>
@@ -209,6 +323,9 @@ function TechnicianRegisterInfo() {
                   </option>
                 ))}
               </select>
+              {errors.location && (
+                <p className="mt-1 text-xs text-red-600">{errors.location}</p>
+              )}
             </div>
             <div>
               <label className="block text-gray-700 mb-1">Service Type</label>
@@ -216,7 +333,16 @@ function TechnicianRegisterInfo() {
                 name="serviceType"
                 value={formData.serviceType}
                 onChange={handleChange}
+                onBlur={() =>
+                  setErrors((prev) => ({
+                    ...prev,
+                    serviceType: serviceOptions.includes(formData.serviceType)
+                      ? ""
+                      : "Please select a valid service type",
+                  }))
+                }
                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
               >
                 {serviceOptions.map((option) => (
                   <option key={option} value={option}>
@@ -224,6 +350,9 @@ function TechnicianRegisterInfo() {
                   </option>
                 ))}
               </select>
+              {errors.serviceType && (
+                <p className="mt-1 text-xs text-red-600">{errors.serviceType}</p>
+              )}
             </div>
             <div>
               <label className="block text-gray-700 mb-1">
@@ -233,11 +362,28 @@ function TechnicianRegisterInfo() {
                 name="experienceYears"
                 type="number"
                 min="0"
+                max="50"
+                step="1"
                 value={formData.experienceYears}
                 onChange={handleChange}
+                onBlur={() =>
+                  setErrors((prev) => ({
+                    ...prev,
+                    experienceYears:
+                      Number.isInteger(Number(formData.experienceYears)) &&
+                      Number(formData.experienceYears) >= 0 &&
+                      Number(formData.experienceYears) <= 50
+                        ? ""
+                        : "Experience must be a whole number between 0 and 50 years",
+                  }))
+                }
                 placeholder="e.g., 3"
                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
               />
+              {errors.experienceYears && (
+                <p className="mt-1 text-xs text-red-600">{errors.experienceYears}</p>
+              )}
             </div>
             <div>
               <label className="block text-gray-700 mb-1">
@@ -253,6 +399,9 @@ function TechnicianRegisterInfo() {
                 <p className="text-sm text-green-600 mt-1">
                   Uploaded: Document
                 </p>
+              )}
+              {errors.identityDocumentUrl && (
+                <p className="mt-1 text-xs text-red-600">{errors.identityDocumentUrl}</p>
               )}
             </div>
 

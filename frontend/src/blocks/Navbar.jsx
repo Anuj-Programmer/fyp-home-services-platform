@@ -705,7 +705,7 @@ const Navbar = () => {
 
               {mobileModal === "notifications" && (
                 <div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {notifications.length > 0 ? (
                       [...notifications]
                         .sort((a, b) => {
@@ -716,13 +716,16 @@ const Navbar = () => {
                         .map((notification, index) => (
                         <div
                           key={index}
-                          className="p-3 bg-white border rounded-lg"
+                          className="rounded-2xl bg-white/95 ring-1 ring-stone-200 px-4 py-3.5 shadow-[0_1px_2px_rgba(15,23,42,0.06)]"
                         >
-                          <p className="font-medium text-gray-800">
+                          <div className="flex items-start gap-3">
+                            <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-color-main" />
+                            <div className="min-w-0">
+                              <p className="font-medium text-stone-800 leading-snug">
                             {notification.message ||
                               `New notification from ${notification.name}`}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
+                              </p>
+                              <p className="text-xs text-stone-500 mt-1">
                             {notification.date
                               ? new Date(notification.date).toLocaleString()
                               : notification.createdAt
@@ -730,7 +733,9 @@ const Navbar = () => {
                                     notification.createdAt,
                                   ).toLocaleString()
                                 : "—"}
-                          </p>
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       ))
                     ) : (
@@ -743,40 +748,63 @@ const Navbar = () => {
               )}
 
               {mobileModal === "profile" && (
-                <div className="space-y-2">
-                  <button
-                    className="w-full text-left px-4 py-3 bg-white border rounded-lg hover:bg-gray-50"
-                    onClick={() => {
-                      navigate(
-                        isAdmin
-                          ? "/AdminProfile"
-                          : user?.role === "technician"
-                            ? "/technician-profile"
-                            : "/profile",
-                      );
-                      setMobileModal(null);
-                    }}
-                  >
-                    View Profile
-                  </button>
-                  {/* Hide Booking button if isAdmin */}
-                  {!isAdmin && (
+                <div className="space-y-4">
+                  <div className="rounded-2xl border border-stone-200 bg-linear-to-br from-white to-stone-100 px-4 py-4 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white border border-stone-200 shadow-sm">
+                        <UserCircle size={24} className="text-stone-700" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-stone-900 leading-tight">
+                          {user?.firstName
+                            ? `${user.firstName} ${user?.lastName || ""}`.trim()
+                            : "My account"}
+                        </p>
+                        <p className="text-xs text-stone-500 capitalize">
+                          {isAdmin ? "admin" : user?.role || "user"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-stone-200 bg-white shadow-sm overflow-hidden">
                     <button
-                      className="w-full text-left px-4 py-3 bg-white border rounded-lg hover:bg-gray-50"
+                      className="w-full text-left px-4 py-3.5 hover:bg-stone-50 transition flex items-center justify-between"
                       onClick={() => {
                         navigate(
-                          user?.role === "technician"
-                            ? "/TechnicianBookings"
-                            : "/bookings",
+                          isAdmin
+                            ? "/AdminProfile"
+                            : user?.role === "technician"
+                              ? "/technician-profile"
+                              : "/profile",
                         );
                         setMobileModal(null);
                       }}
                     >
-                      Booking
+                      <span className="text-sm font-medium text-stone-800">View Profile</span>
+                      <span className="text-stone-400">&gt;</span>
                     </button>
-                  )}
+
+                    {!isAdmin && (
+                      <button
+                        className="w-full text-left px-4 py-3.5 border-t border-stone-100 hover:bg-stone-50 transition flex items-center justify-between"
+                        onClick={() => {
+                          navigate(
+                            user?.role === "technician"
+                              ? "/TechnicianBookings"
+                              : "/bookings",
+                          );
+                          setMobileModal(null);
+                        }}
+                      >
+                        <span className="text-sm font-medium text-stone-800">Bookings</span>
+                        <span className="text-stone-400">&gt;</span>
+                      </button>
+                    )}
+                  </div>
+
                   <button
-                    className="w-full text-left px-4 py-3 bg-white border rounded-lg text-red-500 hover:bg-red-50"
+                    className="w-full text-left px-4 py-3.5 rounded-2xl border border-red-200 bg-red-50 text-red-600 font-medium hover:bg-red-100 transition"
                     onClick={() => {
                       setMobileModal(null);
                       handleLogout();

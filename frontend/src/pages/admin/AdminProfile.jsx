@@ -7,9 +7,52 @@ import Cookies from "js-cookie";
 import Navbar from "@/blocks/Navbar";
 import { useUser } from "../../context/UserContext";
 
+const LOCATION_OPTIONS = ["chitwan", "pokhara", "kathmandu"];
+
+const normalizePhone = (value) => value.replace(/[\s-]/g, "").replace(/^\+977/, "");
+
+const validateName = (label, value) => {
+  const trimmed = value.trim();
+  if (trimmed.length < 2) return `${label} must be at least 2 letters`;
+  if (trimmed.length > 30) return `${label} must be at most 30 characters`;
+  if (!/^[A-Za-z][A-Za-z' -]*$/.test(trimmed)) {
+    return `${label} can only include letters, spaces, apostrophes, and hyphens`;
+  }
+  return "";
+};
+
+const validatePhone = (value) => {
+  const normalized = normalizePhone(value);
+  if (!/^\d{10}$/.test(normalized)) return "Phone number must be exactly 10 digits";
+  if (!/^9/.test(normalized)) return "Phone number must start with 9";
+  return "";
+};
+
+const validateAdminProfile = (data) => {
+  const errors = {
+    firstName: validateName("First name", data.firstName),
+    lastName: validateName("Last name", data.lastName),
+    phone: validatePhone(data.phone),
+    address: LOCATION_OPTIONS.includes(data.address)
+      ? ""
+      : "Please select a valid location",
+  };
+
+  return {
+    errors,
+    isValid: Object.values(errors).every((error) => !error),
+  };
+};
+
 function AdminProfile() {
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    phone: "",
+    address: "",
+  });
+  const [errors, setErrors] = useState({
     firstName: "",
     lastName: "",
     phone: "",
@@ -52,10 +95,22 @@ function AdminProfile() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
   };
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
+
+    const { errors: formErrors, isValid } = validateAdminProfile(formData);
+    setErrors(formErrors);
+    if (!isValid) {
+      const firstError = Object.values(formErrors).find(Boolean);
+      toast.error(firstError || "Please correct the form fields");
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -63,9 +118,9 @@ function AdminProfile() {
         "/api/users/update-profile",
         {
           userId: user?._id,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          phone: formData.phone,
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
+          phone: normalizePhone(formData.phone),
           address: formData.address,
         },
         {
@@ -155,9 +210,20 @@ function AdminProfile() {
                       name="firstName"
                       value={formData.firstName}
                       onChange={handleInputChange}
+                      onBlur={() =>
+                        setErrors((prev) => ({
+                          ...prev,
+                          firstName: validateName("First name", formData.firstName),
+                        }))
+                      }
                       className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
+                      minLength={2}
+                      maxLength={30}
                       required
                     />
+                    {errors.firstName && (
+                      <p className="text-xs text-red-600">{errors.firstName}</p>
+                    )}
                   </label>
                   <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
                     Last name
@@ -166,9 +232,20 @@ function AdminProfile() {
                       name="lastName"
                       value={formData.lastName}
                       onChange={handleInputChange}
+                      onBlur={() =>
+                        setErrors((prev) => ({
+                          ...prev,
+                          lastName: validateName("Last name", formData.lastName),
+                        }))
+                      }
                       className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
+                      minLength={2}
+                      maxLength={30}
                       required
                     />
+                    {errors.lastName && (
+                      <p className="text-xs text-red-600">{errors.lastName}</p>
+                    )}
                   </label>
                 </div>
 
@@ -180,9 +257,19 @@ function AdminProfile() {
                       name="phone"
                       value={formData.phone}
                       onChange={handleInputChange}
+                      onBlur={() =>
+                        setErrors((prev) => ({
+                          ...prev,
+                          phone: validatePhone(formData.phone),
+                        }))
+                      }
                       className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
                       placeholder="+977-"
+                      required
                     />
+                    {errors.phone && (
+                      <p className="text-xs text-red-600">{errors.phone}</p>
+                    )}
                   </label>
                   <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
                     Location
@@ -190,6 +277,14 @@ function AdminProfile() {
                       name="address"
                       value={formData.address || ""}
                       onChange={handleInputChange}
+                      onBlur={() =>
+                        setErrors((prev) => ({
+                          ...prev,
+                          address: LOCATION_OPTIONS.includes(formData.address)
+                            ? ""
+                            : "Please select a valid location",
+                        }))
+                      }
                       className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
                       required
                     >
@@ -201,6 +296,9 @@ function AdminProfile() {
                     <p className="text-xs text-stone-500">
                       Your primary location for admin operations.
                     </p>
+                    {errors.address && (
+                      <p className="text-xs text-red-600">{errors.address}</p>
+                    )}
                   </label>
                 </div>
 

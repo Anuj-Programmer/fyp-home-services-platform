@@ -6,6 +6,41 @@ import Navbar from "@/blocks/Navbar";
 import Cookies from "js-cookie";
 import { useUser } from "../../context/UserContext";
 
+const LOCATION_OPTIONS = ["chitwan", "pokhara", "kathmandu"];
+
+const normalizePhone = (value) => value.replace(/[\s-]/g, "").replace(/^\+977/, "");
+
+const validateName = (label, value) => {
+  const trimmed = value.trim();
+  if (trimmed.length < 2) return `${label} must be at least 2 letters`;
+  if (trimmed.length > 30) return `${label} must be at most 30 characters`;
+  if (!/^[A-Za-z][A-Za-z' -]*$/.test(trimmed)) {
+    return `${label} can only include letters, spaces, apostrophes, and hyphens`;
+  }
+  return "";
+};
+
+const validatePhone = (value) => {
+  const normalized = normalizePhone(value);
+  if (!/^\d{10}$/.test(normalized)) return "Phone number must be exactly 10 digits";
+  if (!/^9/.test(normalized)) return "Phone number must start with 9";
+  return "";
+};
+
+const validateRegisterForm = ({ firstName, lastName, phone, address }) => {
+  const errors = {
+    firstName: validateName("First name", firstName),
+    lastName: validateName("Last name", lastName),
+    phone: validatePhone(phone),
+    address: LOCATION_OPTIONS.includes(address) ? "" : "Please select a valid location",
+  };
+
+  return {
+    errors,
+    isValid: Object.values(errors).every((error) => !error),
+  };
+};
+
 function RegisterInfo() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -13,6 +48,12 @@ function RegisterInfo() {
   const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
+  const [errors, setErrors] = useState({
+    firstName: "",
+    lastName: "",
+    phone: "",
+    address: "",
+  });
   const { setUserData } = useUser();
 
   const navigate = useNavigate();
@@ -33,17 +74,29 @@ function RegisterInfo() {
 
   const handleRegisterDetails = async (e) => {
     e.preventDefault();
-    if (!firstName || !lastName || !phone || !address)
-      return toast.error("Please fill in all fields");
+
+    const { errors: formErrors, isValid } = validateRegisterForm({
+      firstName,
+      lastName,
+      phone,
+      address,
+    });
+    setErrors(formErrors);
+
+    if (!isValid) {
+      const firstError = Object.values(formErrors).find(Boolean);
+      toast.error(firstError || "Please correct the form fields");
+      return;
+    }
 
     setLoading(true);
 
     try {
       const { data } = await apiClient.post("/api/users/register", {
         email,
-        firstName,
-        lastName,
-        phone,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        phone: normalizePhone(phone),
         address,
       });
 
@@ -92,10 +145,27 @@ function RegisterInfo() {
             <input
               type="text"
               value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
+              onChange={(e) => {
+                setFirstName(e.target.value);
+                if (errors.firstName) {
+                  setErrors((prev) => ({ ...prev, firstName: "" }));
+                }
+              }}
+              onBlur={() =>
+                setErrors((prev) => ({
+                  ...prev,
+                  firstName: validateName("First name", firstName),
+                }))
+              }
               placeholder="Enter first name"
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              minLength={2}
+              maxLength={30}
+              required
             />
+            {errors.firstName && (
+              <p className="mt-1 text-xs text-red-600">{errors.firstName}</p>
+            )}
           </div>
 
           <div>
@@ -103,10 +173,27 @@ function RegisterInfo() {
             <input
               type="text"
               value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
+              onChange={(e) => {
+                setLastName(e.target.value);
+                if (errors.lastName) {
+                  setErrors((prev) => ({ ...prev, lastName: "" }));
+                }
+              }}
+              onBlur={() =>
+                setErrors((prev) => ({
+                  ...prev,
+                  lastName: validateName("Last name", lastName),
+                }))
+              }
               placeholder="Enter last name"
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              minLength={2}
+              maxLength={30}
+              required
             />
+            {errors.lastName && (
+              <p className="mt-1 text-xs text-red-600">{errors.lastName}</p>
+            )}
           </div>
 
           <div>
@@ -114,17 +201,45 @@ function RegisterInfo() {
             <input
               type="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => {
+                setPhone(e.target.value);
+                if (errors.phone) {
+                  setErrors((prev) => ({ ...prev, phone: "" }));
+                }
+              }}
+              onBlur={() =>
+                setErrors((prev) => ({
+                  ...prev,
+                  phone: validatePhone(phone),
+                }))
+              }
               placeholder="Enter phone number"
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
             />
+            {errors.phone && (
+              <p className="mt-1 text-xs text-red-600">{errors.phone}</p>
+            )}
           </div>
 
           <div className="mb-6">
             <label className="block text-gray-700 mb-1">Address</label>
             <select
               value={address}
-              onChange={(e) => setAddress(e.target.value)}
+              onChange={(e) => {
+                setAddress(e.target.value);
+                if (errors.address) {
+                  setErrors((prev) => ({ ...prev, address: "" }));
+                }
+              }}
+              onBlur={() =>
+                setErrors((prev) => ({
+                  ...prev,
+                  address: LOCATION_OPTIONS.includes(address)
+                    ? ""
+                    : "Please select a valid location",
+                }))
+              }
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             >
@@ -133,6 +248,9 @@ function RegisterInfo() {
               <option value="pokhara">Pokhara</option>
               <option value="kathmandu">Kathmandu Valley</option>
             </select>
+            {errors.address && (
+              <p className="mt-1 text-xs text-red-600">{errors.address}</p>
+            )}
           </div>
 
           <button
