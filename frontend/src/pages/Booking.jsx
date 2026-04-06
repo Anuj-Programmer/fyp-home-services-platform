@@ -78,31 +78,45 @@ function Booking() {
 
       if (response.data.success) {
         // Transform backend data to match frontend format
-        const transformedBookings = response.data.bookings.map((booking) => ({
-          id: booking._id,
-          technicianId: typeof booking.technician === 'object' ? booking.technician._id : booking.technician,
-          technicianName: `${booking.technicianInfo.firstname} ${booking.technicianInfo.lastname}`,
-          specialty: booking.technicianInfo.servicetype,
-          bookingDate: new Date(booking.serviceDate).toLocaleDateString("en-GB", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          }),
-          time: booking.serviceTime,
-          serviceType: booking.technicianInfo.servicetype,
-          email: booking.technicianInfo.email,
-          phone: booking.technicianInfo.phone,
-          status: booking.status.charAt(0).toUpperCase() + booking.status.slice(1),
-          isVerifiedTechnician: booking.technicianInfo.isVerifiedTechnician || false,
-          hasReview: booking.hasReview || false,
-          fee: booking.fee || 0,
-          paymentStatus: booking.paymentStatus || "unpaid",
-          statusHistory: Array.isArray(booking.statusHistory)
-            ? booking.statusHistory
-            : booking.statusHistory
-              ? [booking.statusHistory]
-              : [],
-        }));
+        const transformedBookings = response.data.bookings.map((booking) => {
+          const technicianInfo = booking?.technicianInfo || {};
+          const technicianId =
+            booking?.technician && typeof booking.technician === "object"
+              ? booking.technician?._id || ""
+              : booking?.technician || "";
+
+          return {
+            id: booking?._id || "",
+            technicianId,
+            technicianName:
+              `${technicianInfo.firstname || ""} ${technicianInfo.lastname || ""}`.trim() ||
+              "Unknown Technician",
+            specialty: technicianInfo.servicetype || "General Service",
+            bookingDate: booking?.serviceDate
+              ? new Date(booking.serviceDate).toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })
+              : "Date unavailable",
+            time: booking?.serviceTime || "Time unavailable",
+            serviceType: technicianInfo.servicetype || "Service",
+            email: technicianInfo.email || "N/A",
+            phone: technicianInfo.phone || "N/A",
+            status: booking?.status
+              ? booking.status.charAt(0).toUpperCase() + booking.status.slice(1)
+              : "Pending",
+            isVerifiedTechnician: technicianInfo.isVerifiedTechnician || false,
+            hasReview: booking?.hasReview || false,
+            fee: booking?.fee || 0,
+            paymentStatus: booking?.paymentStatus || "unpaid",
+            statusHistory: Array.isArray(booking?.statusHistory)
+              ? booking.statusHistory
+              : booking?.statusHistory
+                ? [booking.statusHistory]
+                : [],
+          };
+        });
 
         setBookings(transformedBookings);
 
@@ -240,10 +254,11 @@ function Booking() {
 
   // Apply search filter
   if (searchQuery.trim()) {
-    filteredBookings = filteredBookings.filter(booking => 
-      booking.technicianName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      booking.serviceType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      booking.id.toLowerCase().includes(searchQuery.toLowerCase())
+    const normalizedQuery = searchQuery.toLowerCase();
+    filteredBookings = filteredBookings.filter((booking) => 
+      (booking.technicianName || "").toLowerCase().includes(normalizedQuery) ||
+      (booking.serviceType || "").toLowerCase().includes(normalizedQuery) ||
+      String(booking.id || "").toLowerCase().includes(normalizedQuery)
     );
   }
 
