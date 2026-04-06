@@ -34,24 +34,60 @@ const registerTechnician = async (req, res) => {
         email,
         location
       } = req.body;
-      
-      // Create technician entry
-      const technician = new Technician({
-        firstName,
-        lastName,
-        phone,
-        email,
-        isEmailVerified: true,
-        identityDocumentUrl,
-        experienceYears,
-        serviceType,
-        certificateUrl,
-        location,
-        // Set certificate status to pending if certificate is provided
-        certificateStatus: certificateUrl ? 'pending' : 'not_provided'
-      });
-  
-      await technician.save();
+
+      const normalizedEmail = String(email || "").trim().toLowerCase();
+      const certificateStatus = certificateUrl ? 'pending' : 'not_provided';
+
+      if (!normalizedEmail) {
+        return res.status(400).json({
+          success: false,
+          message: "Email is required",
+        });
+      }
+
+      const existingTechnician = await Technician.findOne({ email: normalizedEmail });
+
+      if (existingTechnician && existingTechnician.status !== "rejected") {
+        return res.status(409).json({
+          success: false,
+          message: "Technician already exists. Please login or contact support.",
+        });
+      }
+
+      let technician;
+      if (existingTechnician && existingTechnician.status === "rejected") {
+        // Reapply flow: reuse rejected account record to avoid unique-email conflicts.
+        existingTechnician.firstName = firstName;
+        existingTechnician.lastName = lastName;
+        existingTechnician.phone = phone;
+        existingTechnician.identityDocumentUrl = identityDocumentUrl;
+        existingTechnician.experienceYears = experienceYears;
+        existingTechnician.serviceType = serviceType;
+        existingTechnician.certificateUrl = certificateUrl || null;
+        existingTechnician.location = location;
+        existingTechnician.isEmailVerified = true;
+        existingTechnician.status = "pending";
+        existingTechnician.certificateStatus = certificateStatus;
+        existingTechnician.isVerifiedTechnician = false;
+        technician = await existingTechnician.save();
+      } else {
+        // New technician application
+        technician = new Technician({
+          firstName,
+          lastName,
+          phone,
+          email: normalizedEmail,
+          isEmailVerified: true,
+          identityDocumentUrl,
+          experienceYears,
+          serviceType,
+          certificateUrl,
+          location,
+          certificateStatus,
+        });
+
+        await technician.save();
+      }
   
       // Find admin user
       const admin = await User.findOne({ isAdmin: true });
@@ -103,6 +139,16 @@ const registerTechnician = async (req, res) => {
   
     } catch (error) {
       console.error("Error registering technician:", error);
+
+      if (error?.code === 11000) {
+        const duplicateField = Object.keys(error.keyPattern || {})[0] || "field";
+        return res.status(409).json({
+          success: false,
+          message: `Duplicate ${duplicateField}. Please use a different ${duplicateField}.`,
+          error: error.message,
+        });
+      }
+
       return res.status(500).json({
         success: false,
         message: "Server error during technician registration",

@@ -914,7 +914,7 @@ function TechnicianProfile() {
                         type="button"
                         className={`px-3 py-1 rounded-full text-xs font-semibold cursor-pointer hover:opacity-80 transition-opacity ${getCertificateStatusColor()}`}
                         onClick={() => {
-                          if (user?.certificateStatus === 'not_provided' || user?.certificateStatus === 'pending') {
+                          if (user?.certificateStatus === 'not_provided' || user?.certificateStatus === 'pending' || user?.certificateStatus === 'rejected') {
                             setShowCertificateModal(true);
                           }
                         }}
