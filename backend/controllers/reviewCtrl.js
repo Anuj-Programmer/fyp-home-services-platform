@@ -2,6 +2,19 @@ const Review = require("../models/reviewModel");
 const Booking = require("../models/bookingModel");
 const Technician = require("../models/technicianModel");
 
+const getTechnicianRatingStats = (reviews) => {
+  const averageRating =
+    reviews.length > 0
+      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+      : 0;
+  const fiveStarCount = reviews.filter((r) => r.rating === 5).length;
+
+  return {
+    averageRating: Math.round(averageRating * 10) / 10,
+    highRated: fiveStarCount >= 20
+  };
+};
+
 // Create/Write a new review
 exports.addReview = async (req, res) => {
   try {
@@ -63,13 +76,11 @@ exports.addReview = async (req, res) => {
 
     // Update technician's average rating
     const allReviews = await Review.find({ technicianId: booking.technician });
-    const averageRating =
-      allReviews.length > 0
-        ? allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length
-        : 0;
+    const ratingStats = getTechnicianRatingStats(allReviews);
 
     await Technician.findByIdAndUpdate(booking.technician, {
-      averageRating: Math.round(averageRating * 10) / 10
+      averageRating: ratingStats.averageRating,
+      highRated: ratingStats.highRated
     });
 
     // Return updated booking with hasReview flag for frontend
@@ -180,11 +191,11 @@ exports.updateReview = async (req, res) => {
 
     // Recalculate technician's average rating
     const allReviews = await Review.find({ technicianId: review.technicianId });
-    const averageRating =
-      allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
+    const ratingStats = getTechnicianRatingStats(allReviews);
 
     await Technician.findByIdAndUpdate(review.technicianId, {
-      averageRating: Math.round(averageRating * 10) / 10
+      averageRating: ratingStats.averageRating,
+      highRated: ratingStats.highRated
     });
 
     res.status(200).json({
@@ -231,13 +242,11 @@ exports.deleteReview = async (req, res) => {
 
     // Recalculate technician's average rating
     const allReviews = await Review.find({ technicianId });
-    const averageRating =
-      allReviews.length > 0
-        ? allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length
-        : 0;
+    const ratingStats = getTechnicianRatingStats(allReviews);
 
     await Technician.findByIdAndUpdate(technicianId, {
-      averageRating: Math.round(averageRating * 10) / 10
+      averageRating: ratingStats.averageRating,
+      highRated: ratingStats.highRated
     });
 
     res.status(200).json({

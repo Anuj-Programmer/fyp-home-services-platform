@@ -1,6 +1,7 @@
 import { MapPin, Calendar, Star } from "phosphor-react";
 import { Link } from "react-router-dom";
 import VerifiedIcon from "@/assets/VerifiedIcon.svg";
+import HighRatedIcon from "@/assets/HighRatedIcon.svg";
 
 const TechnicianCard = ({ pro, onBookClick }) => {
   return (
@@ -40,6 +41,9 @@ const TechnicianCard = ({ pro, onBookClick }) => {
             </h3>
             {pro.isVerifiedTechnician && (
               <img src={VerifiedIcon} alt="Verified Technician" className="w-4 h-4 shrink-0" title="Verified Technician" />
+            )}
+            {pro.highRated && (
+              <img src={HighRatedIcon} alt="High Rated" className="w-4 h-4 shrink-0" />
             )}
           </div>
 

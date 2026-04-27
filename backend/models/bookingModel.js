@@ -17,7 +17,8 @@ const bookingSchema = new mongoose.Schema({
       description: String,
       email: String,
       phone: String,
-      isVerifiedTechnician: Boolean
+      isVerifiedTechnician: Boolean,
+      highRated: Boolean
     },
     userInfo: {
         firstname: String,

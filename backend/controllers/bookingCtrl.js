@@ -438,6 +438,7 @@ exports.createBooking = async (req, res) => {
         email: technicianInfo.email,
         phone: technicianData.phone,
         isVerifiedTechnician: technicianData.isVerifiedTechnician || false,
+        highRated: technicianData.highRated || false,
       },
       userInfo: {
         firstname: user.firstName,

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { Star } from "phosphor-react";
 import Navbar from "@/blocks/Navbar";
 import VerifiedIcon from "@/assets/VerifiedIcon.svg";
 import Footer from "@/blocks/Footer";
@@ -9,6 +10,7 @@ import Cookies from "js-cookie";
 import { useSocket } from "../context/SocketContext";
 import BookingChatPopup from "../components/BookingChatPopup";
 import "../css/landingPage.css";
+import HighRatedIcon from "@/assets/HighRatedIcon.svg";
 
 const TABS = ["All", "Upcoming", "Pending"  , "Completed"];
 const PLATFORM_FEE = 50;
@@ -80,6 +82,10 @@ function Booking() {
         // Transform backend data to match frontend format
         const transformedBookings = response.data.bookings.map((booking) => {
           const technicianInfo = booking?.technicianInfo || {};
+          const populatedTechnician =
+            booking?.technician && typeof booking.technician === "object"
+              ? booking.technician
+              : {};
           const technicianId =
             booking?.technician && typeof booking.technician === "object"
               ? booking.technician?._id || ""
@@ -89,9 +95,9 @@ function Booking() {
             id: booking?._id || "",
             technicianId,
             technicianName:
-              `${technicianInfo.firstname || ""} ${technicianInfo.lastname || ""}`.trim() ||
+              `${technicianInfo.firstname || populatedTechnician.firstName || ""} ${technicianInfo.lastname || populatedTechnician.lastName || ""}`.trim() ||
               "Unknown Technician",
-            specialty: technicianInfo.servicetype || "General Service",
+            specialty: technicianInfo.servicetype || populatedTechnician.serviceType || "General Service",
             bookingDate: booking?.serviceDate
               ? new Date(booking.serviceDate).toLocaleDateString("en-GB", {
                   day: "2-digit",
@@ -100,13 +106,20 @@ function Booking() {
                 })
               : "Date unavailable",
             time: booking?.serviceTime || "Time unavailable",
-            serviceType: technicianInfo.servicetype || "Service",
-            email: technicianInfo.email || "N/A",
-            phone: technicianInfo.phone || "N/A",
+            serviceType: technicianInfo.servicetype || populatedTechnician.serviceType || "Service",
+            email: technicianInfo.email || populatedTechnician.email || "N/A",
+            phone: technicianInfo.phone || populatedTechnician.phone || "N/A",
             status: booking?.status
               ? booking.status.charAt(0).toUpperCase() + booking.status.slice(1)
               : "Pending",
-            isVerifiedTechnician: technicianInfo.isVerifiedTechnician || false,
+            isVerifiedTechnician:
+              typeof technicianInfo.isVerifiedTechnician === "boolean"
+                ? technicianInfo.isVerifiedTechnician
+                : Boolean(populatedTechnician.isVerifiedTechnician),
+            highRated:
+              typeof technicianInfo.highRated === "boolean"
+                ? technicianInfo.highRated
+                : Boolean(populatedTechnician.highRated),
             hasReview: booking?.hasReview || false,
             fee: booking?.fee || 0,
             paymentStatus: booking?.paymentStatus || "unpaid",
@@ -564,6 +577,9 @@ function Booking() {
                         {booking.isVerifiedTechnician && (
                           <img src={VerifiedIcon} alt="Verified Technician" className="w-4 h-4 shrink-0 ml-1" title="Verified Technician" />
                         )}
+                        {booking.highRated && (
+                          <img src={HighRatedIcon} alt="High Rated" className="w-4 h-4 shrink-0 ml-1" title="Highly Rated Technician" />
+                        )}
                       </div>
                     </div>
 
@@ -892,10 +908,22 @@ function Booking() {
                       <p className="text-sm text-neutral-900">{selectedBooking.phone}</p>
                     </div>
                   </div>
-                  {selectedBooking.isVerifiedTechnician && (
-                    <div className="flex items-center gap-2 bg-emerald-100 p-3 rounded-lg mt-2">
-                      <img src={VerifiedIcon} alt="Verified Technician" className="w-5 h-5" />
-                      <span className="text-sm font-medium text-emerald-700">Verified Technician</span>
+                  {(selectedBooking.isVerifiedTechnician || selectedBooking.highRated) && (
+                    <div className="flex items-center gap-2 mt-2">
+                      {selectedBooking.isVerifiedTechnician && (
+                        <div className="flex items-center gap-2 bg-emerald-100 p-3 rounded-lg">
+                          <img src={VerifiedIcon} alt="Verified Technician" className="w-5 h-5" />
+                          <span className="text-sm font-medium text-emerald-700">Verified Technician</span>
+                        </div>
+                      )}
+                      {selectedBooking.highRated && (
+                        <div className="flex items-center gap-2 bg-amber-100 p-3 rounded-lg">
+                            
+              <img src={HighRatedIcon} alt="High Rated" className="w-4 h-4 shrink-0" />
+          
+                          <span className="text-sm font-medium text-amber-700">High Rated</span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

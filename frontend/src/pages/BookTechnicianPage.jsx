@@ -10,6 +10,7 @@ import { useSocket } from '../context/SocketContext';
 import { useUser } from '../context/UserContext';
 import VerifiedIcon from '@/assets/VerifiedIcon.svg';
 import houseVerifiedIcon from '@/assets/houseVerifiedIcon.svg';
+import HighRatedIcon from "@/assets/HighRatedIcon.svg";
 
 function BookTechnicianPage() {
   const { id } = useParams();
@@ -513,6 +514,9 @@ function BookTechnicianPage() {
                   </h2>
                   {technician.isVerifiedTechnician && (
                     <img src={VerifiedIcon} alt="Verified Technician" className="w-6 h-6" title="Verified Technician" />
+                  )}
+                  {technician.highRated && (
+                    <img src={HighRatedIcon} alt="High Rated" className="w-6 h-6" title="Highly Rated Technician" />
                   )}
                   <span className="text-gray-400 mx-1">•</span>
                   <span className="text-lg text-gray-600">{technician.serviceType}</span>

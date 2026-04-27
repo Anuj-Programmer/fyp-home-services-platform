@@ -80,6 +80,7 @@ const TechnicianSchema = new mongoose.Schema({
   }
 ],
 averageRating: { type: Number, default: 0 },
+highRated: { type: Boolean, default: false },
   notification: {
     type: Array,
     default: [] 
