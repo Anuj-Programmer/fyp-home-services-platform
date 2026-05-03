@@ -19,6 +19,8 @@ function Profile() {
   const [saving, setSaving] = useState(false);
   const [showCertificateModal, setShowCertificateModal] = useState(false);
   const [uploadingCertificate, setUploadingCertificate] = useState(false);
+  const [completedBookingsCount, setCompletedBookingsCount] = useState(0);
+  const [loadingBookingsCount, setLoadingBookingsCount] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [editingAddress, setEditingAddress] = useState(null);
   const [addressMenuOpen, setAddressMenuOpen] = useState(null);
@@ -59,7 +61,10 @@ function Profile() {
   };
 
   const badgeData = [
-    { label: "Completed bookings", value: "-" },
+    {
+      label: "Completed bookings",
+      value: loadingBookingsCount ? "..." : String(completedBookingsCount),
+    },
     { label: "Member since", value: formatMemberSince(user?.createdAt) },
   ];
 
@@ -76,6 +81,41 @@ function Profile() {
       setFormData(hydrateFormFromUser(user));
     }
   }, [user]);
+
+  useEffect(() => {
+    const fetchBookingsCount = async () => {
+      if (!token) {
+        setCompletedBookingsCount(0);
+        return;
+      }
+
+      try {
+        setLoadingBookingsCount(true);
+        const response = await apiClient.get("/api/bookings/user-bookings", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.data?.success) {
+          const completed = (response.data.bookings || []).filter(
+            (booking) =>
+              String(booking.status || "").toLowerCase() === "completed",
+          );
+          setCompletedBookingsCount(completed.length);
+        } else {
+          setCompletedBookingsCount(0);
+        }
+      } catch (error) {
+        console.error("Failed to fetch bookings count", error);
+        setCompletedBookingsCount(0);
+      } finally {
+        setLoadingBookingsCount(false);
+      }
+    };
+
+    fetchBookingsCount();
+  }, [token]);
 
   // After loading user from localStorage
   const role = user?.role || "user";
@@ -679,7 +719,7 @@ function Profile() {
       {/* Certificate Upload Modal */}
       {showCertificateModal && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full space-y-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full space-y-4 border border-stone-200 shadow-lg">
             <div className="flex items-center justify-between">
               <h3 className="text-xl font-semibold txt-color-primary">
                 Upload House Certificate
@@ -703,23 +743,28 @@ function Profile() {
                 <span className="text-sm font-medium text-stone-600 mb-2 block">
                   Select Certificate File
                 </span>
-                <input
-                  type="file"
-                  accept="image/*,application/pdf"
-                  onChange={handleCertificateUpload}
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={uploadingCertificate}
-                />
+                <div className="rounded-xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4">
+                  <input
+                    type="file"
+                    accept="image/*,application/pdf"
+                    onChange={handleCertificateUpload}
+                    className="w-full text-sm text-stone-600 file:mr-3 file:rounded-lg file:border-0 file:bg-stone-200 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-stone-700 hover:file:bg-stone-300"
+                    disabled={uploadingCertificate}
+                  />
+                  <p className="mt-2 text-xs text-stone-500">
+                    JPG, PNG, WebP, or PDF up to 5MB.
+                  </p>
+                </div>
               </label>
 
               {uploadingCertificate && (
-                <p className="text-sm text-blue-600 text-center">
+                <p className="text-sm text-color-main text-center">
                   Uploading certificate...
                 </p>
               )}
 
               {user?.houseCertificateStatus === "pending" && (
-                <p className="text-sm text-blue-600">
+                <p className="text-sm text-color-main">
                   Your previous certificate is pending approval. You can upload
                   a new one to replace it.
                 </p>
@@ -749,7 +794,7 @@ function Profile() {
       {/* Add/Edit Address Modal */}
       {showAddressModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full space-y-4 my-8">
+          <div className="bg-white rounded-2xl p-6 max-w-2xl w-full space-y-4 my-8 border border-stone-200 shadow-lg">
             <div className="flex items-center justify-between">
               <h3 className="text-xl font-semibold txt-color-primary">
                 {editingAddress ? "Edit Address" : "Add Address"}
@@ -763,69 +808,71 @@ function Profile() {
             </div>
 
             <form onSubmit={handleSaveAddress} className="space-y-4">
-              <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
-                Contact Name
-                <input
-                  type="text"
-                  name="contactName"
-                  value={addressFormData.contactName}
-                  onChange={handleAddressInputChange}
-                  className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
-                  required
-                />
-              </label>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
+                  Contact Name
+                  <input
+                    type="text"
+                    name="contactName"
+                    value={addressFormData.contactName}
+                    onChange={handleAddressInputChange}
+                    className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    required
+                  />
+                </label>
 
-              <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
-                Phone Number
-                <input
-                  type="tel"
-                  name="phone"
-                  value={addressFormData.phone}
-                  onChange={handleAddressInputChange}
-                  className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
-                  required
-                />
-              </label>
+                <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
+                  Phone Number
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={addressFormData.phone}
+                    onChange={handleAddressInputChange}
+                    className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    required
+                  />
+                </label>
 
-              <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
-                Address
-                <input
-                  type="text"
-                  name="address"
-                  value={addressFormData.address}
-                  onChange={handleAddressInputChange}
-                  className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
-                  placeholder="e.g., Lazimpat, Kathmandu"
-                  required
-                />
-              </label>
+                <label className="flex flex-col gap-1 text-sm font-medium text-stone-600 sm:col-span-2">
+                  Address
+                  <input
+                    type="text"
+                    name="address"
+                    value={addressFormData.address}
+                    onChange={handleAddressInputChange}
+                    className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    placeholder="e.g., Lazimpat, Kathmandu"
+                    required
+                  />
+                </label>
 
-              <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
-                Landmark
-                <input
-                  type="text"
-                  name="landMark"
-                  value={addressFormData.landMark}
-                  onChange={handleAddressInputChange}
-                  className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
-                  placeholder="e.g., Near City Mall"
-                  required
-                />
-              </label>
+                <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
+                  Landmark
+                  <input
+                    type="text"
+                    name="landMark"
+                    value={addressFormData.landMark}
+                    onChange={handleAddressInputChange}
+                    className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    placeholder="e.g., Near City Mall"
+                    required
+                  />
+                </label>
 
-              <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
-                Address Type
-                <select
-                  name="addressType"
-                  value={addressFormData.addressType}
-                  onChange={handleAddressInputChange}
-                  className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
-                >
-                  <option value="home">Home</option>
-                  <option value="office">Office</option>
-                  <option value="other">Other</option>
-                </select>
-              </label>
+                <label className="flex flex-col gap-1 text-sm font-medium text-stone-600">
+                  Address Type
+                  <select
+                    name="addressType"
+                    value={addressFormData.addressType}
+                    onChange={handleAddressInputChange}
+                    className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
+                  >
+                    <option value="home">Home</option>
+                    <option value="office">Office</option>
+                    <option value="other">Other</option>
+                  </select>
+                </label>
+              </div>
 
               <div className="border-t pt-4 mt-4">
                 <label className="flex flex-col gap-2 text-sm font-medium text-stone-600">
@@ -888,13 +935,18 @@ function Profile() {
                         </p>
                       </div>
                     )}
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp,application/pdf"
-                      onChange={handleAddressCertificateUpload}
-                      disabled={uploadingAddressCertificate}
-                      className="px-4 py-2 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900 cursor-pointer"
-                    />
+                    <div className="rounded-xl border border-dashed border-stone-300 bg-stone-50 px-4 py-3">
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,application/pdf"
+                        onChange={handleAddressCertificateUpload}
+                        disabled={uploadingAddressCertificate}
+                        className="w-full text-sm text-stone-600 file:mr-3 file:rounded-lg file:border-0 file:bg-stone-200 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-stone-700 hover:file:bg-stone-300"
+                      />
+                      <p className="mt-2 text-xs text-stone-500">
+                        JPG, PNG, WebP, or PDF up to 5MB.
+                      </p>
+                    </div>
                     {uploadingAddressCertificate && (
                       <p className="text-xs text-blue-600">
                         Uploading certificate...

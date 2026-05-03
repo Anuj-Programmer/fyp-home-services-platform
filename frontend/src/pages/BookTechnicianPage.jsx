@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 import Cookies from 'js-cookie';
-import { Star, ArrowLeft, CurrencyCircleDollar, Wrench, MapPin, CheckCircle } from 'phosphor-react';
+import { Star, ArrowLeft, CurrencyCircleDollar, Wrench, MapPin, CheckCircle, CalendarBlank, Clock, WarningCircle, EnvelopeSimple, NotePencil } from 'phosphor-react';
 import Navbar from '@/blocks/Navbar';
 import Footer from '@/blocks/Footer';
 import { useSocket } from '../context/SocketContext';
@@ -433,128 +433,162 @@ function BookTechnicianPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-8 flex flex-col md:flex-row gap-8">
           {/* Left: Big Photo & Info */}
           <div className="md:w-1/2 w-full flex flex-col items-center md:items-start">
-            <div className="relative w-full rounded-2xl overflow-hidden shadow-lg bg-white">
+            <div className="relative w-full rounded-3xl overflow-hidden shadow-2xl bg-white">
               <img
                 src={technician.photoUrl || 'https://via.placeholder.com/600x420?text=No+Photo'}
                 alt={technician.firstName}
                 className="w-full h-80 object-cover md:h-[420px]"
               />
               {/* Overlayed rating */}
-              <div className="absolute bottom-4 left-4 bg-white/90 px-4 py-2 rounded-full flex items-center gap-2 shadow">
+              <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-md px-5 py-3 rounded-full flex items-center gap-3 shadow-lg">
                 <Star size={20} weight="fill" className="text-yellow-400" />
                 <span className="font-bold text-gray-800 text-lg">{technician.averageRating?.toFixed(1) || 'No'}</span>
-                <span className="text-gray-500 text-sm">({reviews.length} reviews)</span>
+                <span className="text-gray-500 text-sm font-medium">({reviews.length})</span>
               </div>
             </div>
             {/* About Section */}
-            <div className="w-full mt-8 bg-white rounded-xl shadow p-6">
-              <h2 className="text-xl font-bold txt-color-primary mb-2">About</h2>
-              <p className="text-gray-700 mb-3">{technician.description}</p>
-              <ul className="list-disc pl-6 text-gray-600 space-y-1">
-                {highlights.map((point, idx) => (
-                  <li key={idx}>{point}</li>
-                ))}
-              </ul>
-              {/* Expertise/Experience Headings */}
-              {/* <div className="mt-6">
-                <h3 className="font-semibold text-gray-800 mb-1">Expertise</h3>
-                <p className="text-gray-600">{technician.serviceType}</p>
-              </div>
-              <div className="mt-4">
-                <h3 className="font-semibold text-gray-800 mb-1">Experience</h3>
-                <p className="text-gray-600">{technician.experienceYears} years in the field</p>
-              </div> */}
+            <div className="w-full mt-8 bg-white rounded-2xl shadow-lg border border-gray-100 p-8 hover:shadow-xl transition-shadow">
+              <h2 className="text-2xl font-bold txt-color-primary mb-4 flex items-center gap-2">
+                <div className="w-1 h-8 bg-color-main rounded-full"></div>
+                About
+              </h2>
+              <p className="text-gray-700 mb-6 leading-relaxed text-sm">{technician.description}</p>
+              {highlights.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wide">Highlights</p>
+                  <ul className="space-y-2">
+                    {highlights.map((point, idx) => (
+                      <li key={idx} className="flex items-start gap-3 text-gray-600 text-sm">
+                        <span className="w-2 h-2 rounded-full bg-color-main mt-2 shrink-0"></span>
+                        <span>{point}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
             {/* Reviews Section */}
-            <div className="w-full mt-8 bg-white rounded-xl shadow p-6">
-              <h2 className="text-xl font-bold txt-color-primary mb-4 flex items-center gap-2">
-                <CheckCircle size={22} className="text-green-500" /> Customer Reviews
+            <div className="w-full mt-8 bg-white rounded-2xl shadow-lg border border-gray-100 p-8 hover:shadow-xl transition-shadow">
+              <h2 className="text-2xl font-bold txt-color-primary mb-6 flex items-center gap-3">
+                <CheckCircle size={26} className="text-green-500" /> 
+                <span>Customer Reviews</span>
+                {reviews.length > 0 && <span className="ml-auto text-base font-normal text-gray-500">{reviews.length} review{reviews.length !== 1 ? 's' : ''}</span>}
               </h2>
               <div className="space-y-4">
-                {reviews.map((review, idx) => (
-                  <div key={idx} className="bg-gray-50 rounded-lg p-4 shadow-sm">
-                    <div className="flex items-center gap-2 mb-1">
-                      {renderStars(review.rating, 16)}
-                      {review.customer && <span className="text-gray-500 text-xs">by {review.customer}</span>}
+                {reviews.length > 0 ? (
+                  reviews.map((review, idx) => (
+                    <div key={idx} className="bg-linear-to-r from-blue-50 to-transparent rounded-xl p-5 border border-blue-100 hover:border-blue-200 transition-all">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          {renderStars(review.rating, 16)}
+                        </div>
+                        <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{review.rating}.0</span>
+                      </div>
+                      <p className="text-gray-700 text-sm leading-relaxed mb-2">{review.comment}</p>
+                      {review.customer && <p className="text-xs text-gray-500 font-medium">— {review.customer}</p>}
                     </div>
-                    <p className="text-gray-600 text-sm">{review.comment}</p>
+                  ))
+                ) : (
+                  <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 text-center">
+                    <p className="text-gray-500 text-sm">No reviews yet. Be the first to review this technician!</p>
                   </div>
-                ))}
-                {reviews.length === 0 && (
-                  <p className="text-gray-500">No reviews yet.</p>
                 )}
               </div>
             </div>
           </div>
           {/* Right: Booking Panel */}
           <div className="md:w-1/2 w-full flex flex-col gap-8">
-            <div className="bg-white rounded-xl shadow p-8 flex flex-col gap-6 sticky top-24">
+            <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 p-8 flex flex-col gap-6 sticky top-24">
               {hasPendingPayment && (
-                <div className="rounded-xl border border-amber-300 bg-amber-50 p-4">
-                  <h3 className="text-sm font-semibold text-amber-800">Payment Required Before New Booking</h3>
-                  <p className="mt-1 text-sm text-amber-700">
-                    You have {pendingPaymentCount} completed booking{pendingPaymentCount > 1 ? 's' : ''} with unpaid status.
-                    Please complete payment first to continue booking.
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
+                  <h3 className="text-sm font-bold text-amber-900 mb-1 flex items-center gap-2">
+                    <WarningCircle size={18} className="text-amber-600" /> Payment Required Before New Booking
+                  </h3>
+                  <p className="mt-2 text-sm text-amber-800 leading-relaxed">
+                    You have <span className="font-semibold">{pendingPaymentCount}</span> completed booking{pendingPaymentCount > 1 ? 's' : ''} with unpaid status.
+                    Please complete payment first.
                   </p>
                   <button
                     type="button"
                     onClick={() => navigate('/bookings')}
-                    className="mt-3 inline-flex items-center rounded-lg bg-amber-600 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-700 transition"
+                    className="mt-4 inline-flex items-center rounded-lg bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700 transition"
                   >
-                    Go to Bookings and Pay
+                    Go to Bookings & Pay
                   </button>
                 </div>
               )}
 
               {/* Technician Header */}
-              <div className="border-b border-gray-200 pb-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <h2 className="text-2xl font-bold text-gray-800">
-                    {technician.firstName} {technician.lastName}
-                  </h2>
-                  {technician.isVerifiedTechnician && (
-                    <img src={VerifiedIcon} alt="Verified Technician" className="w-6 h-6" title="Verified Technician" />
-                  )}
-                  {technician.highRated && (
-                    <img src={HighRatedIcon} alt="High Rated" className="w-6 h-6" title="Highly Rated Technician" />
-                  )}
-                  <span className="text-gray-400 mx-1">•</span>
-                  <span className="text-lg text-gray-600">{technician.serviceType}</span>
+              <div className="border-b-2 border-gray-100 pb-6">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      <h2 className="text-3xl font-bold bg-linear-to-r from-gray-800 to-gray-900 bg-clip-text text-transparent">
+                        {technician.firstName} {technician.lastName}
+                      </h2>
+                      <div className="flex gap-2">
+                        {technician.isVerifiedTechnician && (
+                          <div className="group relative">
+                            <img src={VerifiedIcon} alt="Verified" className="w-6 h-6 cursor-help" />
+                            <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs py-1 px-2 rounded whitespace-nowrap z-10">Verified Technician</div>
+                          </div>
+                        )}
+                        {technician.highRated && (
+                          <div className="group relative">
+                            <img src={HighRatedIcon} alt="High Rated" className="w-6 h-6 cursor-help" />
+                            <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs py-1 px-2 rounded whitespace-nowrap z-10">Highly Rated</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3 mb-4">
+                      <span className="inline-block bg-blue-100 text-color-main text-xs font-bold px-3 py-1.5 rounded-full">
+                        {technician.serviceType}
+                      </span>
+                      <span className="text-sm text-gray-600 font-medium">
+                        {technician.experienceYears} {technician.experienceYears === 1 ? 'year' : 'years'} exp.
+                      </span>
+                      {technician.location && (
+                        <span className="text-sm text-gray-600 font-medium flex items-center gap-1">
+                          <MapPin size={14} className="text-color-main" />
+                          {technician.location.charAt(0).toUpperCase() + technician.location.slice(1)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-4 text-gray-600 mb-3">
-                  <span className="text-sm">
-                    {technician.experienceYears} {technician.experienceYears === 1 ? 'year' : 'years'} experience
-                  </span>
-                  <span className="text-gray-400">•</span>
-                  <span className="text-sm">{technician.location ? technician.location.charAt(0).toUpperCase() + technician.location.slice(1) : technician.location}</span>
-                </div>
-                <div className="text-[16px] font-semibold text-gray-800">
-                  Booking Fee: <span className="text-color-main">Rs. {technician.fee}</span>
+                <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
+                  <p className="text-xs text-gray-600 font-semibold uppercase tracking-wider">Booking Fee</p>
+                  <p className="text-lg font-bold text-color-main">Rs. {technician.fee}</p>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">Booking slots</label>
-                <div className="flex overflow-x-auto gap-2 mb-4 pb-2 -mx-2 px-2 sm:grid sm:grid-cols-7 sm:overflow-visible">
+                <label className="text-sm font-bold text-gray-800 mb-4 uppercase tracking-wide flex items-center gap-2">
+                  <CalendarBlank size={16} className="text-color-main" /> Select Date
+                </label>
+                <div className="flex overflow-x-auto gap-3 mb-4 pb-2 -mx-2 px-2 sm:grid sm:grid-cols-7 sm:overflow-visible">
                   {next7Days.map((day) => (
                     <button
                       key={day.fullDate}
                       onClick={() => setSelectedDate(day.fullDate)}
-                      className={`flex flex-col items-center justify-center py-3 px-3 sm:py-4 sm:px-2 rounded-3xl border-2 font-medium transition min-w-[70px] sm:min-w-0 ${
+                      className={`flex flex-col items-center justify-center py-3 px-3 sm:py-4 sm:px-2 rounded-2xl border-2 font-bold transition min-w-[75px] sm:min-w-0 ${
                         selectedDate === day.fullDate
                           ? 'border-color-main bg-color-main text-white shadow-lg'
-                          : 'border-gray-300 bg-white text-gray-700 hover:border-color-main'
+                          : 'border-gray-200 bg-white text-gray-700 hover:border-color-main'
                       }`}
                     >
-                      <span className="text-xs mb-1 font-semibold whitespace-nowrap">{day.dayName}</span>
-                      <span className="text-lg sm:text-xl font-bold">{day.dayNumber}</span>
+                      <span className="text-xs mb-1.5 font-bold whitespace-nowrap">{day.dayName}</span>
+                      <span className="text-xl sm:text-2xl font-bold">{day.dayNumber}</span>
                     </button>
                   ))}
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">Select Time Slot</label>
+                <label className="text-sm font-bold text-gray-800 mb-4 uppercase tracking-wide flex items-center gap-2">
+                  <Clock size={16} className="text-color-main" /> Select Time Slot
+                </label>
                 {availableSlots.length > 0 ? (
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
                     {availableSlots.map((slot) => {
                       const isBooked = bookedSlots.includes(slot);
                       
@@ -567,14 +601,14 @@ function BookTechnicianPage() {
                           key={slot}
                           onClick={() => !isBooked && !isPastTime && setSelectedTime(slot)}
                           disabled={isBooked || isPastTime}
-                          className={`py-2 px-3 rounded-lg border-2 font-medium transition ${
+                          className={`py-2.5 px-3 rounded-xl border-2 font-bold transition ${
                             isBooked || isPastTime
-                              ? 'border-gray-300 bg-gray-200 text-gray-500 cursor-not-allowed opacity-60'
+                              ? 'border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed opacity-50'
                               : selectedTime === slot
-                              ? 'border-color-main bg-color-main text-white'
-                              : 'border-gray-300 bg-white text-gray-700 hover:border-color-main'
+                              ? 'border-color-main bg-color-main text-white shadow-lg'
+                              : 'border-gray-200 bg-white text-gray-700 hover:border-color-main'
                           }`}
-                          title={isBooked ? 'This slot is already booked' : isPastTime ? 'This time has already passed' : ''}
+                          title={isBooked ? 'Already booked' : isPastTime ? 'Time passed' : ''}
                         >
                           {slot}
                         </button>
@@ -582,31 +616,16 @@ function BookTechnicianPage() {
                     })}
                   </div>
                 ) : selectedDate ? (
-                  <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                    <p className="text-red-600 text-sm font-medium">
-                      No available slots for this date. Please select another date.
-                    </p>
+                  <div className="bg-red-50 p-5 rounded-xl border border-red-200">
+                    <p className="text-red-700 text-sm font-semibold">No available slots for this date</p>
+                    <p className="text-red-600 text-xs mt-1">Please select another date</p>
                   </div>
                 ) : (
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p className="text-gray-600 text-sm">Please select a date first</p>
+                  <div className="bg-gray-50 p-5 rounded-xl border border-gray-200 text-center">
+                    <p className="text-gray-600 text-sm font-medium">Select a date to view available time slots</p>
                   </div>
                 )}
               </div>
-              {selectedDate && selectedTime && (
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                  <p className="text-sm text-gray-600">
-                    <strong>Scheduled for:</strong>{' '}
-                    {new Date(selectedDate).toLocaleDateString('en-US', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}{' '}
-                    at {selectedTime}
-                  </p>
-                </div>
-              )}
               <button
                 onClick={handleBookNow}
                 disabled={
@@ -616,7 +635,7 @@ function BookTechnicianPage() {
                   hasPendingPayment ||
                   checkingPendingPayments
                 }
-                className={`w-full py-4 px-6 rounded-lg font-bold text-lg text-white transition mt-2 ${
+                className={`w-full py-4 px-6 rounded-xl font-bold text-base text-white transition ${
                   bookingLoading || !selectedDate || !selectedTime || hasPendingPayment || checkingPendingPayments
                     ? 'bg-gray-400 cursor-not-allowed'
                     : 'bg-color-main hover:bg-blue-700 btn-filled-slide'
@@ -631,7 +650,7 @@ function BookTechnicianPage() {
                       : 'Book Now'}
               </button>
               {hasPendingPayment && (
-                <p className="text-xs text-red-600 -mt-3">
+                <p className="text-xs text-red-600 text-center -mt-2 font-medium">
                   New booking is disabled until all completed bookings are paid.
                 </p>
               )}
@@ -643,15 +662,15 @@ function BookTechnicianPage() {
 
       {/* Booking Modal */}
       {showModal && user && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4 overflow-hidden">
-          <div className="bg-white rounded-2xl max-w-lg w-full h-[90dvh] sm:h-auto sm:max-h-[90dvh] flex flex-col">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 overflow-hidden animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-lg w-full h-[90dvh] sm:h-auto sm:max-h-[90dvh] flex flex-col shadow-2xl border border-gray-200 animate-slide-up">
             {/* Fixed Header */}
-            <div className="px-3 py-4 sm:px-6 sm:py-6 border-b border-gray-200 shrink-0">
+            <div className="px-3 py-4 sm:px-8 sm:py-6 border-b-2 border-gray-100 shrink-0 bg-white">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Book Service</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Complete Booking</h2>
                 <button
                   onClick={() => setShowModal(false)}
-                  className="text-gray-400 hover:text-gray-600 text-2xl leading-none shrink-0"
+                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 w-8 h-8 flex items-center justify-center rounded-full transition"
                 >
                   ×
                 </button>
@@ -659,33 +678,39 @@ function BookTechnicianPage() {
             </div>
 
             {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-6">
+            <div className="flex-1 overflow-y-auto px-3 py-4 sm:px-8 sm:py-6 space-y-6">
               {/* Booking Time */}
-              <div className="mb-4 sm:mb-6">
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">Booking Time</h3>
-                <p className="text-gray-800 text-sm sm:text-base">
+              <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200">
+                <h3 className="text-xs font-bold text-gray-600 mb-2 uppercase tracking-wider flex items-center gap-2">
+                  <CalendarBlank size={14} className="text-color-main" /> Booking Date & Time
+                </h3>
+                <p className="text-lg font-bold text-color-main">
                   {new Date(selectedDate).toLocaleDateString('en-US', {
                     weekday: 'short',
                     month: 'short',
                     day: 'numeric',
-                  })}, {selectedTime}
+                  })}{' '}
+                  <span className="text-gray-400">•</span>
+                  <span className="text-gray-800"> {selectedTime}</span>
                 </p>
               </div>
 
               {/* Select Address */}
-              <div className="mb-4 sm:mb-6">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-semibold text-gray-700">Select Address</h3>
-                  <a href="/profile" className="text-xs font-semibold text-color-main hover:underline">Add Address</a>
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wide flex items-center gap-2">
+                    <MapPin size={14} className="text-color-main" /> Service Address
+                  </h3>
+                  <a href="/profile" className="text-xs font-bold text-color-main hover:text-blue-700 transition">Add Address</a>
                 </div>
                 {technician.serviceType === 'Locksmith' && (
-                  <div className="mb-3 bg-yellow-50 p-3 rounded-lg border border-yellow-200">
-                    <p className="text-xs text-yellow-800">
-                      <strong>Note:</strong> Locksmith service requires a house-verified address.
+                  <div className="mb-4 bg-amber-50 p-4 rounded-xl border border-amber-200">
+                    <p className="text-xs text-amber-800 font-semibold flex items-center gap-2">
+                      <WarningCircle size={14} className="text-amber-700" /> Locksmith service requires a verified address
                     </p>
                   </div>
                 )}
-                <div className="space-y-2 max-h-48 overflow-y-auto">
+                <div className="space-y-2 max-h-56 overflow-y-auto">
                   {user.addressBook && user.addressBook.length > 0 ? (
                     user.addressBook
                       .filter((address) => technician.serviceType === 'Locksmith' ? address.isHouseVerified : true)
@@ -693,14 +718,14 @@ function BookTechnicianPage() {
                       <div
                         key={address._id}
                         onClick={() => setSelectedAddress(address)}
-                        className={`p-3 rounded-lg border-2 cursor-pointer transition ${
+                        className={`p-4 rounded-2xl border-2 cursor-pointer transition ${
                           selectedAddress?._id === address._id
-                            ? 'border-color-main bg-blue-50'
-                            : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                            ? 'border-color-main bg-blue-50 shadow-sm'
+                            : 'border-gray-200 bg-gray-50 hover:border-color-main'
                         }`}
                       >
                         <div className="flex items-start gap-3">
-                          <div className="w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0" style={{
+                          <div className="w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 transition" style={{
                             borderColor: selectedAddress?._id === address._id ? '#003d82' : '#d1d5db'
                           }}>
                             {selectedAddress?._id === address._id && (
@@ -708,69 +733,76 @@ function BookTechnicianPage() {
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-semibold text-gray-800 text-sm capitalize">
-                                {address.contactName} ({address.addressType})
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <h4 className="font-bold text-gray-800 text-sm capitalize">
+                                {address.contactName}
                               </h4>
+                              <span className="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full font-medium capitalize">{address.addressType}</span>
                               {address.isHouseVerified && (
-                                <img src={houseVerifiedIcon} alt="Verified Address" className="w-4 h-4 shrink-0" title="Verified Address" />
+                                <img src={houseVerifiedIcon} alt="Verified" className="w-4 h-4 shrink-0" title="Verified Address" />
                               )}
                             </div>
-                            <p className="text-xs text-gray-600 mt-1">{address.address}</p>
+                            <p className="text-xs text-gray-700 font-medium mt-1">{address.address}</p>
                             {address.landMark && (
-                              <p className="text-xs text-gray-500">Landmark: {address.landMark}</p>
+                              <p className="text-xs text-gray-600 mt-1">Landmark: {address.landMark}</p>
                             )}
-                            <p className="text-xs text-gray-600 mt-1">{address.phone}</p>
+                            <p className="text-xs text-gray-600 mt-1 font-medium">Phone: {address.phone}</p>
                           </div>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <p className="text-xs text-gray-500">
-                      {technician.serviceType === 'Locksmith' 
-                        ? 'No verified addresses found. Please add a verified address to book locksmith service.' 
-                        : 'No addresses found'}
-                    </p>
+                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 text-center">
+                      <p className="text-xs text-gray-600 font-medium">
+                        {technician.serviceType === 'Locksmith' 
+                          ? 'No verified addresses found' 
+                          : 'No addresses found'}
+                      </p>
+                    </div>
                   )}
                 </div>
               </div>
 
               {/* Email Address (Read-only) */}
-              <div className="mb-4 sm:mb-6">
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">Email Address</h3>
+              <div>
+                <h3 className="text-sm font-bold text-gray-800 mb-2 uppercase tracking-wide flex items-center gap-2">
+                  <EnvelopeSimple size={14} className="text-color-main" /> Email Address
+                </h3>
                 <input
                   type="email"
                   value={user.email}
                   readOnly
-                  className="w-full border border-gray-300 rounded-lg p-2 sm:p-3 text-xs sm:text-sm text-gray-700 bg-gray-50 cursor-not-allowed"
+                  className="w-full border-2 border-gray-200 rounded-xl p-3 sm:p-4 text-sm text-gray-700 bg-gray-50 cursor-not-allowed font-medium"
                 />
               </div>
 
               {/* Order Note */}
-              <div className="mb-4 sm:mb-6">
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">Order Note</h3>
+              <div>
+                <h3 className="text-sm font-bold text-gray-800 mb-2 uppercase tracking-wide flex items-center gap-2">
+                  <NotePencil size={14} className="text-color-main" /> Additional Notes
+                </h3>
                 <textarea
                   value={orderNote}
                   onChange={(e) => setOrderNote(e.target.value)}
-                  placeholder="eg: Please bring extra batteries."
-                  className="w-full border border-gray-300 rounded-lg p-2 sm:p-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-color-main resize-none"
-                  rows="2"
+                  placeholder="e.g., Please bring extra batteries, specific requirements..."
+                  className="w-full border-2 border-gray-200 rounded-xl p-3 sm:p-4 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-color-main focus:border-transparent resize-none font-medium placeholder:text-gray-400"
+                  rows="3"
                 />
               </div>
             </div>
 
             {/* Fixed Footer with Button */}
-            <div className="px-3 py-4 sm:px-6 sm:py-6 border-t border-gray-200 bg-white shrink-0">
+            <div className="px-3 py-4 sm:px-8 sm:py-6 border-t-2 border-gray-100 bg-white shrink-0">
               <button
                 onClick={handleConfirmBooking}
                 disabled={bookingLoading || !selectedDate || !selectedTime || !selectedAddress}
-                className={`w-full py-3 sm:py-4 px-4 sm:px-6 rounded-lg font-bold text-base sm:text-lg text-white transition ${
+                className={`w-full py-4 px-6 rounded-xl font-bold text-base text-white transition ${
                   bookingLoading || !selectedDate || !selectedTime || !selectedAddress
                     ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-color-main hover:bg-blue-700 btn-filled-slide'
+                    : 'bg-color-main hover:bg-blue-700'
                 }`}
               >
-                {bookingLoading ? 'Processing...' : 'Confirm Booking'}
+                {bookingLoading ? 'Confirming...' : 'Confirm Booking'}
               </button>
             </div>
           </div>

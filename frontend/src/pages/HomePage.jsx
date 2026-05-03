@@ -15,7 +15,9 @@ import {
   MapPin,
   Wallet,
   CheckCircle,
-  MagnifyingGlass
+  MagnifyingGlass,
+  Clock,
+  User
 } from "phosphor-react";
 import "../css/landingPage.css";
 import { Link } from "react-router-dom";
@@ -25,6 +27,30 @@ import { toast } from "react-hot-toast";
 import { useSocket } from "@/context/SocketContext";
 
 const heroSearchPlaceholderWords = ["Services", "Names", "Locations"];
+
+// Skeleton Loader Components
+const SkeletonCard = () => (
+  <div className="animate-pulse p-4 rounded-xl bg-white shadow-sm border border-neutral-100">
+    <div className="w-10 h-10 rounded-full bg-stone-200 mb-3"></div>
+    <div className="h-4 bg-stone-200 rounded w-3/4 mb-2"></div>
+    <div className="h-3 bg-stone-100 rounded w-full"></div>
+  </div>
+);
+
+const SkeletonBookingCard = () => (
+  <div className="animate-pulse flex items-start gap-3 p-4 bg-white rounded-xl shadow-sm border border-neutral-100">
+    <div className="mt-1 w-6 h-6 bg-stone-200 rounded-full"></div>
+    <div className="flex-1 space-y-2">
+      <div className="h-4 bg-stone-200 rounded w-2/3"></div>
+      <div className="h-3 bg-stone-100 rounded w-1/2"></div>
+      <div className="h-3 bg-stone-100 rounded w-3/4"></div>
+    </div>
+  </div>
+);
+
+const SkeletonServiceCard = () => (
+  <div className="animate-pulse w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 p-4 rounded-2xl bg-stone-100"></div>
+);
 
 function HomePage() {
   const navigate = useNavigate();
@@ -237,7 +263,7 @@ function HomePage() {
                   </div>
                   <button
                     type="submit"
-                    className="w-full rounded-xl bg-color-main px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 sm:w-auto"
+                    className="w-full rounded-xl bg-color-main px-5 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:bg-blue-700 hover:shadow-lg sm:w-auto active:scale-95"
                   >
                     Search
                   </button>
@@ -281,16 +307,16 @@ function HomePage() {
                   <button
                     key={idx}
                     onClick={item.onClick}
-                    className="flex flex-col items-start gap-3 p-4 rounded-xl bg-white shadow-sm hover:shadow-md border border-neutral-100 transition text-left"
+                    className="flex flex-col items-start gap-3 p-4 rounded-xl bg-white shadow-sm hover:shadow-lg border border-neutral-100 transition-all duration-300 text-left hover:border-blue-200 group"
                   >
-                    <div className="w-10 h-10 rounded-full icon-bg flex items-center justify-center text-white">
+                    <div className="w-10 h-10 rounded-full icon-bg flex items-center justify-center text-white transition-transform duration-300 group-hover:scale-110">
                       {item.icon}
                     </div>
                     <div className="flex flex-col gap-1">
-                      <span className="text-sm font-semibold txt-color-primary">
+                      <span className="text-sm font-semibold txt-color-primary group-hover:text-blue-700 transition-colors">
                         {item.title}
                       </span>
-                      <span className="text-xs text-stone-500">
+                      <span className="text-xs text-stone-500 group-hover:text-stone-600 transition-colors">
                         {item.description}
                       </span>
                     </div>
@@ -306,7 +332,7 @@ function HomePage() {
                   Upcoming Bookings
                 </h2>
                 <button
-                  className="text-xs text-color-main hover:underline"
+                  className="text-xs text-color-main hover:underline hover:text-blue-700 transition-colors"
                   onClick={() => navigate("/bookings")}
                 >
                   View all
@@ -314,47 +340,73 @@ function HomePage() {
               </div>
 
               <div className="flex flex-col gap-4">
-                {upcomingBookings.map((booking) => (
-                  <div
-                    key={booking._id || booking.id}
-                    className="flex items-start gap-3 p-4 bg-white rounded-xl shadow-sm border border-neutral-100"
-                  >
-                    <div className="mt-1">
-                      <CheckCircle
-                        size={24}
-                        weight="fill"
-                        className={
-                          (booking.status === "completed" || booking.status === "confirmed")
-                            ? "text-emerald-500"
+                {loading ? (
+                  <>
+                    <SkeletonBookingCard />
+                    <SkeletonBookingCard />
+                  </>
+                ) : upcomingBookings.length > 0 ? (
+                  upcomingBookings.map((booking) => (
+                    <div
+                      key={booking._id || booking.id}
+                      className="flex items-start gap-3 p-4 bg-white rounded-xl shadow-sm hover:shadow-md border border-neutral-100 transition-all duration-300 hover:border-blue-100 cursor-pointer group"
+                    >
+                      <div className="mt-1 transition-transform duration-300 group-hover:scale-110">
+                        <CheckCircle
+                          size={24}
+                          weight="fill"
+                          className={
+                            (booking.status === "completed" || booking.status === "confirmed")
+                              ? "text-emerald-500"
+                              : booking.status === "pending"
+                              ? "text-amber-500"
+                              : (booking.status === "expired" || booking.status === "cancelled")
+                              ? "text-red-500"
+                              : "text-emerald-500"
+                          }
+                        />
+                      </div>
+                      <div className="flex-1 flex flex-col gap-1">
+                        <span className="text-sm font-semibold txt-color-primary group-hover:text-blue-700 transition-colors">
+                          {booking.technicianInfo?.servicetype}
+                        </span>
+                        <span className="text-xs text-stone-500 flex items-center gap-1">
+                          <Calendar size={12} />
+                          {new Date(booking.serviceDate).toLocaleDateString()} • {booking.serviceTime}
+                        </span>
+                        <span className="text-xs text-stone-500 flex items-center gap-1">
+                          <User size={12} />
+                          {booking.technicianInfo?.firstname} {booking.technicianInfo?.lastname}
+                        </span>
+                        <span className={`inline-flex mt-2 px-2 py-1 text-[10px] font-semibold rounded-full transition-colors ${
+                          booking.status === "completed" || booking.status === "confirmed"
+                            ? "bg-emerald-50 text-emerald-700"
                             : booking.status === "pending"
-                            ? "text-yellow-500"
-                            : (booking.status === "expired" || booking.status === "cancelled")
-                            ? "text-red-500"
-                            : "text-emerald-500"
-                        }
-                      />
+                            ? "bg-amber-50 text-amber-700"
+                            : booking.status === "expired" || booking.status === "cancelled"
+                            ? "bg-red-50 text-red-700"
+                            : "bg-stone-100 text-stone-700"
+                        } capitalize`}>
+                          {booking.status}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex-1 flex flex-col gap-1">
-                      <span className="text-sm font-semibold txt-color-primary">
-                        {booking.technicianInfo?.servicetype}
-                      </span>
-                      <span className="text-xs text-stone-500">
-                        {new Date(booking.serviceDate).toLocaleDateString()} • {booking.serviceTime}
-                      </span>
-                      <span className="text-xs text-stone-500">
-                        With {booking.technicianInfo?.firstname} {booking.technicianInfo?.lastname}
-                      </span>
-                      <span className="inline-flex mt-1 px-2 py-0.5 text-[10px] font-semibold rounded-full bg-stone-100 text-stone-700 capitalize">
-                        {booking.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-
-                {upcomingBookings.length === 0 && (
-                  <div className="p-4 rounded-xl bg-stone-50 text-xs text-stone-500">
-                    You have no upcoming bookings. Start by booking a new
-                    service.
+                  ))
+                ) : (
+                  <div className="p-6 rounded-xl bg-linear-to-br from-blue-50 to-indigo-50 border border-blue-100 text-center">
+                    <Calendar size={32} className="mx-auto mb-2 text-blue-300" />
+                    <p className="text-sm font-medium text-stone-700 mb-1">
+                      No upcoming bookings
+                    </p>
+                    <p className="text-xs text-stone-500 mb-3">
+                      Start by booking a new service
+                    </p>
+                    <button
+                      onClick={() => navigate("/services")}
+                      className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+                    >
+                      Browse services →
+                    </button>
                   </div>
                 )}
               </div>
@@ -391,15 +443,15 @@ function HomePage() {
             ].map((service) => (
               <div
                 key={service.id}
-                className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 p-4 rounded-2xl shadow-[0_8px_16px_rgba(31,54,127,0.35)] hover:shadow-[0_12px_24px_rgba(31,54,127,0.45)] transition flex flex-col items-center justify-center gap-2 bg-white cursor-pointer"
+                className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 p-4 rounded-2xl shadow-[0_8px_16px_rgba(31,54,127,0.35)] hover:shadow-[0_14px_28px_rgba(31,54,127,0.5)] transition-all duration-300 flex flex-col items-center justify-center gap-2 bg-white cursor-pointer hover:scale-105 group"
                 onClick={() => navigate(`/services?category=${service.id}`)}
               >
                 <img 
                   src={service.image} 
                   alt={service.title}
-                  className="w-12 h-12 object-contain"
+                  className="w-12 h-12 object-contain transition-transform duration-300 group-hover:scale-110"
                 />
-                <h3 className="text-xs sm:text-sm font-medium text-center text-gray-800">
+                <h3 className="text-xs sm:text-sm font-medium text-center text-gray-800 group-hover:text-blue-700 transition-colors">
                   {service.title}
                 </h3>
               </div>
@@ -426,16 +478,37 @@ function HomePage() {
             </div>
             <Link
               to="/services"
-              className="text-sm font-semibold text-color-main border border-color-main px-5 py-2 rounded-md btn-transparent-slide"
+              className="text-sm font-semibold text-color-main border border-color-main px-5 py-2 rounded-md btn-transparent-slide transition-all duration-300 hover:bg-blue-50"
             >
               View all professionals
             </Link>
           </div>
 
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto">
-            {recommendedPros.slice(0, 4).map((pro) => (
-              <TechnicianCard key={pro._id || pro.id} pro={pro} />
-            ))}
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto w-full">
+            {loading ? (
+              <>
+                <div className="animate-pulse p-4 rounded-xl bg-white shadow-sm border border-neutral-100 h-80"></div>
+                <div className="animate-pulse p-4 rounded-xl bg-white shadow-sm border border-neutral-100 h-80"></div>
+                <div className="animate-pulse p-4 rounded-xl bg-white shadow-sm border border-neutral-100 h-80"></div>
+                <div className="animate-pulse p-4 rounded-xl bg-white shadow-sm border border-neutral-100 h-80"></div>
+              </>
+            ) : recommendedPros.length > 0 ? (
+              recommendedPros.slice(0, 4).map((pro) => (
+                <div key={pro._id || pro.id} className="transition-transform duration-300 hover:scale-105">
+                  <TechnicianCard pro={pro} />
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full p-8 rounded-xl bg-linear-to-br from-stone-50 to-stone-100 border border-stone-200 text-center">
+                <User size={40} className="mx-auto mb-3 text-stone-300" />
+                <p className="text-sm font-medium text-stone-700">
+                  No professionals available
+                </p>
+                <p className="text-xs text-stone-500 mt-1">
+                  Check back soon for more service providers
+                </p>
+              </div>
+            )}
           </div>
         </section>
 
