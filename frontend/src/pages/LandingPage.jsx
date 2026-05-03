@@ -3,6 +3,9 @@ import Navbar from "@/blocks/Navbar";
 import heroicon from "../assets/HeroIcon.png";
 import qualiticon from "../assets/QualityPageIcon.png";
 import welcomeicon from "../assets/Welcome.png";
+import verifiedIcon from "../assets/VerifiedIcon.svg";
+import highRatedIcon from "../assets/HighRatedIcon.svg";
+import houseVerifiedIcon from "../assets/houseVerifiedIcon.svg";
 import TechnicianCard from "@/blocks/TechnicianCard";
 import plumbingIcon from "../assets/plumberIcon.svg";
 import electricalIcon from "../assets/electricianIcon.svg";
@@ -245,6 +248,76 @@ function LandingPage() {
           </div>
           </section>
         </div>
+
+        {/* Badges Section */}
+        <section className="w-full px-6 lg:px-32 py-20 flex flex-col gap-10">
+          <div className="w-full flex flex-col gap-6 text-center">
+            <h2 className="txt-color-primary text-2xl sm:text-4xl lg:text-5xl font-semibold leading-tight">
+              Earn Recognition Badges
+            </h2>
+            <p className="text-base text-stone-500 leading-6 max-w-2xl mx-auto">
+              Stand out in our community by earning badges that showcase your expertise, reliability, and commitment to excellence
+            </p>
+          </div>
+
+          {/* Divider */}
+          <div className="w-full border-b border-neutral-300"></div>
+
+          {/* Badges Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mt-6">
+            {/* Verified Badge */}
+            <div className="flex flex-col items-center gap-4 p-6 bg-white rounded-2xl shadow-[0_8px_16px_rgba(31,54,127,0.15)] hover:shadow-[0_12px_24px_rgba(31,54,127,0.25)] transition duration-300">
+              <img 
+                src={verifiedIcon} 
+                alt="Verified Badge"
+                className="w-20 h-20 object-contain"
+              />
+              <div className="flex flex-col gap-2 text-center">
+                <h3 className="text-xl font-semibold txt-color-primary">
+                  Verified
+                </h3>
+                <p className="text-sm text-stone-500 leading-5">
+                  Earn this badge when you get verified by our admin after uploading verifiable documents
+                </p>
+              </div>
+            </div>
+
+            {/* High Rated Badge */}
+            <div className="flex flex-col items-center gap-4 p-6 bg-white rounded-2xl shadow-[0_8px_16px_rgba(31,54,127,0.15)] hover:shadow-[0_12px_24px_rgba(31,54,127,0.25)] transition duration-300">
+              <img 
+                src={highRatedIcon} 
+                alt="High Rated Badge"
+                className="w-20 h-20 object-contain"
+              />
+              <div className="flex flex-col gap-2 text-center">
+                <h3 className="text-xl font-semibold txt-color-primary">
+                  Highly Rated
+                </h3>
+                <p className="text-sm text-stone-500 leading-5">
+                  Unlock this badge when you receive over 20 five-star reviews from satisfied customers
+                </p>
+              </div>
+            </div>
+
+            {/* House Verified Badge */}
+            <div className="flex flex-col items-center gap-4 p-6 bg-white rounded-2xl shadow-[0_8px_16px_rgba(31,54,127,0.15)] hover:shadow-[0_12px_24px_rgba(31,54,127,0.25)] transition duration-300">
+              <img 
+                src={houseVerifiedIcon} 
+                alt="House Verified Badge"
+                className="w-20 h-20 object-contain"
+              />
+              <div className="flex flex-col gap-2 text-center">
+                <h3 className="text-xl font-semibold txt-color-primary">
+                  House Verified
+                </h3>
+                <p className="text-sm text-stone-500 leading-5">
+                  Verify your address by uploading a document proving house ownership to earn this trust badge
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="w-full px-6 lg:px-32 py-20 flex flex-col lg:flex-row items-center justify-between gap-10">
           {/* Text Content */}
           <div className="flex-1 flex flex-col gap-12 text-center lg:text-left  ">
@@ -388,63 +461,17 @@ function LandingPage() {
                 {
                   title: "Call Us",
                   value: "+977 9812345678",
-                  icon: (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="w-6 h-6 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M3 5h2l3 6-3 6H3l3-6-3-6zM14 5h2l3 6-3 6h-2l3-6-3-6z"
-                      />
-                    </svg>
-                  ),
+                  icon: <Phone size={24} weight="bold" className="text-white" />,
                 },
                 {
                   title: "Email Now",
                   value: "pradhananuj123@gmail.com",
-                  icon: (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="w-6 h-6 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8m-18 8h18V8H3v8z"
-                      />
-                    </svg>
-                  ),
+                  icon: <Envelope size={24} weight="bold" className="text-white" />,
                 },
                 {
                   title: "Address",
                   value: "Herald College, Naxal, Kathmandu",
-                  icon: (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="w-6 h-6 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"
-                      />
-                      <circle cx={12} cy={9} r={2} fill="currentColor" />
-                    </svg>
-                  ),
+                  icon: <MapPin size={24} weight="bold" className="text-white" />,
                 },
               ].map((item, idx) => (
                 <div
