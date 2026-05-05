@@ -367,10 +367,11 @@ function BookTechnicianPage() {
     for (let i = 0; i < 7; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
+      const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
       days.push({
         dayName: date.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase(),
         dayNumber: date.getDate(),
-        fullDate: date.toISOString().split('T')[0],
+        fullDate: localDate.toLocaleDateString('en-CA'),
       });
     }
     return days;
