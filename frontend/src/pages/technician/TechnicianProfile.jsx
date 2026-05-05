@@ -474,7 +474,7 @@ function TechnicianProfile() {
   return (
     <>
       <Navbar />
-      <main className="px-4 sm:px-6 lg:px-32 pt-20 sm:pt-24 pb-12 sm:pb-16 min-h-screen bg-stone-50 space-y-8 sm:space-y-12">
+      <main className="px-4 sm:px-6 lg:px-32 pt-5 sm:pt-24 pb-12 sm:pb-16 min-h-screen bg-stone-50 space-y-8 sm:space-y-12">
         <section className="flex flex-col lg:flex-row items-start justify-between gap-6 sm:gap-8">
           <div className="space-y-4">
             <p className="text-sm font-semibold text-color-main uppercase tracking-wide">
@@ -493,7 +493,7 @@ function TechnicianProfile() {
             {badgeData.map((badge) => (
               <div
                 key={badge.label}
-                className="bg-white rounded-2xl shadow-sm border px-3 sm:px-4 py-2 sm:py-3 text-center"
+                className="bg-white rounded-2xl shadow-sm border border-stone-200 px-3 sm:px-4 py-2 sm:py-3 text-center"
               >
                 <p className="text-xs uppercase tracking-wide text-stone-500">
                   {badge.label}
@@ -507,7 +507,7 @@ function TechnicianProfile() {
         </section>
 
         <section className="grid gap-6 sm:gap-8 lg:grid-cols-3">
-          <div className="lg:col-span-2 bg-white rounded-3xl shadow-sm border p-4 sm:p-6 space-y-6">
+          <div className="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-stone-200 p-4 sm:p-6 space-y-6">
             <div>
               <h2 className="text-lg sm:text-xl font-semibold txt-color-primary">
                 Professional information
@@ -589,7 +589,7 @@ function TechnicianProfile() {
                           firstName: validateName("First name", formData.firstName),
                         }))
                       }
-                      className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
+                      className="px-3 sm:px-4 py-2 sm:py-3 border border-stone-200 rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
                     minLength={2}
                     maxLength={30}
                     required
@@ -611,7 +611,7 @@ function TechnicianProfile() {
                           lastName: validateName("Last name", formData.lastName),
                         }))
                       }
-                      className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
+                      className="px-3 sm:px-4 py-2 sm:py-3 border border-stone-200 rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
                     minLength={2}
                     maxLength={30}
                     required
@@ -636,7 +636,7 @@ function TechnicianProfile() {
                         phone: validatePhone(formData.phone),
                       }))
                     }
-                    className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    className="px-3 sm:px-4 py-2 sm:py-3 border border-stone-200 rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
                     placeholder="+977-"
                     required
                   />
@@ -658,7 +658,7 @@ function TechnicianProfile() {
                           : "Please select a valid location",
                       }))
                     }
-                    className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    className="px-3 sm:px-4 py-2 sm:py-3 border border-stone-200 rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
                     required
                   >
                     <option value="">Select location</option>
@@ -673,7 +673,7 @@ function TechnicianProfile() {
               </div>
 
               {/* Professional Details */}
-              <div className="space-y-4 pt-4 border-t">
+              <div className="space-y-4 pt-4 border-t border-stone-400">
                 <div>
                   <h3 className="text-lg font-semibold txt-color-primary">
                     Professional details
@@ -708,7 +708,7 @@ function TechnicianProfile() {
                               : "Experience must be a whole number between 0 and 50 years",
                         }));
                       }}
-                      className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
+                      className="px-3 sm:px-4 py-2 sm:py-3 border border-stone-200 rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
                       placeholder="e.g. 5"
                       min="0"
                       max="50"
@@ -742,7 +742,7 @@ function TechnicianProfile() {
                               : "Service fee must be between 100 and 20000",
                         }));
                       }}
-                      className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
+                      className="px-3 sm:px-4 py-2 sm:py-3 border border-stone-200 rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
                       placeholder="e.g. 500"
                       min="100"
                       max="20000"
@@ -770,7 +770,7 @@ function TechnicianProfile() {
                             : "Bio must be between 30 and 400 characters",
                       }));
                     }}
-                    className="px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900 resize-none"
+                    className="px-3 sm:px-4 py-2 sm:py-3 border border-stone-200 rounded-lg sm:rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-900 resize-none"
                     placeholder="Tell customers about your experience, expertise, and what makes you unique..."
                     rows="4"
                     maxLength={400}
@@ -783,7 +783,7 @@ function TechnicianProfile() {
               </div>
 
               {/* Availability Schedule */}
-              <div className="space-y-3 sm:space-y-4 pt-4 border-t">
+              <div className="space-y-3 sm:space-y-4 pt-4 border-t  border-stone-400">
                 <div>
                   <h3 className="text-base sm:text-lg font-semibold txt-color-primary">
                     Your availability
@@ -849,7 +849,7 @@ function TechnicianProfile() {
           </div>
 
           <div className="space-y-4 sm:space-y-5">
-            <div className="bg-white rounded-3xl shadow-sm border p-5 space-y-3">
+            <div className="bg-white rounded-3xl shadow-sm border border-stone-200 p-5 space-y-3">
               <h3 className="text-lg font-semibold txt-color-primary">
                 Account health
               </h3>
@@ -945,7 +945,7 @@ function TechnicianProfile() {
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl shadow-sm border p-4 sm:p-5 space-y-3">
+            <div className="bg-white rounded-3xl shadow-sm border border-stone-200 p-4 sm:p-5 space-y-3">
               <h3 className="text-base sm:text-lg font-semibold txt-color-primary">
                 Service type
               </h3>

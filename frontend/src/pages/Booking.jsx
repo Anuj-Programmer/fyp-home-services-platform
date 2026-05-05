@@ -521,8 +521,8 @@ function Booking() {
         </section>
 
         {/* Tab Filter Section with Search */}
-        <section className="bg-white rounded-3xl shadow-sm border overflow-hidden">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-4 md:p-6 border-b">
+        <section className="bg-white rounded-3xl shadow-sm border border-stone-200 overflow-hidden">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-4 md:p-6 border-b border-stone-300">
             <div className="flex flex-wrap gap-2">
               {TABS.map((tab) => (
                 <button

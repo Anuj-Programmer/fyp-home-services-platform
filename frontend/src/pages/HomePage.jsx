@@ -329,7 +329,7 @@ function HomePage() {
             <div className="w-full lg:w-[360px]">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl sm:text-2xl font-semibold txt-color-primary">
-                  Upcoming Bookings
+                  Upcoming Booking
                 </h2>
                 <button
                   className="text-xs text-color-main hover:underline hover:text-blue-700 transition-colors"
@@ -346,7 +346,7 @@ function HomePage() {
                     <SkeletonBookingCard />
                   </>
                 ) : upcomingBookings.length > 0 ? (
-                  upcomingBookings.map((booking) => (
+                  upcomingBookings.slice(0,1).map((booking) => (
                     <div
                       key={booking._id || booking.id}
                       className="flex items-start gap-3 p-4 bg-white rounded-xl shadow-sm hover:shadow-md border border-neutral-100 transition-all duration-300 hover:border-blue-100 cursor-pointer group"
@@ -484,7 +484,7 @@ function HomePage() {
             </Link>
           </div>
 
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto w-full">
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto w-full place-items-center">
             {loading ? (
               <>
                 <div className="animate-pulse p-4 rounded-xl bg-white shadow-sm border border-neutral-100 h-80"></div>

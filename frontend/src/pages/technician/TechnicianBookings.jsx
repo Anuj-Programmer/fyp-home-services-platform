@@ -499,8 +499,8 @@ function TechnicianBookings() {
         </section>
 
         {/* Tab Filter Section with Search */}
-        <section className="bg-white rounded-3xl shadow-sm border overflow-hidden">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-4 md:p-6 border-b">
+        <section className="bg-white rounded-3xl shadow-sm border border-stone-200 overflow-hidden">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-4 md:p-6 border border-stone-300 ">
             <div className="flex flex-wrap gap-2">
               {TABS.map((tab) => (
                 <button
@@ -538,7 +538,7 @@ function TechnicianBookings() {
             ) : (
               <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="text-stone-500 uppercase text-xs tracking-wide border-b bg-stone-50">
+                  <tr className="text-stone-500 uppercase text-xs tracking-wide border border-stone-200 bg-stone-50">
                     <th className="px-6 py-4 font-semibold w-40">Client Name</th>
                     <th className="px-6 py-4 font-semibold w-48">Booking Date</th>
                     <th className="px-6 py-4 font-semibold w-56">Location / Address</th>
@@ -551,7 +551,7 @@ function TechnicianBookings() {
                     filteredBookings.map((booking) => (
                       <tr
                         key={booking.id}
-                        className="border-b hover:bg-stone-50 transition-colors duration-150"
+                        className="border border-stone-200 hover:bg-stone-50 transition-colors duration-150"
                       >
                         <td className="px-6 py-4 font-semibold text-neutral-900 w-40">
                           <div className="flex items-center gap-2">
@@ -821,7 +821,7 @@ function TechnicianBookings() {
             onClick={e => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="sticky top-0 bg-linear-to-r bg-white text-color-primary px-6 py-3 flex items-center justify-between border-b rounded-t-2xl">
+            <div className="sticky top-0 bg-linear-to-r bg-white text-color-primary px-6 py-3 flex items-center justify-between border border-stone-200 rounded-t-2xl">
               <h2 className="text-lg font-semibold">Booking Details</h2>
               <button
                 onClick={handleCloseModal}
@@ -1052,7 +1052,7 @@ function TechnicianBookings() {
           onClick={handleCloseCancelModal}
         >
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-            <div className="px-6 py-4 border-b flex items-center justify-between rounded-t-2xl">
+            <div className="px-6 py-4 border border-stone-200 flex items-center justify-between rounded-t-2xl">
               <h2 className="text-lg font-semibold text-neutral-900">Cancel Booking</h2>
               <button onClick={handleCloseCancelModal} className="text-stone-600 hover:text-stone-900 text-2xl leading-none">×</button>
             </div>
@@ -1088,7 +1088,7 @@ function TechnicianBookings() {
           onClick={handleCloseCompleteModal}
         >
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-            <div className="px-6 py-4 border-b flex items-center justify-between rounded-t-2xl">
+            <div className="px-6 py-4 border border-stone-200 flex items-center justify-between rounded-t-2xl">
               <h2 className="text-lg font-semibold text-neutral-900">Complete Service</h2>
               <button onClick={handleCloseCompleteModal} className="text-stone-600 hover:text-stone-900 text-2xl leading-none">×</button>
             </div>

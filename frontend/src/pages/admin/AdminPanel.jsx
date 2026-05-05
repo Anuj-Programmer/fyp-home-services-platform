@@ -130,7 +130,7 @@ function AdminPanel() {
             {stats.map((item) => (
               <div
                 key={item.label}
-                className="p-5 rounded-2xl bg-white shadow-sm border flex flex-col gap-1"
+                className="p-5 rounded-2xl bg-white shadow-sm border border-stone-200 flex flex-col gap-1"
               >
                 <span className="text-sm text-stone-500">{item.label}</span>
                 <strong className="text-2xl font-semibold txt-color-primary">
@@ -141,7 +141,7 @@ function AdminPanel() {
           </section>
 
           {/* Content Section */}
-          <section className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+          <section className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
             <div className="p-6">
               <div className="space-y-6">
                 {/* Technicians List */}
@@ -156,11 +156,11 @@ function AdminPanel() {
                       View all
                     </button>
                   </div>
-                  <div className="rounded-xl border overflow-hidden">
+                  <div className="rounded-xl border border-stone-200 overflow-hidden">
                     {/* Desktop table */}
                     <div className="hidden md:block overflow-x-auto">
                       <table className="w-full">
-                        <thead className="bg-stone-50 border-b">
+                        <thead className="bg-stone-50 border-b border-stone-200">
                           <tr>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Technician Name</th>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Specialty</th>
@@ -224,7 +224,7 @@ function AdminPanel() {
 
                 {/* Platform Overview */}
                 <div className="grid gap-6 md:grid-cols-2">
-                  <div className="p-6 rounded-2xl bg-white border space-y-4">
+                  <div className="p-6 rounded-2xl bg-white border border-stone-200 space-y-4">
                     <h2 className="text-xl font-semibold txt-color-primary">
                       Platform Statistics
                     </h2>
@@ -248,7 +248,7 @@ function AdminPanel() {
                     </ul>
                   </div>
 
-                  <div className="p-6 rounded-2xl bg-white border space-y-4">
+                  <div className="p-6 rounded-2xl bg-white border border-stone-200 space-y-4">
                     <h2 className="text-xl font-semibold txt-color-primary">
                       Admin Notes
                     </h2>

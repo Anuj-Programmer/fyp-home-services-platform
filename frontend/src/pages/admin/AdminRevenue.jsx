@@ -124,15 +124,15 @@ function AdminRevenue() {
         </section>
 
         <section className="grid gap-6 sm:grid-cols-3">
-          <div className="p-5 rounded-2xl bg-white shadow-sm border">
+          <div className="p-5 rounded-2xl bg-white shadow-sm border border-stone-200">
             <p className="text-sm text-stone-500 mb-2">Fee per Payment</p>
             <p className="text-2xl font-semibold txt-color-primary">Rs. 50</p>
           </div>
-          <div className="p-5 rounded-2xl bg-white shadow-sm border">
+          <div className="p-5 rounded-2xl bg-white shadow-sm  border border-stone-200">
             <p className="text-sm text-stone-500 mb-2">Total Payments</p>
             <p className="text-2xl font-semibold txt-color-primary">{revenue.length}</p>
           </div>
-          <div className="p-5 rounded-2xl bg-white shadow-sm border">
+          <div className="p-5 rounded-2xl bg-white shadow-sm border border-stone-200">
             <p className="text-sm text-stone-500 mb-2">Average Transaction</p>
             <p className="text-2xl font-semibold txt-color-primary">
               {revenue.length > 0 ? formatAmount(revenue.reduce((sum, p) => sum + p.totalAmount, 0) / revenue.length) : "Rs. 0"}

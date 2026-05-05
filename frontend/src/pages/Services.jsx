@@ -132,7 +132,7 @@ function Services() {
         </section>
 
         {/* Filters */}
-        <section className="bg-white rounded-3xl shadow-sm border p-5 space-y-4">
+        <section className="bg-white rounded-3xl shadow-sm border border-stone-200 p-5 space-y-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold txt-color-primary">
@@ -178,7 +178,7 @@ function Services() {
               <p className="text-stone-500">Loading technicians...</p>
             </div>
           ) : filteredTechnicians.length > 0 ? (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto w-full place-items-center">
               {filteredTechnicians.map((pro) => (
                 <TechnicianCard key={pro._id || pro.id} pro={pro} />
               ))}

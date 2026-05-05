@@ -163,14 +163,14 @@ function TechnicianDashboard() {
             </p>
           </div>
 
-          <div className="w-full lg:w-80 p-5 rounded-2xl bg-white shadow-sm border">
+          <div className="w-full lg:w-80 p-5 rounded-2xl bg-white shadow-sm border border-stone-200">
             <p className="text-xs font-semibold text-stone-500 mb-3">
               Quick actions
             </p>
             <div className="flex flex-col gap-3">
               <button 
                 onClick={() => navigate('/TechnicianPayments')}
-                className="px-4 py-3 rounded-xl border text-left text-sm font-semibold hover:bg-stone-50 btn-transparent-slide"
+                className="px-4 py-3 rounded-xl border border-stone-200 text-left text-sm font-semibold hover:bg-stone-50 btn-transparent-slide"
               >
                 Payment History
               </button>
@@ -180,10 +180,10 @@ function TechnicianDashboard() {
               >
                 Manage timing
               </button> */}
-              <button onClick={() => navigate('/TechnicianBookings')} className="px-4 py-3 rounded-xl border text-left text-sm font-semibold hover:bg-stone-50 btn-transparent-slide">
+              <button onClick={() => navigate('/TechnicianBookings')} className="px-4 py-3 rounded-xl border border-stone-200 text-left text-sm font-semibold hover:bg-stone-50 btn-transparent-slide">
                 View Bookings
               </button>
-              <button onClick={() => navigate('/TechnicianReview')} className="px-4 py-3 rounded-xl border text-left text-sm font-semibold hover:bg-stone-50 btn-transparent-slide">
+              <button onClick={() => navigate('/TechnicianReview')} className="px-4 py-3 rounded-xl border border-stone-200 text-left text-sm font-semibold hover:bg-stone-50 btn-transparent-slide">
                 View Ratings
               </button>
             </div>
@@ -194,7 +194,7 @@ function TechnicianDashboard() {
           {stats.map((item) => (
             <div
               key={item.label}
-              className="p-5 rounded-2xl bg-white shadow-sm border flex flex-col gap-1"
+              className="p-5 rounded-2xl bg-white shadow-sm border border-stone-200 flex flex-col gap-1"
             >
               <span className="text-sm text-stone-500">{item.label}</span>
               <strong className="text-2xl font-semibold txt-color-primary">
@@ -205,7 +205,7 @@ function TechnicianDashboard() {
         </section>
 
         <section className="grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2 p-6 rounded-2xl bg-white shadow-sm border space-y-6">
+          <div className="lg:col-span-2 p-6 rounded-2xl bg-white shadow-sm border border-stone-200 space-y-6">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-semibold txt-color-primary">
@@ -232,7 +232,7 @@ function TechnicianDashboard() {
                 upcomingJobs.map((job) => (
                   <div
                     key={job.id}
-                    className="p-4 rounded-xl border bg-stone-50 flex flex-col gap-2"
+                    className="p-4 rounded-xl border border-stone-200 bg-stone-50 flex flex-col gap-2"
                   >
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-semibold txt-color-primary">
@@ -258,7 +258,7 @@ function TechnicianDashboard() {
             </div>
           </div>
 
-          <div className="p-6 rounded-2xl bg-white shadow-sm border space-y-4">
+          <div className="p-6 rounded-2xl bg-white shadow-sm border border-stone-200 space-y-4">
             <h2 className="text-xl font-semibold txt-color-primary">
               Tips for success
             </h2>

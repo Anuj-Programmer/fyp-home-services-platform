@@ -74,8 +74,6 @@ function AdminProfile() {
   };
 
   const badgeData = [
-    { label: "Completed bookings", value: "-" },
-    { label: "Member since", value: formatMemberSince(user?.createdAt) },
   ];
 
   const hydrateFormFromUser = (data) => ({
@@ -177,7 +175,7 @@ function AdminProfile() {
               {badgeData.map((badge) => (
                 <div
                   key={badge.label}
-                  className="bg-white rounded-2xl shadow-sm border px-4 py-3 text-center"
+                  className="bg-white rounded-2xl shadow-sm border border-stone-200 px-4 py-3 text-center"
                 >
                   <p className="text-xs uppercase tracking-wide text-stone-500">
                     {badge.label}
@@ -191,7 +189,7 @@ function AdminProfile() {
           </section>
 
           <section className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
-              <div className="md:col-span-2 bg-white rounded-3xl shadow-sm border p-6 space-y-6">
+              <div className="md:col-span-2 bg-white rounded-3xl shadow-sm border border-stone-200 p-6 space-y-6">
               <div>
                 <h2 className="text-xl font-semibold txt-color-primary">
                   Personal information
@@ -216,7 +214,7 @@ function AdminProfile() {
                           firstName: validateName("First name", formData.firstName),
                         }))
                       }
-                      className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
+                      className="px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
                       minLength={2}
                       maxLength={30}
                       required
@@ -238,7 +236,7 @@ function AdminProfile() {
                           lastName: validateName("Last name", formData.lastName),
                         }))
                       }
-                      className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
+                      className="px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
                       minLength={2}
                       maxLength={30}
                       required
@@ -263,7 +261,7 @@ function AdminProfile() {
                           phone: validatePhone(formData.phone),
                         }))
                       }
-                      className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
+                      className="px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
                       placeholder="+977-"
                       required
                     />
@@ -285,7 +283,7 @@ function AdminProfile() {
                             : "Please select a valid location",
                         }))
                       }
-                      className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
+                      className="px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
                       required
                     >
                       <option value="">Select Location</option>
@@ -324,7 +322,7 @@ function AdminProfile() {
             </div>
 
             <div className="space-y-5">
-              <div className="bg-white rounded-3xl shadow-sm border p-5 space-y-3">
+              <div className="bg-white rounded-3xl shadow-sm border border-stone-200 p-5 space-y-3">
                 <h3 className="text-lg font-semibold txt-color-primary">
                   Account health
                 </h3>

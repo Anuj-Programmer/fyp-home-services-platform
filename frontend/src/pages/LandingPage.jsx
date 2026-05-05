@@ -250,7 +250,7 @@ function LandingPage() {
         </div>
 
         {/* Badges Section */}
-        <section className="w-full px-6 lg:px-32 py-20 flex flex-col gap-10">
+        <section id="badges" className="w-full px-6 lg:px-32 py-20 flex flex-col gap-10">
           <div className="w-full flex flex-col gap-6 text-center">
             <h2 className="txt-color-primary text-2xl sm:text-4xl lg:text-5xl font-semibold leading-tight">
               Earn Recognition Badges

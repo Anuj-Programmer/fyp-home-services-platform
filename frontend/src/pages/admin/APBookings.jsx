@@ -197,11 +197,11 @@ function APBookings() {
           </section>
 
           {/* Bookings Table */}
-          <section className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+          <section className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
             {/* Desktop table */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-stone-50 border-b">
+                <thead className="bg-stone-50 border-b  border-stone-200">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Customer</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Technician</th>

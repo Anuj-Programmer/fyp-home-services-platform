@@ -70,11 +70,13 @@ const Navbar = () => {
     isAuthenticated && !isAdmin && user?.role !== "technician";
   const navItems = [
     { label: "Home", path: "/home" },
+    { label: "Payments", path: "/payments" },
     { label: "Services", path: "/services" },
     { label: "Booking", path: "/bookings" },
   ];
   const publicNavItems = [
     { label: "Services", sectionId: "services" },
+    { label: "Badges", sectionId: "badges" },
     { label: "Team", sectionId: "team" },
     { label: "Contact", sectionId: "contact" },
   ];
@@ -370,7 +372,7 @@ const Navbar = () => {
                 {isNormalAuthenticatedUser && (
                   <form
                     onSubmit={handleSearchSubmit}
-                    className="hidden lg:flex items-center gap-2 bg-white border rounded-full px-3 py-1.5 min-w-[220px]"
+                    className="hidden lg:flex items-center gap-2  border border-stone-300 rounded-full px-3 py-1.5 min-w-[220px]"
                   >
                     <MagnifyingGlass size={18} className="text-gray-500" weight="bold" />
                     <input
@@ -414,7 +416,7 @@ const Navbar = () => {
                           setShowNotifications(!showNotifications);
                           setShowProfileMenu(false);
                         }}
-                        className="relative flex items-center justify-center w-10 h-10 rounded-full bg-white border hover:bg-gray-50 transition"
+                        className="relative flex items-center justify-center w-10 h-10 rounded-full  border border-stone-300 hover:bg-gray-50 transition"
                       >
                         <Bell size={20} />
                         {notifications.length > 0 && (
@@ -423,8 +425,8 @@ const Navbar = () => {
                       </button>
 
                       {showNotifications && (
-                        <div className="absolute right-0 mt-2 w-64 bg-white shadow-lg rounded-md border text-sm z-50">
-                          <div className="px-4 py-2 border-b font-semibold flex justify-between items-center">
+                        <div className="absolute right-0 mt-2 w-64 bg-white shadow-lg rounded-md border border-stone-200 text-sm z-50">
+                          <div className="px-4 py-2 border border-stone-300 font-semibold flex justify-between items-center">
                             <span>Notifications</span>
                             {notifications.length > 0 && (
                               <button
@@ -446,7 +448,7 @@ const Navbar = () => {
                                 .map((notification, index) => (
                                 <div
                                   key={index}
-                                  className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b"
+                                  className="px-4 py-3 hover:bg-gray-50 cursor-pointer border border-stone-200"
                                 >
                                   <p className="font-medium text-gray-800">
                                     {notification.message ||
@@ -482,13 +484,13 @@ const Navbar = () => {
                           setShowProfileMenu(!showProfileMenu);
                           setShowNotifications(false);
                         }}
-                        className="flex items-center justify-center w-10 h-10 rounded-full bg-white border hover:bg-gray-50 transition"
+                        className="flex items-center justify-center w-10 h-10 rounded-full  border border-stone-300 hover:bg-gray-50 transition"
                       >
                         <UserCircle size={22} />
                       </button>
 
                       {showProfileMenu && (
-                        <div className="absolute right-0 mt-2 w-44 bg-white shadow-lg rounded-md border text-sm z-50">
+                        <div className="absolute right-0 mt-2 w-44 bg-white shadow-lg rounded-md border border-stone-400 text-sm z-50">
                           <button
                             className="w-full text-left px-4 py-2 hover:bg-gray-50"
                             onClick={() => {

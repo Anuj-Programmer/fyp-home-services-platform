@@ -421,9 +421,9 @@ function Profile() {
           <div className="grid gap-3 sm:grid-cols-2">
             {badgeData.map((badge) => (
               <div
-                key={badge.label}
-                className="bg-white rounded-2xl shadow-sm border px-4 py-3 text-center"
-              >
+                  key={badge.label}
+                  className="bg-white rounded-2xl shadow-sm border border-stone-200 px-4 py-3 text-center"
+                >
                 <p className="text-xs uppercase tracking-wide text-stone-500">
                   {badge.label}
                 </p>
@@ -436,7 +436,7 @@ function Profile() {
         </section>
 
         <section className="grid gap-8 lg:grid-cols-3">
-          <div className="lg:col-span-2 bg-white rounded-3xl shadow-sm border p-6 space-y-6">
+          <div className="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-stone-200 p-6 space-y-6">
             <div>
               <h2 className="text-xl font-semibold txt-color-primary">
                 Personal information
@@ -455,7 +455,7 @@ function Profile() {
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleInputChange}
-                    className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    className="px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
                     required
                   />
                 </label>
@@ -466,7 +466,7 @@ function Profile() {
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleInputChange}
-                    className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    className="px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
                     required
                   />
                 </label>
@@ -480,7 +480,7 @@ function Profile() {
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    className="px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
                     placeholder="+977-"
                   />
                 </label>
@@ -490,7 +490,7 @@ function Profile() {
                     name="address"
                     value={formData.address || ""}
                     onChange={handleInputChange}
-                    className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    className="px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
                     required
                   >
                     <option value="">Select Location</option>
@@ -526,7 +526,7 @@ function Profile() {
           </div>
 
           <div className="space-y-5">
-            <div className="bg-white rounded-3xl shadow-sm border p-5 space-y-3">
+            <div className="bg-white rounded-3xl shadow-sm border border-stone-200 p-5 space-y-3">
               <h3 className="text-lg font-semibold txt-color-primary">
                 Account health
               </h3>
@@ -587,7 +587,7 @@ function Profile() {
         {/* Address Book Section */}
         {user && showAddressBook && (
           <section className="grid lg:grid-cols-3">
-            <div className="space-y-6 lg:col-span-2 border p-6 rounded-3xl shadow-sm bg-white">
+            <div className="space-y-6 lg:col-span-2 border border-stone-200 p-6 rounded-3xl shadow-sm bg-white">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-base sm:text-xl font-semibold txt-color-primary flex items-center gap-2">
@@ -617,7 +617,7 @@ function Profile() {
                   user.addressBook.map((address) => (
                     <div
                       key={address._id}
-                      className="border border-gray-200 rounded-xl p-3 sm:p-4 space-y-2 hover:shadow-md transition"
+                      className="border border-stone-200 rounded-xl p-3 sm:p-4 space-y-2 hover:shadow-md transition"
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -743,7 +743,7 @@ function Profile() {
                 <span className="text-sm font-medium text-stone-600 mb-2 block">
                   Select Certificate File
                 </span>
-                <div className="rounded-xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4">
+                <div className="rounded-xl border border-dashed border-stone-200 bg-stone-50 px-4 py-4">
                   <input
                     type="file"
                     accept="image/*,application/pdf"
@@ -816,7 +816,7 @@ function Profile() {
                     name="contactName"
                     value={addressFormData.contactName}
                     onChange={handleAddressInputChange}
-                    className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    className="px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
                     required
                   />
                 </label>
@@ -828,7 +828,7 @@ function Profile() {
                     name="phone"
                     value={addressFormData.phone}
                     onChange={handleAddressInputChange}
-                    className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    className="px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
                     required
                   />
                 </label>
@@ -840,7 +840,7 @@ function Profile() {
                     name="address"
                     value={addressFormData.address}
                     onChange={handleAddressInputChange}
-                    className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    className="px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
                     placeholder="e.g., Lazimpat, Kathmandu"
                     required
                   />
@@ -853,7 +853,7 @@ function Profile() {
                     name="landMark"
                     value={addressFormData.landMark}
                     onChange={handleAddressInputChange}
-                    className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    className="px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
                     placeholder="e.g., Near City Mall"
                     required
                   />
@@ -865,7 +865,7 @@ function Profile() {
                     name="addressType"
                     value={addressFormData.addressType}
                     onChange={handleAddressInputChange}
-                    className="px-4 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    className="px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900"
                   >
                     <option value="home">Home</option>
                     <option value="office">Office</option>
@@ -935,7 +935,7 @@ function Profile() {
                         </p>
                       </div>
                     )}
-                    <div className="rounded-xl border border-dashed border-stone-300 bg-stone-50 px-4 py-3">
+                    <div className="rounded-xl border border-dashed border-stone-200 bg-stone-50 px-4 py-3">
                       <input
                         type="file"
                         accept="image/jpeg,image/png,image/webp,application/pdf"

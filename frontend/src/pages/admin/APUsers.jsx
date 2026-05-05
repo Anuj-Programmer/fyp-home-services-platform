@@ -201,11 +201,11 @@ function APUsers() {
           </section>
 
           {/* Users Table */}
-          <section className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+          <section className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
             {/* Desktop table */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-stone-50 border-b">
+                <thead className="bg-stone-50 border-b border-stone-200">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">{activeTab === "House verification request" ? "Address" : "User Name"}</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">{activeTab === "House verification request" ? "User Name" : "Email"}</th>
@@ -364,7 +364,7 @@ function APUsers() {
             onClick={e => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="sticky top-0 bg-white text-color-primary px-6 py-4 flex items-center justify-between border-b rounded-t-2xl">
+            <div className="sticky top-0 bg-white text-color-primary px-6 py-4 flex items-center justify-between border-b border-stone-200 rounded-t-2xl">
               <h2 className="text-xl sm:text-2xl font-semibold">
                 Address Certificate Verification
               </h2>
@@ -439,7 +439,7 @@ function APUsers() {
             </div>
 
             {/* Modal Footer */}
-            <div className="bg-stone-50 px-6 py-4 border-t flex flex-col-reverse sm:flex-row gap-3 sm:gap-4 justify-end">
+            <div className="bg-stone-50 px-6 py-4 border-t border-stone-200 flex flex-col-reverse sm:flex-row gap-3 sm:gap-4 justify-end">
               <button
                 onClick={() => {
                   setIsModalOpen(false);

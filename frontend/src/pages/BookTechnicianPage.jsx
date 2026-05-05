@@ -434,7 +434,7 @@ function BookTechnicianPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-8 flex flex-col md:flex-row gap-8">
           {/* Left: Big Photo & Info */}
           <div className="md:w-1/2 w-full flex flex-col items-center md:items-start">
-            <div className="relative w-full rounded-3xl overflow-hidden shadow-2xl bg-white">
+            <div className="relative w-full rounded-3xl overflow-hidden border border-stone-300 bg-white">
               <img
                 src={technician.photoUrl || 'https://via.placeholder.com/600x420?text=No+Photo'}
                 alt={technician.firstName}
@@ -448,7 +448,7 @@ function BookTechnicianPage() {
               </div>
             </div>
             {/* About Section */}
-            <div className="w-full mt-8 bg-white rounded-2xl shadow-lg border border-gray-100 p-8 hover:shadow-xl transition-shadow">
+            <div className="w-full mt-8 bg-white rounded-2xl border border-stone-300 p-8  transition-shadow">
               <h2 className="text-2xl font-bold txt-color-primary mb-4 flex items-center gap-2">
                 <div className="w-1 h-8 bg-color-main rounded-full"></div>
                 About
@@ -469,7 +469,7 @@ function BookTechnicianPage() {
               )}
             </div>
             {/* Reviews Section */}
-            <div className="w-full mt-8 bg-white rounded-2xl shadow-lg border border-gray-100 p-8 hover:shadow-xl transition-shadow">
+            <div className="w-full mt-8 bg-white rounded-2xl border border-stone-300 p-8 ">
               <h2 className="text-2xl font-bold txt-color-primary mb-6 flex items-center gap-3">
                 <CheckCircle size={26} className="text-green-500" /> 
                 <span>Customer Reviews</span>
@@ -499,7 +499,7 @@ function BookTechnicianPage() {
           </div>
           {/* Right: Booking Panel */}
           <div className="md:w-1/2 w-full flex flex-col gap-8">
-            <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 p-8 flex flex-col gap-6 sticky top-24">
+            <div className="bg-white rounded-2xl border border-stone-300 p-8 flex flex-col gap-6 sticky top-24">
               {hasPendingPayment && (
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
                   <h3 className="text-sm font-bold text-amber-900 mb-1 flex items-center gap-2">
@@ -664,14 +664,14 @@ function BookTechnicianPage() {
       {/* Booking Modal */}
       {showModal && user && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 overflow-hidden animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-lg w-full h-[90dvh] sm:h-auto sm:max-h-[90dvh] flex flex-col shadow-2xl border border-gray-200 animate-slide-up">
+          <div className="bg-white rounded-3xl max-w-lg w-full h-[90dvh] sm:h-auto sm:max-h-[90dvh] flex flex-col shadow-2xl border border-gray-200 animate-slide-up overflow-hidden">
             {/* Fixed Header */}
             <div className="px-3 py-4 sm:px-8 sm:py-6 border-b-2 border-gray-100 shrink-0 bg-white">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Complete Booking</h2>
                 <button
                   onClick={() => setShowModal(false)}
-                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 w-8 h-8 flex items-center justify-center rounded-full transition"
+                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 w-8 h  -8 flex items-center justify-center rounded-full transition"
                 >
                   ×
                 </button>

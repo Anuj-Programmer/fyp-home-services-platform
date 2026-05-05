@@ -116,7 +116,7 @@ function AdminNotification() {
           </section>
 
           <section className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <div className="xl:col-span-2 bg-white rounded-2xl border shadow-sm p-5 sm:p-6">
+            <div className="xl:col-span-2 bg-white rounded-2xl border border-stone-200 shadow-sm p-5 sm:p-6">
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
                   <label className="block text-sm font-semibold text-stone-700 mb-2">
@@ -134,7 +134,7 @@ function AdminNotification() {
                         onClick={() =>
                           setFormData((prev) => ({ ...prev, target: option.value }))
                         }
-                        className={`px-3 py-2 rounded-xl border text-sm font-medium transition ${
+                        className={`px-3 py-2 rounded-xl border border-stone-200 text-sm font-medium transition ${
                           formData.target === option.value
                             ? "bg-color-main text-white border-color-main"
                             : "bg-white text-stone-700 border-stone-200 hover:bg-stone-50"
@@ -211,7 +211,7 @@ function AdminNotification() {
               </form>
             </div>
 
-            <div className="bg-white rounded-2xl border shadow-sm p-5 sm:p-6 space-y-4">
+            <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-5 sm:p-6 space-y-4">
               <h2 className="text-lg font-semibold txt-color-primary">Preview</h2>
               <div className="rounded-xl border border-stone-200 p-4 bg-stone-50 space-y-2">
                 <p className="text-xs uppercase tracking-wide text-stone-500">Audience</p>
