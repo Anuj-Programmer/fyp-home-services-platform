@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
 import Navbar from "@/blocks/Navbar";
 import Footer from "@/blocks/Footer";
 import TechnicianCard from "@/blocks/TechnicianCard";
@@ -19,6 +20,7 @@ const categories = [
 ];
 
 function SearchResults() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const searchQueryFromUrl = searchParams.get("search");
   const categoryFromUrl = searchParams.get("category");
@@ -33,8 +35,22 @@ function SearchResults() {
   const [maxFeeFilter, setMaxFeeFilter] = useState("");
   const [sortBy, setSortBy] = useState("default");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [newSearchTerm, setNewSearchTerm] = useState("");
 
   const token = Cookies.get("token") || localStorage.getItem("token");
+
+  // Handle new search submission
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+
+    if (!newSearchTerm.trim()) {
+      toast.error("Please enter a search term");
+      return;
+    }
+
+    navigate(`/search-results?search=${encodeURIComponent(newSearchTerm)}`);
+    setNewSearchTerm("");
+  };
 
   // Mapping of category IDs to service types
   const categoryMapping = {
@@ -317,6 +333,28 @@ function SearchResults() {
             </aside>
 
             <section className="min-w-0 space-y-5 md:col-span-8 lg:col-span-9">
+              {/* New Search Bar */}
+              <form onSubmit={handleSearchSubmit} className="rounded-2xl border border-stone-200 bg-white p-3 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-stone-300 px-2 py-2 focus-within:border-color-main focus-within:ring-2 focus-within:ring-blue-100">
+                    <MagnifyingGlass size={16} className="shrink-0 text-stone-400" />
+                    <input
+                      type="text"
+                      value={newSearchTerm}
+                      onChange={(e) => setNewSearchTerm(e.target.value)}
+                      placeholder="Search again..."
+                      className="w-full min-w-0 bg-transparent text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="rounded-lg bg-color-main px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 active:scale-95"
+                  >
+                    Search
+                  </button>
+                </div>
+              </form>
+
               <div className="flex flex-col gap-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center justify-between gap-3">
                   <h2 className="text-xl font-semibold text-stone-900 sm:text-2xl">

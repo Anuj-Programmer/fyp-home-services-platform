@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, PaperPlaneTilt } from "phosphor-react";
 import { apiClient } from "@/lib/api";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
@@ -20,6 +21,7 @@ function BookingChatPopup({
   const [messageText, setMessageText] = useState("");
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isViewingMessages, setIsViewingMessages] = useState(false);
   const messagesEndRef = useRef(null);
 
   const eligibleBookings = useMemo(() => {
@@ -103,6 +105,14 @@ function BookingChatPopup({
       setLoadingMessages(false);
     }
   };
+
+  useEffect(() => {
+    if (!isOpen) {
+      setIsViewingMessages(false);
+    } else if (isOpen && conversationTargets.length > 1) {
+      setIsViewingMessages(true);
+    }
+  }, [isOpen, conversationTargets.length]);
 
   useEffect(() => {
     if (!isOpen || !selectedBooking) return;
@@ -238,14 +248,32 @@ function BookingChatPopup({
       {isOpen && (
         <div className="fixed inset-x-2 bottom-20 sm:inset-x-auto sm:bottom-24 sm:right-6 z-70 w-auto sm:w-[92vw] sm:max-w-sm max-h-[calc(100vh-6rem)] sm:max-h-152 bg-white border border-stone-200 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
           <div className="px-4 py-3 bg-color-main text-white flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold">{headerTitle}</p>
-              <p className="text-[11px] opacity-90 truncate">
-                {selectedBooking?.[partnerNameKey] || "Booking Chat"}
-              </p>
+            <div className="flex items-center gap-3 flex-1">
+              {!isViewingMessages && conversationTargets.length > 1 && (
+                <button
+                  onClick={() => setIsViewingMessages(true)}
+                  className="text-white/90 hover:text-white transition-colors"
+                  aria-label="Go back to messages"
+                >
+                  <ArrowLeft size={20} weight="bold" />
+                </button>
+              )}
+              <div>
+                <p className="text-sm font-semibold">
+                  {isViewingMessages ? "Messages" : headerTitle}
+                </p>
+                {!isViewingMessages && (
+                  <p className="text-[11px] opacity-90 truncate">
+                    {selectedBooking?.[partnerNameKey] || "Booking Chat"}
+                  </p>
+                )}
+              </div>
             </div>
             <button
-              onClick={() => setIsOpen(false)}
+              onClick={() => {
+                setIsOpen(false);
+                setIsViewingMessages(false);
+              }}
               className="text-white/90 hover:text-white text-lg leading-none"
               aria-label="Close chat popup"
             >
@@ -253,84 +281,100 @@ function BookingChatPopup({
             </button>
           </div>
 
-          {conversationTargets.length > 1 && (
-            <div className="px-3 pt-3">
-              <select
-                value={selectedBookingId}
-                onChange={(e) => setSelectedBookingId(e.target.value)}
-                className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs text-stone-700"
-              >
+          {isViewingMessages ? (
+            <div className="flex-1 min-h-0 overflow-y-auto bg-white">
+              <div className="divide-y divide-stone-100">
                 {conversationTargets.map((booking) => (
-                  <option key={booking.id} value={booking.id}>
-                    {`${booking.id.slice(-6)} - ${booking[partnerNameKey] || "Booking"}`}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2 bg-stone-50">
-            <div className="text-[11px] text-stone-500 text-center pb-1">
-              Booking confirmed, you can start chatting
-            </div>
-
-            {loadingMessages ? (
-              <p className="text-center text-xs text-stone-500 py-8">Loading chat...</p>
-            ) : messages.length > 0 ? (
-              messages.map((msg) => {
-                const isMine = String(msg.sender_id) === String(currentUserId);
-                return (
-                  <div
-                    key={msg._id || `${msg.timestamp}-${msg.message}`}
-                    className={`flex ${isMine ? "justify-end" : "justify-start"}`}
+                  <button
+                    key={booking.id}
+                    onClick={() => {
+                      setSelectedBookingId(booking.id);
+                      setIsViewingMessages(false);
+                    }}
+                    className="w-full px-4 py-3 flex items-center gap-3 hover:bg-stone-50 transition-colors text-left"
                   >
-                    <div
-                      className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
-                        isMine
-                          ? "bg-color-main text-white rounded-br-sm"
-                          : "bg-white text-stone-800 border border-stone-200 rounded-bl-sm"
-                      }`}
-                    >
-                      {msg.booking_id && (
-                        <p className={`text-[10px] mb-1 ${isMine ? "text-white/80" : "text-stone-500"}`}>
-                          {`Related to Booking #${String(msg.booking_id).slice(-6)}`}
-                        </p>
-                      )}
-                      <p className="wrap-break-word">{msg.message}</p>
-                      <p className={`text-[10px] mt-1 ${isMine ? "text-white/80" : "text-stone-400"}`}>
-                        {formatTime(msg.timestamp)}
+                    <div className="w-12 h-12 rounded-full bg-color-main flex items-center justify-center text-white text-sm font-semibold shrink-0">
+                      {booking[partnerNameKey]?.charAt(0) || "?"}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-stone-900 truncate">
+                        {booking[partnerNameKey] || "Booking"}
+                      </p>
+                      <p className="text-xs text-stone-500 truncate">
+                        Booking #{booking.id?.slice(-6)}
                       </p>
                     </div>
-                  </div>
-                );
-              })
-            ) : (
-              <p className="text-center text-xs text-stone-500 py-8">No messages yet.</p>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2 bg-stone-50">
+                <div className="text-[11px] text-stone-500 text-center pb-1">
+                  Booking confirmed, you can start chatting
+                </div>
 
-          <div className="p-3 border-t border-stone-200 bg-white flex items-center gap-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-            <input
-              type="text"
-              value={messageText}
-              onChange={(e) => setMessageText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleSendMessage();
-                }
-              }}
-              placeholder="Type your message..."
-              className="flex-1 min-w-0 border border-stone-300 rounded-full px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-color-main"
-            />
-            <button
-              onClick={handleSendMessage}
-              className="shrink-0 px-3 sm:px-4 py-2 rounded-full bg-color-main text-white text-sm font-medium hover:opacity-90"
-            >
-              Send
-            </button>
-          </div>
+                {loadingMessages ? (
+                  <p className="text-center text-xs text-stone-500 py-8">Loading chat...</p>
+                ) : messages.length > 0 ? (
+                  messages.map((msg) => {
+                    const isMine = String(msg.sender_id) === String(currentUserId);
+                    return (
+                      <div
+                        key={msg._id || `${msg.timestamp}-${msg.message}`}
+                        className={`flex ${isMine ? "justify-end" : "justify-start"}`}
+                      >
+                        <div
+                          className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
+                            isMine
+                              ? "bg-color-main text-white rounded-br-sm"
+                              : "bg-white text-stone-800 border border-stone-200 rounded-bl-sm"
+                          }`}
+                        >
+                          {msg.booking_id && (
+                            <p className={`text-[10px] mb-1 ${isMine ? "text-white/80" : "text-stone-500"}`}>
+                              {`Related to Booking #${String(msg.booking_id).slice(-6)}`}
+                            </p>
+                          )}
+                          <p className="wrap-break-word">{msg.message}</p>
+                          <p className={`text-[10px] mt-1 ${isMine ? "text-white/80" : "text-stone-400"}`}>
+                            {formatTime(msg.timestamp)}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-center text-xs text-stone-500 py-8">No messages yet.</p>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              <div className="p-3 border-t border-stone-200 bg-white flex items-center gap-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                <input
+                  type="text"
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
+                  placeholder="Type your message..."
+                  className="flex-1 min-w-0 border border-stone-300 rounded-full px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-color-main"
+                />
+                <button
+                  onClick={handleSendMessage}
+                  className="shrink-0 p-2 rounded-full bg-color-main text-white hover:opacity-90 transition-opacity flex items-center justify-center"
+                  aria-label="Send message"
+                >
+                  <PaperPlaneTilt size={18} weight="fill" />
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
     </>
