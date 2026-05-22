@@ -45,6 +45,12 @@ function Profile() {
     phone: "",
     address: "",
   });
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [deleteConfirmFirstName, setDeleteConfirmFirstName] = useState("");
+  const [checkingDeletionStatus, setCheckingDeletionStatus] = useState(false);
+  const [activeBookings, setActiveBookings] = useState([]);
+  const [pendingPayments, setPendingPayments] = useState([]);
 
   const token = Cookies.get("token") || localStorage.getItem("token");
   const { user, setUserData, refreshUser } = useUser();
@@ -400,6 +406,97 @@ function Profile() {
     return "bg-amber-100 text-amber-700";
   };
 
+  const handleOpenDeleteConfirm = async () => {
+    setDeleteConfirmFirstName("");
+    setCheckingDeletionStatus(true);
+    setActiveBookings([]);
+    setPendingPayments([]);
+
+    try {
+      // Check for active bookings
+      const bookingsResponse = await apiClient.get("/api/bookings/user-bookings", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (bookingsResponse.data?.success && bookingsResponse.data.bookings) {
+        const restrictedStatuses = ["pending", "onetheway", "inprogress", "confirmed"];
+        const active = bookingsResponse.data.bookings.filter((booking) =>
+          restrictedStatuses.includes(String(booking.status).toLowerCase())
+        );
+        setActiveBookings(active);
+      }
+
+      // Check for pending payments
+      const paymentsResponse = await apiClient.get("/api/payments/user-payments", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (paymentsResponse.data?.success && paymentsResponse.data.payments) {
+        const pending = paymentsResponse.data.payments.filter(
+          (payment) => String(payment.status).toLowerCase() === "pending"
+        );
+        setPendingPayments(pending);
+      }
+    } catch (error) {
+      console.error("Error checking deletion status:", error);
+      // Still open modal even if check fails
+    } finally {
+      setCheckingDeletionStatus(false);
+      setShowDeleteConfirmModal(true);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    // Verify first name matches
+    if (deleteConfirmFirstName !== user?.firstName) {
+      toast.error("First name does not match. Please try again.");
+      return;
+    }
+
+    setDeletingAccount(true);
+
+    try {
+      const response = await apiClient.delete(
+        "/api/users/delete-account",
+        {
+          data: {
+            userId: user._id,
+          },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      toast.success(response.data.message || "Account deleted successfully");
+
+      // Clear user data and tokens
+      Cookies.remove("token");
+      localStorage.removeItem("token");
+      setUserData(null);
+
+      // Redirect to home page after 2 seconds
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 2000);
+    } catch (error) {
+      console.error(error);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.activeBookingStatus
+          ? `Cannot delete account: You have ${error.response?.data?.activeBookingStatus} bookings. ${error.response?.data?.message}`
+          : "Failed to delete account";
+      toast.error(errorMessage);
+    } finally {
+      setDeletingAccount(false);
+      setShowDeleteConfirmModal(false);
+    }
+  };
+
   return (
     <>
       <Navbar />
@@ -563,6 +660,27 @@ function Profile() {
                   </>
                 )} */}
               </div>
+            </div>
+
+            {/* Delete Account Section */}
+            <div className="bg-white rounded-3xl shadow-sm border border-stone-200 p-5 space-y-3">
+              <h3 className="text-lg font-semibold txt-color-primary">
+                Danger Zone
+              </h3>
+              <p className="text-sm text-stone-500">
+                Permanently delete your account and all associated data.
+              </p>
+              <button
+                onClick={handleOpenDeleteConfirm}
+                disabled={deletingAccount}
+                className="w-full px-4 py-3 bg-color-main text-red-400  rounded-xl font-semibold  text-sm"
+              >
+                {deletingAccount ? "Deleting account..." : "Delete Account"}
+              </button>
+              <p className="text-xs text-red-600">
+                Warning: This action cannot be undone. Make sure all your
+                bookings are completed or cancelled before deletion.
+              </p>
             </div>
 
             {/* <div className="bg-white rounded-3xl shadow-sm border p-5 space-y-4">
@@ -982,6 +1100,139 @@ function Profile() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteConfirmModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full space-y-4 border border-stone-200 shadow-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-red-700">
+                Confirm Account Deletion
+              </h3>
+              <button
+                onClick={() => setShowDeleteConfirmModal(false)}
+                className="text-stone-400 hover:text-stone-600 text-2xl"
+                disabled={deletingAccount}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-2">
+                <p className="text-sm font-semibold text-red-700">
+                  ⚠️ This action cannot be undone
+                </p>
+                <p className="text-xs text-red-600">
+                  Deleting your account will permanently remove:
+                </p>
+                <ul className="text-xs text-red-600 list-disc list-inside space-y-1 ml-1">
+                  <li>All personal information</li>
+                  <li>Booking history</li>
+                  <li>Saved addresses</li>
+                  <li>Payment information</li>
+                </ul>
+              </div>
+
+              {/* Active Bookings Warning */}
+              {activeBookings.length > 0 && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 space-y-2">
+                  <p className="text-sm font-semibold text-yellow-800">
+                    ⚠️ Active Bookings Found
+                  </p>
+                  <p className="text-xs text-yellow-700">
+                    You have {activeBookings.length} active booking(s) that must be cancelled before deletion:
+                  </p>
+                  <ul className="text-xs text-yellow-700 list-disc list-inside space-y-1 ml-1">
+                    {activeBookings.map((booking, idx) => (
+                      <li key={idx}>
+                        Booking #{booking._id?.slice(-6)} - Status: <span className="font-semibold">{booking.status}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Pending Payments Warning */}
+              {pendingPayments.length > 0 && (
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 space-y-2">
+                  <p className="text-sm font-semibold text-orange-800">
+                    ⚠️ Pending Payments Found
+                  </p>
+                  <p className="text-xs text-orange-700">
+                    You have {pendingPayments.length} pending payment(s) that must be resolved:
+                  </p>
+                  <ul className="text-xs text-orange-700 list-disc list-inside space-y-1 ml-1">
+                    {pendingPayments.map((payment, idx) => (
+                      <li key={idx}>
+                        Rs. {payment.amount} - Payment ID: {payment._id?.slice(-6)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {checkingDeletionStatus && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-xs text-blue-700">
+                    Checking your bookings and payments...
+                  </p>
+                </div>
+              )}
+
+              {/* Only show name input if no active bookings or pending payments */}
+              {activeBookings.length === 0 && pendingPayments.length === 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-stone-700">
+                    Type your first name to confirm deletion:
+                  </p>
+                  <input
+                    type="text"
+                    value={deleteConfirmFirstName}
+                    onChange={(e) => setDeleteConfirmFirstName(e.target.value)}
+                    placeholder={`Type "${user?.firstName}"`}
+                    className="w-full px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-red-500"
+                    disabled={deletingAccount}
+                  />
+                  <p className="text-xs text-stone-500">
+                    We need to ensure you really want to delete your account.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 justify-end mt-6 pt-4 border-t">
+              <button
+                onClick={() => setShowDeleteConfirmModal(false)}
+                className="px-4 py-2 text-sm font-semibold text-stone-600 hover:text-stone-800"
+                disabled={deletingAccount}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={
+                  deletingAccount ||
+                  deleteConfirmFirstName !== user?.firstName ||
+                  activeBookings.length > 0 ||
+                  pendingPayments.length > 0 ||
+                  checkingDeletionStatus
+                }
+                title={
+                  activeBookings.length > 0
+                    ? "Cancel all active bookings first"
+                    : pendingPayments.length > 0
+                      ? "Resolve pending payments first"
+                      : ""
+                }
+                className="px-6 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed transition text-sm"
+              >
+                {deletingAccount ? "Deleting..." : "Delete Account"}
+              </button>
+            </div>
           </div>
         </div>
       )}

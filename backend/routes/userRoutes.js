@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const authMiddleware = require("../middleware/authmiddleware");
 
-const { createProfile, registerUser, updateProfile, markAllNotification,deleteAllNotifications, getCurrentUser, uploadHouseCertificate, addAddress, updateAddress, deleteAddress, uploadAddressCertificate} = require("../controllers/userCtrl");
+const { createProfile, registerUser, updateProfile, markAllNotification,deleteAllNotifications, getCurrentUser, uploadHouseCertificate, addAddress, updateAddress, deleteAddress, uploadAddressCertificate, deleteAccount} = require("../controllers/userCtrl");
 
 // Register a new user
 // POST /api/users/register
@@ -37,6 +37,10 @@ router.put('/update-address', authMiddleware, updateAddress);
 
 // Delete Address || DELETE /api/users/delete-address
 router.delete('/delete-address', authMiddleware, deleteAddress);
+
+// Delete Account || DELETE /api/users/delete-account
+router.delete('/delete-account', authMiddleware, deleteAccount);
+
 
 
 module.exports = router;

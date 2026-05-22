@@ -1,5 +1,7 @@
 const OTP = require("../models/otpModel.js");
 const User = require("../models/userModel.js");
+const Booking = require("../models/bookingModel.js");
+const Payment = require("../models/paymentModel.js");
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const Technician = require("../models/technicianModel.js");
@@ -598,6 +600,51 @@ const uploadAddressCertificate = async (req, res) => {
   }
 };
 
+const deleteAccount = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check for pending payments
+    const pendingPayments = await Payment.findOne({
+      userId: userId,
+      status: "pending"
+    });
+    if (pendingPayments) {
+      return res.status(400).json({ 
+        message: "Cannot delete account with pending payments. Please complete or cancel all pending payments first." 
+      });
+    }
+
+    // Check for active bookings (not completed or cancelled)
+    const restrictedStatuses = ["pending", "onetheway", "inprogress", "confirmed"];
+    const activeBooking = await Booking.findOne({
+      userId: userId,
+      status: { $in: restrictedStatuses }
+    });
+    if (activeBooking) {
+      return res.status(400).json({ 
+        message: `Cannot delete account with active bookings. Please cancel or complete all ${restrictedStatuses.join(", ")} bookings first.`,
+        activeBookingStatus: activeBooking.status
+      });
+    }
+
+    // If all checks pass, delete the user account
+    await User.deleteOne({ _id: userId });
+    emitAdminDataChanged(req, ['users', 'dashboard-stats']);
+    res.status(200).json({ message: "Account deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting account:", error);
+    res.status(500).json({ message: "Server error deleting account" });
+  }
+};
+
 
 
 module.exports = {
@@ -611,5 +658,6 @@ module.exports = {
   addAddress,
   updateAddress,
   deleteAddress,
-  uploadAddressCertificate
+  uploadAddressCertificate,
+  deleteAccount
 };
