@@ -138,7 +138,7 @@ function LandingPage() {
             <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(30,58,138,0.42)_0%,rgba(30,58,138,0.26)_28%,rgba(255,255,255,0.76)_58%,rgba(255,255,255,0.94)_78%,#ffffff_100%)]"></div>
           </div>
 
-          <section className="relative z-10 w-full px-6 lg:px-32 py-20 flex flex-col lg:flex-row items-center justify-between gap-12 rounded-2xl">
+          <section className="relative z-10 w-full px-6 lg:px-32 py-8 sm:py-12 lg:py-20 flex flex-col lg:flex-row items-center justify-between gap-8 sm:gap-12 rounded-2xl">
 
           {/* Left Text Section */}
           <div className="flex-1 space-y-6 relative z-10">
@@ -182,10 +182,10 @@ function LandingPage() {
           <section
             ref={servicesRef}
             id="services"
-            className="relative z-10 w-full px-6 lg:px-32 pt-16 pb-20 flex flex-col gap-10 services-section scroll-mt-24"
+            className="relative z-10 w-full px-6 lg:px-32 py-8 sm:py-12 lg:py-20 flex flex-col gap-4 sm:gap-6 services-section scroll-mt-24"
           >
           {/* Header Row */}
-          <div className="w-full flex flex-col lg:flex-row justify-between items-start gap-10">
+          <div className="w-full flex flex-col lg:flex-row justify-between items-start gap-4">
             {/* LEFT SIDE TITLE */}
 
             {/* Desktop Title (hidden on mobile) */}
@@ -222,27 +222,32 @@ function LandingPage() {
 
           {/* Divider */}
           <div className="w-full border-b border-neutral-300"></div>
-          <div className="flex flex-wrap gap-6 py-4 px-2 items-center justify-center mt-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 px-2 w-full max-w-6xl mx-auto">
             {[
-              { title: "Plumbing", image: plumbingIcon },
-              { title: "Electrical", image: electricalIcon },
-              { title: "Carpentry", image: carpentryIcon },
-              { title: "Appliance Repair", image: repairIcon },
-              { title: "Bathroom Remodeling", image: bathroomIcon },
-              { title: "Locksmith", image: locksmithIcon },
+              { title: "Plumbing", description: "Expert repairs and maintenance for all plumbing needs", image: plumbingIcon },
+              { title: "Electrical", description: "Safe and reliable electrical installations and repairs", image: electricalIcon },
+              { title: "Carpentry", description: "Professional woodwork and carpentry services", image: carpentryIcon },
+              { title: "Appliance Repair", description: "Quick fixes for all major home appliances", image: repairIcon },
+              { title: "Bathroom Remodeling", description: "Complete bathroom renovations and upgrades", image: bathroomIcon },
+              { title: "Locksmith", description: "Fast and secure lock installation and repair services", image: locksmithIcon },
             ].map((service, i) => (
               <div
                 key={i}
-                className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 p-4 rounded-2xl shadow-[0_8px_16px_rgba(31,54,127,0.35)] hover:shadow-[0_12px_24px_rgba(31,54,127,0.45)] transition flex flex-col items-center justify-center gap-2 bg-white"
+                className="p-6 rounded-2xl shadow-[0_8px_16px_rgba(31,54,127,0.35)] hover:shadow-[0_12px_24px_rgba(31,54,127,0.45)] transition flex flex-col items-center justify-start gap-4 bg-white h-full"
               >
                 <img 
                   src={service.image} 
                   alt={service.title}
-                  className="w-12 h-12 object-contain"
+                  className="w-16 h-16 object-contain"
                 />
-                <h3 className="text-xs sm:text-sm font-medium text-center text-gray-800">
-                  {service.title}
-                </h3>
+                <div className="flex flex-col gap-2 text-center">
+                  <h3 className="text-sm sm:text-base font-semibold text-gray-900">
+                    {service.title}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-stone-500 leading-5">
+                    {service.description}
+                  </p>
+                </div>
               </div>
             ))}
           </div>
@@ -250,7 +255,7 @@ function LandingPage() {
         </div>
 
         {/* Badges Section */}
-        <section id="badges" className="w-full px-6 lg:px-32 py-20 flex flex-col gap-10">
+        <section id="badges" className="w-full px-6 lg:px-32 py-8 sm:py-12 lg:py-20 flex flex-col gap-8 sm:gap-10">
           <div className="w-full flex flex-col gap-6 text-center">
             <h2 className="txt-color-primary text-2xl sm:text-4xl lg:text-5xl font-semibold leading-tight">
               Earn Recognition Badges
@@ -264,7 +269,7 @@ function LandingPage() {
           <div className="w-full border-b border-neutral-300"></div>
 
           {/* Badges Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mt-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {/* Verified Badge */}
             <div className="flex flex-col items-center gap-4 p-6 bg-white rounded-2xl shadow-[0_8px_16px_rgba(31,54,127,0.15)] hover:shadow-[0_12px_24px_rgba(31,54,127,0.25)] transition duration-300">
               <img 
@@ -318,9 +323,9 @@ function LandingPage() {
           </div>
         </section>
 
-        <section className="w-full px-6 lg:px-32 py-20 flex flex-col lg:flex-row items-center justify-between gap-10">
+        <section className="w-full px-6 lg:px-32 py-8 sm:py-12 lg:py-20 flex flex-col lg:flex-row items-center justify-between gap-8 sm:gap-10">
           {/* Text Content */}
-          <div className="flex-1 flex flex-col gap-12 text-center lg:text-left  ">
+          <div className="flex-1 flex flex-col gap-8 sm:gap-12 text-center lg:text-left">
             {/* Heading Block */}
             <div className="flex flex-col gap-6">
               <p className="text-base text-neutral-900 font-normal font-Lato text-center lg:text-left">
@@ -351,8 +356,8 @@ function LandingPage() {
           </div>
         </section>
 
-        <section id="team" className="w-full px-6 lg:px-32 py-20 flex flex-col gap-10 scroll-mt-24">
-          <div className="w-full flex flex-col lg:flex-row justify-between gap-10 text-center lg:text-left items-center lg:items-start">
+        <section id="team" className="w-full px-6 lg:px-32 py-8 sm:py-12 lg:py-20 flex flex-col gap-8 sm:gap-10 scroll-mt-24">
+          <div className="w-full flex flex-col lg:flex-row justify-between gap-6 sm:gap-10 text-center lg:text-left items-center lg:items-start">
             {/* Left Title */}
             <h2 className="text-2xl sm:text-4xl lg:text-5xl font-semibold txt-color-primary leading-tight w-full lg:max-w-2xl hidden md:block">
               Effective Service Requires an Expert Service Team
@@ -378,7 +383,7 @@ function LandingPage() {
 
           {/* Divider */}
           <div className="w-full border-b border-neutral-300"></div>
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto">
+          <div className="grid gap-6 sm:gap-8 sm:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto">
             {professionals.slice(0, 4).map((pro) => (
               <TechnicianCard
                 key={pro._id || pro.id}
@@ -392,20 +397,20 @@ function LandingPage() {
           </div>
         </section>
 
-        <section className="w-full px-6 lg:px-32 py-20 flex flex-col lg:flex-row items-start gap-16">
+        <section className="w-full px-6 lg:px-32 py-8 sm:py-12 lg:py-20 flex flex-col lg:flex-row items-start gap-8 sm:gap-12 lg:gap-16">
           {/* Image */}
           <div className="shrink-0 hidden lg:flex">
             <img
               src={welcomeicon}
               alt="Home Service 2"
-              className="w-115 h-96 rounded-2xl  object-cover"
+              className="w-115 h-96 rounded-2xl object-cover"
             />
           </div>
 
           {/* Text Content */}
-          <div className="flex-1 flex flex-col gap-12 text-center lg:text-left">
+          <div className="flex-1 flex flex-col gap-8 sm:gap-12 text-center lg:text-left">
             {/* Heading */}
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3 sm:gap-4">
               <h2 className="text-2xl sm:text-4xl lg:text-5xl font-semibold txt-color-primary leading-tight">
                 Welcome To Our
                 <br />
@@ -448,14 +453,14 @@ function LandingPage() {
           </div>
         </section>
 
-        <section id="contact" className="w-full px-6 lg:px-32 py-20 flex flex-col lg:flex-row justify-between gap-16 scroll-mt-24">
+        <section id="contact" className="w-full px-6 lg:px-32 py-8 sm:py-12 lg:py-20 flex flex-col lg:flex-row justify-between gap-8 sm:gap-10 lg:gap-16 scroll-mt-24">
           {/* Left Contact Info */}
-          <div className="flex-1 flex flex-col gap-10">
+          <div className="flex-1 flex flex-col gap-6 sm:gap-10">
             <h3 className="txt-color-primary text-4xl text-center lg:text-left">
               Find Us
             </h3>
 
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4 sm:gap-6">
               {/* Contact Cards */}
               {[
                 {
@@ -496,8 +501,8 @@ function LandingPage() {
           </div>
 
           {/* Right Contact Form */}
-          <div className="flex-1 flex flex-col gap-10">
-            <div className="flex flex-col gap-4 text-center lg:text-left">
+          <div className="flex-1 flex flex-col gap-6 sm:gap-10">
+            <div className="flex flex-col gap-3 sm:gap-4 text-center lg:text-left">
               <span className="text-base text-neutral-900">Contact Info</span>
               <h2 className="text-4xl font-semibold txt-color-primary leading-tight">
                 Keep In Touch
@@ -510,7 +515,7 @@ function LandingPage() {
 
             {/* Form */}
             <form
-              className="flex flex-col gap-6"
+              className="flex flex-col gap-4 sm:gap-6"
               onSubmit={handleContactSubmit}
             >
               <input

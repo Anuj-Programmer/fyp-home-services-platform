@@ -388,7 +388,7 @@ const Navbar = () => {
                 {/* Unauthenticated buttons */}
                 {!isAuthenticated && (
                   <>
-                    <Link to="/register-technician" className="text-[15px] font-medium">
+                    <Link to="/register-technician" className="text-[15px] font-medium txt-color-primary">
                       Become a Professional
                     </Link>
                     <Link

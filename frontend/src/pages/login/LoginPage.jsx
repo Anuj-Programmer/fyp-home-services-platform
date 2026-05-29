@@ -3,7 +3,7 @@ import { apiClient } from "@/lib/api";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/blocks/Navbar";
-import Logo from "../../assets/faviconLogo.png";
+import Logo from "../../assets/faviconLogo.svg";
 
 function LoginPage() {
   const [email, setEmail] = useState("");

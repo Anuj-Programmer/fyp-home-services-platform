@@ -18,12 +18,12 @@ function Footer() {
   }
 
   return (
-    <footer className="bg-gray-900 text-white py-8">
-      <div className="container mx-auto px-6 flex items-center justify-between">
+    <footer className="bg-gray-900 text-white py-4 sm:py-8">
+      <div className="container mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
         <Link to={isAdmin ? "/admin" : isAuthenticated ? "/home" : "/"}>
-          <img src={Logo} alt="HomeCare Logo" className="h-8" />
+          <img src={Logo} alt="HomeCare Logo" className="h-6 sm:h-8" />
         </Link>
-        <p className="text-gray-400 text-sm">
+        <p className="text-gray-400 text-xs sm:text-sm text-center">
           © 2026 HomeCare. All rights reserved.
         </p>
       </div>

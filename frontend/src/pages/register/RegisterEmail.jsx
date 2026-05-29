@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { apiClient } from "@/lib/api";
 import toast from "react-hot-toast";
 import Navbar from "@/blocks/Navbar";
-import Logo from "../../assets/faviconLogo.png";
+import Logo from "../../assets/faviconLogo.svg";
 
 function RegisterEmail() {
   const [email, setEmail] = useState("");

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { apiClient } from "@/lib/api";
 import toast from "react-hot-toast";
 import Navbar from "@/blocks/Navbar";
-import Logo from "../../assets/faviconLogo.png";
+import Logo from "../../assets/faviconLogo.svg";
 
 function TechnicianRegisterEmail() {
   const [email, setEmail] = useState("");
