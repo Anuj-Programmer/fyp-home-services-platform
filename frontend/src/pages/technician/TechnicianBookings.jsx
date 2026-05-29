@@ -50,6 +50,19 @@ function TechnicianBookings() {
   const today = new Date();
   const todayString = `${String(today.getDate()).padStart(2, "0")} ${today.toLocaleString("en-US", { month: "short" })} ${today.getFullYear()}`;
 
+  // Calculate badge counts for each tab
+  const getTabCounts = () => {
+    const upcoming = bookings.filter(b => b.status === "Confirmed").length;
+    const todayBookings = bookings.filter(b => b.status === "Confirmed" && b.bookingDate === todayString).length;
+    const pending = bookings.filter(b => b.status === "Pending").length;
+    const rescheduled = bookings.filter(b => b.status === "Rescheduled").length;
+    const all = bookings.length;
+
+    return { upcoming, todayBookings, all, pending, rescheduled };
+  };
+
+  const tabCounts = getTabCounts();
+
   // Fetch technician bookings from backend (initial load only)
   const fetchTechnicianBookings = async (showLoading = true) => {
     try {
@@ -65,8 +78,8 @@ function TechnicianBookings() {
         // Transform backend data to match frontend format
         const transformedBookings = response.data.bookings.map((booking) => ({
           id: booking._id,
-          userId: typeof booking.user === 'object' ? booking.user._id : booking.user,
-          technicianId: typeof booking.technician === 'object' ? booking.technician._id : booking.technician,
+          userId: booking.user ? (typeof booking.user === 'object' ? booking.user._id : booking.user) : null,
+          technicianId: booking.technician ? (typeof booking.technician === 'object' ? booking.technician._id : booking.technician) : null,
           clientName: `${booking.userInfo.firstname} ${booking.userInfo.lastname}`,
           clientPhone: booking.userInfo.phone,
           clientEmail: booking.userInfo.email,
@@ -487,7 +500,7 @@ function TechnicianBookings() {
   return (
     <>
       <Navbar />
-      <main className="px-6 lg:px-32 pt-16 pb-16 min-h-screen bg-stone-50 space-y-8">
+      <main className="px-6 lg:px-32 pt-12 pb-16 min-h-screen bg-stone-50 space-y-8">
         {/* Header */}
         <section className="space-y-4">
           <h1 className="text-3xl sm:text-4xl font-bold txt-color-primary">
@@ -506,13 +519,28 @@ function TechnicianBookings() {
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-4 md:px-6 py-2 rounded-lg font-semibold transition-all duration-200 text-sm ${
+                  className={`px-4 md:px-6 py-2 rounded-lg font-semibold transition-all duration-200 text-sm relative ${
                     activeTab === tab
                       ? "bg-color-main text-white shadow-md"
                       : "bg-stone-100 text-stone-700 hover:bg-stone-200"
                   }`}
                 >
                   {tab}
+                  {tab === "Upcoming" && tabCounts.upcoming > 0 && (
+                    <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-red-500 rounded-full">{tabCounts.upcoming > 9 ? "9+" : tabCounts.upcoming}</span>
+                  )}
+                  {tab === "Today" && tabCounts.todayBookings > 0 && (
+                    <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-red-500 rounded-full">{tabCounts.todayBookings > 9 ? "9+" : tabCounts.todayBookings}</span>
+                  )}
+                  {tab === "Pending" && tabCounts.pending > 0 && (
+                    <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-red-500 rounded-full">{tabCounts.pending > 9 ? "9+" : tabCounts.pending}</span>
+                  )}
+                  {tab === "Rescheduled" && tabCounts.rescheduled > 0 && (
+                    <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-red-500 rounded-full">{tabCounts.rescheduled > 9 ? "9+" : tabCounts.rescheduled}</span>
+                  )}
+                  {/* {tab === "All" && (
+                    <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-blue-500 rounded-full">{tabCounts.all > 9 ? "9+" : tabCounts.all}</span>
+                  )} */}
                 </button>
               ))}
             </div>
@@ -941,7 +969,7 @@ function TechnicianBookings() {
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                     </svg>
-                    ⏰ Important Reminder
+                     Important Reminder
                   </p>
                   <p className="text-xs text-amber-700 leading-relaxed">
                     You must start this service by <strong>{selectedBooking.bookingTime}</strong> or within 15 minutes of this time. The booking will be <strong>automatically cancelled</strong> if not started by then.
@@ -986,7 +1014,7 @@ function TechnicianBookings() {
             </div>
 
             {/* Modal Footer */}
-            <div className="bg-stone-50 px-4 py-3 border-t flex gap-2 justify-end rounded-b-2xl">
+            <div className="bg-stone-50 px-4 py-3 border-t border-stone-200 flex gap-2 justify-end rounded-b-2xl">
               <button
                 onClick={handleCloseModal}
                 className="px-4 py-1.5 bg-stone-200 text-stone-700 font-normal rounded-lg hover:bg-stone-300 transition-colors text-sm"
@@ -1068,7 +1096,7 @@ function TechnicianBookings() {
                 className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-color-main focus:border-transparent"
               />
             </div>
-            <div className="bg-stone-50 px-6 py-4 border-t flex gap-3 justify-end rounded-b-2xl">
+            <div className="bg-stone-50 px-6 py-4 border-t flex gap-3 justify-end rounded-b-2xl border-stone-200">
               <button onClick={handleCloseCancelModal} className="px-4 py-2 bg-stone-200 text-stone-700 rounded-lg text-sm">Close</button>
               <button
                 onClick={confirmCancelBooking}
@@ -1104,7 +1132,7 @@ function TechnicianBookings() {
                 className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-color-main focus:border-transparent"
               />
             </div>
-            <div className="bg-stone-50 px-6 py-4 border-t flex gap-3 justify-end rounded-b-2xl">
+            <div className="bg-stone-50 px-6 py-4 border-t flex gap-3 justify-end rounded-b-2xl border-stone-200">
               <button onClick={handleCloseCompleteModal} className="px-4 py-2 bg-stone-200 text-stone-700 rounded-lg text-sm">Close</button>
               <button
                 onClick={confirmCompleteService}

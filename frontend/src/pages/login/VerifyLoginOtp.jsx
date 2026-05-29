@@ -106,7 +106,12 @@ function VerifyLoginOtp() {
       if (role === "admin") {
         navigate("/admin");
       } else if (role === "technician") {
-        navigate("/technician-dashboard"); // technician dashboard
+        // Check if technician has completed profile on first login
+        if (!data.user.profileCompleted) {
+          navigate("/technician-profile");
+        } else {
+          navigate("/technician-dashboard");
+        }
       } else {
         navigate("/home"); // regular user
       }

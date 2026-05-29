@@ -162,7 +162,7 @@ function TechnicianReview() {
   return (
     <>
       <Navbar />
-      <main className="px-6 lg:px-32 pt-16 pb-16 min-h-screen bg-stone-50 space-y-8">
+      <main className="px-6 lg:px-32 pt-12 pb-16 min-h-screen bg-stone-50 space-y-8">
         {/* Header */}
         <section className="space-y-4">
           <h1 className="text-3xl sm:text-4xl font-bold txt-color-primary">
@@ -222,8 +222,8 @@ function TechnicianReview() {
         </section>
 
         {/* Tab Filter Section with Search */}
-        <section className="bg-white rounded-3xl shadow-sm border overflow-hidden">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-4 md:p-6 border-b">
+        <section className="bg-white rounded-3xl shadow-sm border overflow-hidden border-stone-300">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-4 md:p-6 border-b border-stone-300">
             <div className="flex flex-wrap gap-2">
               {TABS.map((tab) => (
                 <button
@@ -261,7 +261,7 @@ function TechnicianReview() {
             ) : (
               <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="text-stone-500 uppercase text-xs tracking-wide border-b bg-stone-50">
+                  <tr className="text-stone-500 uppercase text-xs tracking-wide border-b border-stone-300 bg-stone-50">
                     <th className="px-6 py-4 font-semibold w-40">Customer Name</th>
                     <th className="px-6 py-4 font-semibold w-20">Rating</th>
                     <th className="px-6 py-4 font-semibold flex-1">Comment</th>
@@ -274,7 +274,7 @@ function TechnicianReview() {
                     filteredReviews.map((review) => (
                       <tr
                         key={review.id}
-                        className="border-b hover:bg-stone-50 transition-colors duration-150"
+                        className="border-b border-stone-300 hover:bg-stone-50 transition-colors duration-150"
                       >
                         <td className="px-6 py-4 font-semibold text-neutral-900 w-40 truncate">
                           {review.userName}
@@ -404,7 +404,7 @@ function TechnicianReview() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="sticky top-0 bg-white text-color-primary px-6 py-4 flex items-center justify-between border-b">
+            <div className="sticky top-0 bg-white text-color-primary px-6 py-4 flex items-center justify-between border-b border-stone-200">
               <h2 className="text-lg font-semibold">Customer Review</h2>
               <button
                 onClick={handleCloseModal}
@@ -512,7 +512,7 @@ function TechnicianReview() {
             </div>
 
             {/* Modal Footer */}
-            <div className="bg-stone-50 px-6 py-4 border-t flex gap-3 justify-end">
+            <div className="bg-stone-50 px-6 py-4 border-t border-stone-200 flex gap-3 justify-end">
               <button
                 onClick={handleCloseModal}
                 className="px-4 py-2 bg-stone-200 text-stone-700 font-medium rounded-lg hover:bg-stone-300 transition-colors text-sm"

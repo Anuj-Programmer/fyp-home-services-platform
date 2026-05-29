@@ -7,6 +7,8 @@ import { uploadToCloudinary } from "@/lib/uploadToCloudinary";
 import "../../css/landingPage.css";
 import Cookies from "js-cookie";
 import { Camera, Trash } from "phosphor-react";
+import VerifiedIcon from "@/assets/VerifiedIcon.svg";
+import HighRatedIcon from "@/assets/HighRatedIcon.svg";
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 const LOCATION_OPTIONS = ["chitwan", "pokhara", "kathmandu"];
@@ -68,11 +70,13 @@ function TechnicianProfile() {
   const [saving, setSaving] = useState(false);
   const [showCertificateModal, setShowCertificateModal] = useState(false);
   const [uploadingCertificate, setUploadingCertificate] = useState(false);
+  const [selectedCertificateFile, setSelectedCertificateFile] = useState(null);
   const [showTimeModal, setShowTimeModal] = useState(false);
   const [editingDay, setEditingDay] = useState(null);
   const [timeError, setTimeError] = useState("");
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [completedJobsCount, setCompletedJobsCount] = useState(0);
   const photoInputRef = useRef(null);
   const [formData, setFormData] = useState({
     firstName: "",
@@ -119,7 +123,7 @@ function TechnicianProfile() {
   };
 
   const badgeData = [
-    { label: "Completed jobs", value: "-" },
+    { label: "Completed jobs", value: completedJobsCount },
     { label: "Member since", value: formatMemberSince(user?.createdAt) },
     { label: "Rating", value: user?.averageRating ? `${user.averageRating}/5` : "—" },
   ];
@@ -174,6 +178,32 @@ function TechnicianProfile() {
       setFormData(hydrateFormFromUser(parsed));
       setAvailability(hydrateAvailabilityFromUser(parsed));
     }
+  }, []);
+
+  // Fetch completed jobs count
+  useEffect(() => {
+    const fetchCompletedJobsCount = async () => {
+      try {
+        const token = Cookies.get("token") || localStorage.getItem("token");
+        const response = await apiClient.get("/api/bookings/technician-bookings", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.data && response.data.success) {
+          const completedCount = response.data.bookings.filter(
+            (booking) => booking.status === "completed"
+          ).length;
+          setCompletedJobsCount(completedCount);
+        }
+      } catch (error) {
+        console.error("Error fetching completed jobs count:", error);
+        setCompletedJobsCount(0);
+      }
+    };
+
+    fetchCompletedJobsCount();
   }, []);
 
   const handleInputChange = (e) => {
@@ -338,7 +368,8 @@ function TechnicianProfile() {
 
       const updatedTechnician = {
         ...data.technician,
-        role: "technician" // Ensure role is preserved
+        role: "technician", // Ensure role is preserved
+        profileCompleted: true
       };
 
       // Check if status changed to active and show appropriate toast
@@ -352,6 +383,13 @@ function TechnicianProfile() {
       setFormData(hydrateFormFromUser(updatedTechnician));
       setAvailability(hydrateAvailabilityFromUser(updatedTechnician));
       localStorage.setItem("user", JSON.stringify(updatedTechnician));
+
+      // If profile was not completed before, redirect to dashboard after short delay
+      if (!user?.profileCompleted) {
+        setTimeout(() => {
+          window.location.href = "/technician-dashboard";
+        }, 1500);
+      }
     } catch (error) {
       console.error(error);
       const errMsg =
@@ -364,8 +402,11 @@ function TechnicianProfile() {
 
   const handleCertificateUpload = async (e) => {
     try {
-      const file = e.target.files[0];
-      if (!file) return;
+      const file = e.target?.files?.[0] || selectedCertificateFile;
+      if (!file) {
+        toast.error("Please select a file first");
+        return;
+      }
 
       setUploadingCertificate(true);
       const response = await uploadToCloudinary(file);
@@ -396,6 +437,7 @@ function TechnicianProfile() {
       localStorage.setItem("user", JSON.stringify(updatedUser));
       
       setShowCertificateModal(false);
+      setSelectedCertificateFile(null);
     } catch (error) {
       console.error(error);
       toast.error(
@@ -474,7 +516,7 @@ function TechnicianProfile() {
   return (
     <>
       <Navbar />
-      <main className="px-4 sm:px-6 lg:px-32 pt-5 sm:pt-24 pb-12 sm:pb-16 min-h-screen bg-stone-50 space-y-8 sm:space-y-12">
+      <main className="px-4 sm:px-6 lg:px-32 pt-5 sm:pt-12 pb-12 sm:pb-16 min-h-screen bg-stone-50 space-y-8 sm:space-y-12">
         <section className="flex flex-col lg:flex-row items-start justify-between gap-6 sm:gap-8">
           <div className="space-y-4">
             <p className="text-sm font-semibold text-color-main uppercase tracking-wide">
@@ -945,6 +987,48 @@ function TechnicianProfile() {
               </div>
             </div>
 
+            <div className="bg-white rounded-3xl shadow-sm border border-stone-200 p-5 space-y-3">
+              <h3 className="text-lg font-semibold txt-color-primary">
+                Badges Received
+              </h3>
+              <p className="text-sm text-stone-500">
+                Achievements and recognitions earned
+              </p>
+              <div className="flex gap-4">
+                {/* Verified Badge */}
+                <div className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition ${
+                  user?.isVerifiedTechnician
+                    ? 'bg-emerald-50 border-emerald-300'
+                    : 'bg-stone-50 border-stone-200 opacity-50'
+                }`}>
+                  <img 
+                    src={VerifiedIcon} 
+                    alt="Verified Badge" 
+                    className="w-12 h-12"
+                  />
+                  <p className="text-xs font-semibold text-stone-700 text-center">
+                    {user?.isVerifiedTechnician ? "Verified" : "Not Verified"}
+                  </p>
+                </div>
+
+                {/* High Rated Badge */}
+                <div className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition ${
+                  user?.highRated
+                    ? 'bg-amber-50 border-amber-300'
+                    : 'bg-stone-50 border-stone-200 opacity-50'
+                }`}>
+                  <img 
+                    src={HighRatedIcon} 
+                    alt="High Rated Badge" 
+                    className="w-12 h-12"
+                  />
+                  <p className="text-xs font-semibold text-stone-700 text-center">
+                    {user?.highRated ? "High Rated" : "Not Rated"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="bg-white rounded-3xl shadow-sm border border-stone-200 p-4 sm:p-5 space-y-3">
               <h3 className="text-base sm:text-lg font-semibold txt-color-primary">
                 Service type
@@ -959,7 +1043,7 @@ function TechnicianProfile() {
 
             <div className="bg-blue-50 rounded-3xl border border-blue-200 p-4 sm:p-5 space-y-3">
               <h3 className="text-base sm:text-lg font-semibold text-blue-900">
-                💡 Pro tips
+                 Pro tips
               </h3>
               <ul className="text-sm text-blue-800 space-y-2">
                 <li>• Set competitive rates to attract more bookings</li>
@@ -1004,10 +1088,18 @@ function TechnicianProfile() {
             )}
             
             <div className="mb-4">
+              <label className="block text-sm font-semibold text-stone-700 mb-3">
+                Select Certificate File
+              </label>
               <input
                 type="file"
                 accept="image/*,.pdf"
-                onChange={handleCertificateUpload}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setSelectedCertificateFile(file);
+                  }
+                }}
                 disabled={uploadingCertificate}
                 className="block w-full text-sm text-gray-500
                   file:mr-4 file:py-2 file:px-4
@@ -1017,21 +1109,38 @@ function TechnicianProfile() {
                   hover:file:bg-blue-100
                   disabled:opacity-50 disabled:cursor-not-allowed"
               />
+              {selectedCertificateFile && (
+                <p className="mt-2 text-xs text-green-600 font-semibold">
+                  ✓ Selected: {selectedCertificateFile.name}
+                </p>
+              )}
             </div>
 
             {uploadingCertificate && (
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-gray-600 mb-4 text-center">
                 Uploading certificate...
               </p>
             )}
 
-            <button
-              onClick={() => setShowCertificateModal(false)}
-              disabled={uploadingCertificate}
-              className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50"
-            >
-              Cancel
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowCertificateModal(false);
+                  setSelectedCertificateFile(null);
+                }}
+                disabled={uploadingCertificate}
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 font-semibold text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCertificateUpload}
+                disabled={uploadingCertificate || !selectedCertificateFile}
+                className="flex-1 px-4 py-2 bg-color-main text-white rounded-md hover:bg-blue-700 disabled:opacity-50 font-semibold text-sm transition"
+              >
+                {uploadingCertificate ? "Uploading..." : "Submit"}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1070,13 +1179,13 @@ function TechnicianProfile() {
 
               <div className="p-4 bg-red-50 rounded-lg border border-red-200">
                 <p className="text-xs text-red-700 font-medium">
-                  ⚠️ When switched to Inactive, users won't be able to book you or see your profile
+                   When switched to Inactive, users won't be able to book you or see your profile
                 </p>
               </div>
 
               <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <p className="text-xs text-blue-700">
-                  💡 You can switch between Active and Inactive anytime without losing your profile data.
+                   You can switch between Active and Inactive anytime without losing your profile data.
                 </p>
               </div>
 
@@ -1107,68 +1216,160 @@ function TechnicianProfile() {
       {/* Time Setting Modal */}
       {showTimeModal && editingDay && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl sm:text-2xl font-bold txt-color-primary">
-                {editingDay} Schedule
+          <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-2xl max-w-sm w-full mx-2">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg sm:text-xl font-bold txt-color-primary truncate">
+                {editingDay}
               </h3>
               <button
                 type="button"
                 onClick={closeTimeModal}
-                className="text-gray-400 hover:text-gray-600 transition"
+                className="text-gray-400 hover:text-gray-600 transition shrink-0 ml-2"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Availability Toggle */}
-              <div className="flex items-center justify-between p-4 bg-stone-50 rounded-xl">
-                <span className="font-medium text-stone-700">Available on this day</span>
+              <div className="flex items-center justify-between p-3 bg-stone-50 rounded-lg">
+                <span className="font-medium text-stone-700 text-sm">Available</span>
                 <button
                   type="button"
                   onClick={() => handleToggleDay(editingDay)}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                  className={`px-3 py-1 rounded text-xs font-semibold transition ${
                     availability[editingDay].isAvailable
                       ? 'bg-green-100 text-green-700 hover:bg-green-200'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
-                  {availability[editingDay].isAvailable ? 'Available' : 'Off'}
+                  {availability[editingDay].isAvailable ? 'On' : 'Off'}
                 </button>
               </div>
 
               {/* Time Inputs */}
               {availability[editingDay].isAvailable && (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div>
-                    <label className="block text-sm font-semibold text-stone-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-semibold text-stone-700 mb-2">
                       Start Time
                     </label>
-                    <input
-                      type="time"
-                      value={availability[editingDay].startTime}
-                      onChange={(e) => handleTimeChangeWithValidation(editingDay, 'startTime', e.target.value)}
-                      className="w-full px-4 py-3 border-2 border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
+                    <div className="flex items-center gap-1.5">
+                      <div className="flex-1 border-2 border-stone-200 rounded-lg p-2 bg-stone-50 flex items-center justify-center">
+                        <span className="text-lg sm:text-xl font-bold text-stone-700">{availability[editingDay].startTime}</span>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const [hours, minutes] = availability[editingDay].startTime.split(':').map(Number);
+                            const newHours = hours === 23 ? 0 : hours + 1;
+                            handleTimeChangeWithValidation(editingDay, 'startTime', `${String(newHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`);
+                          }}
+                          className="p-1 sm:p-2 bg-blue-100 hover:bg-blue-200 rounded text-stone-700 font-bold text-sm sm:text-base"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const [hours, minutes] = availability[editingDay].startTime.split(':').map(Number);
+                            const newHours = hours === 0 ? 23 : hours - 1;
+                            handleTimeChangeWithValidation(editingDay, 'startTime', `${String(newHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`);
+                          }}
+                          className="p-1 sm:p-2 bg-blue-100 hover:bg-blue-200 rounded text-stone-700 font-bold text-sm sm:text-base"
+                        >
+                          ↓
+                        </button>
+                      </div>
+                    </div>
+                    <div className="mt-1.5 grid grid-cols-3 gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleTimeChangeWithValidation(editingDay, 'startTime', '06:00')}
+                        className="px-1.5 py-0.5 text-xs bg-stone-100 hover:bg-stone-200 rounded transition"
+                      >
+                        6 AM
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleTimeChangeWithValidation(editingDay, 'startTime', '09:00')}
+                        className="px-1.5 py-0.5 text-xs bg-stone-100 hover:bg-stone-200 rounded transition"
+                      >
+                        9 AM
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleTimeChangeWithValidation(editingDay, 'startTime', '12:00')}
+                        className="px-1.5 py-0.5 text-xs bg-stone-100 hover:bg-stone-200 rounded transition"
+                      >
+                        12 PM
+                      </button>
+                    </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-stone-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-semibold text-stone-700 mb-2">
                       End Time
                     </label>
-                    <input
-                      type="time"
-                      value={availability[editingDay].endTime}
-                      onChange={(e) => handleTimeChangeWithValidation(editingDay, 'endTime', e.target.value)}
-                      className="w-full px-4 py-3 border-2 border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
+                    <div className="flex items-center gap-1.5">
+                      <div className="flex-1 border-2 border-stone-200 rounded-lg p-2 bg-stone-50 flex items-center justify-center">
+                        <span className="text-lg sm:text-xl font-bold text-stone-700">{availability[editingDay].endTime}</span>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const [hours, minutes] = availability[editingDay].endTime.split(':').map(Number);
+                            const newHours = hours === 23 ? 0 : hours + 1;
+                            handleTimeChangeWithValidation(editingDay, 'endTime', `${String(newHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`);
+                          }}
+                          className="p-1 sm:p-2 bg-green-100 hover:bg-green-200 rounded text-stone-700 font-bold text-sm sm:text-base"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const [hours, minutes] = availability[editingDay].endTime.split(':').map(Number);
+                            const newHours = hours === 0 ? 23 : hours - 1;
+                            handleTimeChangeWithValidation(editingDay, 'endTime', `${String(newHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`);
+                          }}
+                          className="p-1 sm:p-2 bg-green-100 hover:bg-green-200 rounded text-stone-700 font-bold text-sm sm:text-base"
+                        >
+                          ↓
+                        </button>
+                      </div>
+                    </div>
+                    <div className="mt-1.5 grid grid-cols-3 gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleTimeChangeWithValidation(editingDay, 'endTime', '17:00')}
+                        className="px-1.5 py-0.5 text-xs bg-stone-100 hover:bg-stone-200 rounded transition"
+                      >
+                        5 PM
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleTimeChangeWithValidation(editingDay, 'endTime', '18:00')}
+                        className="px-1.5 py-0.5 text-xs bg-stone-100 hover:bg-stone-200 rounded transition"
+                      >
+                        6 PM
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleTimeChangeWithValidation(editingDay, 'endTime', '21:00')}
+                        className="px-1.5 py-0.5 text-xs bg-stone-100 hover:bg-stone-200 rounded transition"
+                      >
+                        9 PM
+                      </button>
+                    </div>
                   </div>
 
                   {/* Error Message */}
                   {timeError && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="p-2 bg-red-50 border border-red-200 rounded">
                       <p className="text-xs text-red-700 font-medium">
                         ⚠️ {timeError}
                       </p>
@@ -1177,27 +1378,27 @@ function TechnicianProfile() {
 
                   {/* Success Message */}
                   {!timeError && availability[editingDay].isAvailable && (
-                    <div className="p-3 bg-green-50 rounded-lg">
+                    <div className="p-2 bg-green-50 rounded">
                       <p className="text-xs text-green-700">
-                        ✓ Valid time range: {availability[editingDay].startTime} - {availability[editingDay].endTime}
+                        ✓ {availability[editingDay].startTime} - {availability[editingDay].endTime}
                       </p>
                     </div>
                   )}
 
-                  <div className="p-3 bg-blue-50 rounded-lg">
+                  <div className="p-2 bg-blue-50 rounded">
                     <p className="text-xs text-blue-700">
-                      💡 Set realistic working hours to manage customer expectations
+                      Set realistic working hours
                     </p>
                   </div>
                 </div>
               )}
 
               {/* Action Buttons */}
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-2 pt-2">
                 <button
                   type="button"
                   onClick={closeTimeModal}
-                  className="flex-1 px-4 py-3 bg-stone-100 text-stone-700 rounded-xl font-semibold hover:bg-stone-200 transition"
+                  className="flex-1 px-3 py-2 bg-stone-100 text-stone-700 rounded-lg font-semibold hover:bg-stone-200 transition text-sm"
                 >
                   Cancel
                 </button>
@@ -1205,7 +1406,7 @@ function TechnicianProfile() {
                   type="button"
                   onClick={closeTimeModal}
                   disabled={timeError ? true : false}
-                  className={`flex-1 px-4 py-3 rounded-xl font-semibold transition ${
+                  className={`flex-1 px-3 py-2 rounded-lg font-semibold transition text-sm ${
                     timeError
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       : 'bg-color-main text-white hover:bg-blue-700'

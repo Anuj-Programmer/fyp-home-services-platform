@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { apiClient } from "@/lib/api";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
@@ -93,7 +93,7 @@ function AdminPanel() {
   return (
     <>
       <Navbar />
-      <div className="flex min-h-screen bg-stone-50 pt-10">
+      <div className="flex min-h-screen bg-stone-50 lg:pt-4">
         <AdminSidebar />
 
         {/* Main Content */}
@@ -243,7 +243,7 @@ function AdminPanel() {
                       </li>
                       <li className="flex justify-between">
                         <span>• Monthly Revenue:</span>
-                        <strong className="txt-color-primary">View Revenue Page →</strong>
+                        <strong className="txt-color-primary"><Link to="/AdminRevenue" className="text-color-main hover:underline">View Revenue Page →</Link></strong>
                       </li>
                     </ul>
                   </div>

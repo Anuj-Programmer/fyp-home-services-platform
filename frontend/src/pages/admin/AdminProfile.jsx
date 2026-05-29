@@ -141,7 +141,7 @@ function AdminProfile() {
   return (
     <>
       <Navbar />
-      <div className="flex min-h-screen bg-stone-50 pt-10">
+      <div className="flex min-h-screen bg-stone-50 lg:pt-4">
       <AdminSidebar />
       <div className="flex-1 lg:ml-64">
         {/* Mobile header */}

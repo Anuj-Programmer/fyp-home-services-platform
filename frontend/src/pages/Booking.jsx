@@ -506,12 +506,12 @@ function Booking() {
   return (
     <>
       <Navbar />
-      <main className="px-6 lg:px-32 pt-16 pb-16 min-h-screen bg-stone-50 space-y-8">
+      <main className="px-6 lg:px-32 pt-12 pb-16 min-h-screen bg-stone-50 space-y-8">
         {/* Header */}
         <section className="space-y-4">
-          <p className="text-sm font-semibold text-color-main uppercase tracking-wide">
+          {/* <p className="text-sm font-semibold text-color-main uppercase tracking-wide">
             Management
-          </p>
+          </p> */}
           <h1 className="text-3xl sm:text-4xl font-bold txt-color-primary">
             Technician Bookings
           </h1>
@@ -868,7 +868,7 @@ function Booking() {
             onClick={e => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="sticky top-0 bg-white text-color-primary px-6 py-4 flex items-center justify-between border-b rounded-t-2xl">
+            <div className="sticky top-0 bg-white text-color-primary px-6 py-4 flex items-center justify-between border-b rounded-t-2xl border-stone-200">
               <h2 className="text-xl font-semibold">Booking Details</h2>
               <button
                 onClick={handleCloseModal}
@@ -1092,7 +1092,7 @@ function Booking() {
             </div>
 
             {/* Modal Footer */}
-            <div className="bg-stone-50 px-6 py-4 border-t flex gap-3 justify-end rounded-b-2xl">
+            <div className="bg-stone-50 px-6 py-4 border-t flex gap-3 justify-end rounded-b-2xl border-stone-300">
               <button
                 onClick={handleCloseModal}
                 className="px-4 py-2 bg-stone-200 text-stone-700 font-medium rounded-lg hover:bg-stone-300 transition-colors text-sm"

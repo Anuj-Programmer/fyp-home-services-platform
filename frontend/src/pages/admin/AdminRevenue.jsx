@@ -106,7 +106,21 @@ function AdminRevenue() {
       <Navbar />
       <AdminSidebar />
 
-      <main className="lg:ml-64 px-6 lg:px-8 pt-16 pb-16 min-h-screen bg-stone-50 space-y-8">
+      <main className="lg:ml-64 px-6 lg:px-8 lg:pt-10 pb-16 min-h-screen bg-stone-50 space-y-8">
+        {/* Mobile header */}
+        <div className="lg:hidden sticky top-16 z-30 py-3 bg-white border-b border-stone-200 flex items-center gap-3 -mx-6 px-6 mb-6">
+          <button
+            onClick={() => window.dispatchEvent(new Event("open-admin-sidebar"))}
+            className="p-2 rounded-lg border border-stone-200 bg-stone-50 hover:bg-stone-100 transition-colors"
+            aria-label="Open menu"
+          >
+            <svg className="w-5 h-5 text-stone-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <span className="font-semibold text-stone-800 text-sm">Platform Revenue</span>
+        </div>
+
         <section className="space-y-4">
           <p className="text-sm font-semibold text-color-main uppercase tracking-wide">Administration</p>
           <h1 className="text-3xl sm:text-4xl font-bold txt-color-primary">Platform Revenue</h1>
@@ -209,7 +223,7 @@ function AdminRevenue() {
         </section>
       </main>
 
-      <Footer />
+      {/* <Footer /> */}
     </>
   );
 }

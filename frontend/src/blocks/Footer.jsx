@@ -1,7 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import Cookies from "js-cookie";
-import Logo from "../assets/LogoLight.png"
+import Logo from "../assets/LogoLight.svg"
 
 function Footer() {
   const token = Cookies.get("token") || localStorage.getItem("token");

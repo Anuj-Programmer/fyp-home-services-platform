@@ -12,6 +12,7 @@ function APBookings() {
   const [isLoading, setIsLoading] = useState(true);
   const [bookings, setBookings] = useState([]);
   const [filterStatus, setFilterStatus] = useState("All");
+  const [searchTerm, setSearchTerm] = useState("");
   const [deletingBookingId, setDeletingBookingId] = useState(null);
   const [bookingToDelete, setBookingToDelete] = useState(null);
 
@@ -126,9 +127,17 @@ function APBookings() {
     }
   };
 
-  const filteredBookings = filterStatus === "All" 
+  const filteredBookings = (filterStatus === "All" 
     ? bookings 
-    : bookings.filter(booking => booking.status === filterStatus);
+    : bookings.filter(booking => booking.status === filterStatus)
+  ).filter(booking => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      booking.user.toLowerCase().includes(searchLower) ||
+      booking.technician.toLowerCase().includes(searchLower) ||
+      booking.service.toLowerCase().includes(searchLower)
+    );
+  });
 
   const getStatusColor = (status) => {
     switch(status) {
@@ -145,10 +154,28 @@ function APBookings() {
     }
   };
 
+  // Calculate pending counts
+  const getPendingCount = (status) => {
+    if (status === "All") {
+      return bookings.length;
+    }
+    return bookings.filter(booking => booking.status === status).length;
+  };
+
+  // Badge component helper
+  const Badge = ({ count }) => {
+    if (!count) return null;
+    return (
+      <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-red-500 rounded-full">
+        {count > 9 ? "9+" : count}
+      </span>
+    );
+  };
+
   return (
     <>
       <Navbar />
-      <div className="flex min-h-screen bg-stone-50 pt-10">
+      <div className="flex min-h-screen bg-stone-50 lg:pt-4">
         <AdminSidebar />
 
         {/* Main Content */}
@@ -179,19 +206,43 @@ function APBookings() {
             </p>
           </section>
 
+          {/* Search Bar */}
+          <section className="relative">
+            <div className="relative">
+              <svg 
+                className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-stone-400" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search by customer, technician, or service..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-11 pr-4 py-2.5 rounded-lg border border-stone-200 bg-white text-sm placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-color-main focus:border-transparent"
+              />
+            </div>
+          </section>
+
           {/* Filter Tabs */}
           <section className="flex gap-2 flex-wrap">
             {["All", "Pending", "In Progress", "Completed", "Cancelled"].map((status) => (
               <button
                 key={status}
                 onClick={() => setFilterStatus(status)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center ${
                   filterStatus === status
                     ? "bg-color-main text-white"
                     : "bg-white border border-stone-200 text-stone-700 hover:border-color-main"
                 }`}
               >
                 {status}
+                {(status === "Pending" || status === "All") && (
+                  <Badge count={getPendingCount(status)} />
+                )}
               </button>
             ))}
           </section>

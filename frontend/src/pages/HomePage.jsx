@@ -221,7 +221,7 @@ function HomePage() {
           </div>
 <Navbar />
         {/* HERO / WELCOME SECTION */}
-        <section className="relative z-10 w-full px-6 lg:px-32 py-16 flex flex-col lg:flex-row items-center justify-between gap-12 rounded-2xl banner-section">
+        <section className="relative z-10 w-full px-6 lg:px-32 py-6 lg:py-16 flex flex-col lg:flex-row items-center justify-between gap-12 rounded-2xl banner-section">
             
 
           {/* Left text */}
@@ -284,12 +284,12 @@ function HomePage() {
         </section>
 
         {/* Section Divider */}
-        <div className="w-full px-6 lg:px-32 py-12">
+        <div className="w-full px-6 lg:px-32 py-6 lg:py-12">
           <div className="h-px bg-linear-to-r from-transparent via-neutral-300 to-transparent"></div>
         </div>
 
         {/* QUICK ACTIONS + UPCOMING */}
-        <section className="relative z-10 w-full px-6 lg:px-32 pt-10 pb-16 flex flex-col gap-10">
+        <section className="relative z-10 w-full px-6 lg:px-32 pt-4 lg:pt-10 pb-16 flex flex-col gap-10">
           <div className="flex flex-col lg:flex-row gap-10">
             {/* Quick Actions */}
             <div className="flex-1">
@@ -416,7 +416,7 @@ function HomePage() {
         </div>
 
         {/* Section Divider */}
-        <div className="w-full px-6 lg:px-32 py-12">
+        <div className="w-full px-6 lg:px-32 py-6 lg:py-12">
           <div className="h-px bg-linear-to-r from-transparent via-neutral-300 to-transparent"></div>
         </div>
 

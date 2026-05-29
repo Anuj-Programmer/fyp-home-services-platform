@@ -81,7 +81,7 @@ function Payments() {
     <>
       <Navbar />
 
-      <main className="px-6 lg:px-32 pt-16 pb-16 min-h-screen bg-stone-50 space-y-8">
+      <main className="px-6 lg:px-32 pt-12 pb-16 min-h-screen bg-stone-50 space-y-8">
         <section className="space-y-4">
           <p className="text-sm font-semibold text-color-main uppercase tracking-wide">Payments</p>
           <h1 className="text-3xl sm:text-4xl font-bold txt-color-primary">Payment History</h1>

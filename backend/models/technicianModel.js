@@ -101,6 +101,10 @@ highRated: { type: Boolean, default: false },
     type: String,
     default: ""
   },
+  profileCompleted: {
+    type: Boolean,
+    default: false
+  },
   createdAt: {
     type: Date,
     default: Date.now

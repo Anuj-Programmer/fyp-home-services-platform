@@ -30,6 +30,9 @@ function Profile() {
     useState("");
   const [addressCertificateUploadError, setAddressCertificateUploadError] =
     useState("");
+  const [showDeleteAddressModal, setShowDeleteAddressModal] = useState(false);
+  const [addressToDelete, setAddressToDelete] = useState(null);
+  const [deletingAddress, setDeletingAddress] = useState(false);
   const [addressFormData, setAddressFormData] = useState({
     contactName: "",
     phone: "",
@@ -291,14 +294,21 @@ function Profile() {
     return "";
   };
 
-  const handleDeleteAddress = async (addressId) => {
-    if (!confirm("Are you sure you want to delete this address?")) return;
+  const openDeleteAddressModal = (address) => {
+    setAddressToDelete(address);
+    setShowDeleteAddressModal(true);
+    setAddressMenuOpen(null);
+  };
+
+  const handleDeleteAddress = async () => {
+    if (!addressToDelete) return;
 
     try {
+      setDeletingAddress(true);
       const response = await apiClient.delete("/api/users/delete-address", {
         data: {
           userId: user._id,
-          addressId: addressId,
+          addressId: addressToDelete._id,
         },
         headers: {
           Authorization: `Bearer ${token}`,
@@ -306,9 +316,13 @@ function Profile() {
       });
       setUserData(response.data.user);
       toast.success("Address deleted successfully!");
+      setShowDeleteAddressModal(false);
+      setAddressToDelete(null);
     } catch (error) {
       console.error(error);
       toast.error(error.response?.data?.message || "Failed to delete address");
+    } finally {
+      setDeletingAddress(false);
     }
   };
 
@@ -500,7 +514,7 @@ function Profile() {
   return (
     <>
       <Navbar />
-      <main className="px-6 lg:px-32 pt-16 pb-16 min-h-screen bg-stone-50 space-y-12">
+      <main className="px-6 lg:px-32 pt-12 pb-16 min-h-screen bg-stone-50 space-y-12">
         <section className="flex flex-col lg:flex-row items-start justify-between gap-8">
           <div className="space-y-4">
             <p className="text-sm font-semibold text-color-main uppercase tracking-wide">
@@ -797,7 +811,7 @@ function Profile() {
                                 Edit
                               </button>
                               <button
-                                onClick={() => handleDeleteAddress(address._id)}
+                                onClick={() => openDeleteAddressModal(address)}
                                 className="w-full text-left px-3 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-red-600 hover:bg-red-50 transition flex items-center gap-2 border-t border-gray-200"
                               >
                                 <Trash size={12} sm:size={16} />
@@ -1231,6 +1245,45 @@ function Profile() {
                 className="px-6 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed transition text-sm"
               >
                 {deletingAccount ? "Deleting..." : "Delete Account"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Address Confirmation Modal */}
+      {showDeleteAddressModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/40"
+            onClick={() => {
+              if (!deletingAddress) setShowDeleteAddressModal(false);
+            }}
+          />
+
+          <div className="relative w-full max-w-md rounded-2xl bg-white shadow-xl border border-stone-200 p-6 space-y-4">
+            <h2 className="text-lg font-bold text-stone-900">Delete Address</h2>
+            <p className="text-sm text-stone-600">
+              Are you sure you want to delete <span className="font-semibold">{addressToDelete?.contactName}</span>? This action cannot be undone.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowDeleteAddressModal(false)}
+                disabled={deletingAddress}
+                className="px-4 py-2 rounded-lg border border-stone-300 text-stone-700 text-sm font-semibold hover:bg-stone-50 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAddress}
+                disabled={deletingAddress}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {deletingAddress ? "Deleting..." : "Delete"}
               </button>
             </div>
           </div>

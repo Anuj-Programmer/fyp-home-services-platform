@@ -86,7 +86,7 @@ function AdminNotification() {
   return (
     <>
       <Navbar />
-      <div className="flex min-h-screen bg-stone-50 pt-10">
+      <div className="flex min-h-screen bg-stone-50 lg:pt-4">
         <AdminSidebar />
 
         <main className="flex-1 lg:ml-64 px-4 sm:px-6 lg:px-12 pb-8 space-y-6 lg:space-y-8">

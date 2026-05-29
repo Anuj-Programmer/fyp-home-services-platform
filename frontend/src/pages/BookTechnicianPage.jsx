@@ -214,6 +214,15 @@ function BookTechnicianPage() {
     };
   }, [socket, id, selectedDate]);
 
+  // Check if a date has available slots
+  const hasAvailableSlots = (dateStr) => {
+    if (!technician?.availability) return false;
+    const dateObj = new Date(dateStr);
+    const dayName = dateObj.toLocaleString('en-US', { weekday: 'long' });
+    const dayAvailability = technician.availability.find((slot) => slot.day === dayName);
+    return dayAvailability ? true : false;
+  };
+
   // Generate time slots
   const generateTimeSlots = (startTime, endTime, duration) => {
     const slots = [];
@@ -568,20 +577,27 @@ function BookTechnicianPage() {
                   <CalendarBlank size={16} className="text-color-main" /> Select Date
                 </label>
                 <div className="flex overflow-x-auto gap-3 mb-4 pb-2 -mx-2 px-2 sm:grid sm:grid-cols-7 sm:overflow-visible">
-                  {next7Days.map((day) => (
-                    <button
-                      key={day.fullDate}
-                      onClick={() => setSelectedDate(day.fullDate)}
-                      className={`flex flex-col items-center justify-center py-3 px-3 sm:py-4 sm:px-2 rounded-2xl border-2 font-bold transition min-w-[75px] sm:min-w-0 ${
-                        selectedDate === day.fullDate
-                          ? 'border-color-main bg-color-main text-white shadow-lg'
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-color-main'
-                      }`}
-                    >
-                      <span className="text-xs mb-1.5 font-bold whitespace-nowrap">{day.dayName}</span>
-                      <span className="text-xl sm:text-2xl font-bold">{day.dayNumber}</span>
-                    </button>
-                  ))}
+                  {next7Days.map((day) => {
+                    const dateHasSlots = hasAvailableSlots(day.fullDate);
+                    return (
+                      <button
+                        key={day.fullDate}
+                        onClick={() => dateHasSlots && setSelectedDate(day.fullDate)}
+                        disabled={!dateHasSlots}
+                        className={`flex flex-col items-center justify-center py-3 px-3 sm:py-4 sm:px-2 rounded-2xl border-2 font-bold transition min-w-[75px] sm:min-w-0 ${
+                          selectedDate === day.fullDate
+                            ? 'border-color-main bg-color-main text-white shadow-lg'
+                            : dateHasSlots
+                            ? 'border-gray-200 bg-white text-gray-700 hover:border-color-main'
+                            : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed opacity-50 hover:border-gray-200'
+                        }`}
+                        title={dateHasSlots ? '' : 'No available slots'}
+                      >
+                        <span className="text-xs mb-1.5 font-bold whitespace-nowrap">{day.dayName}</span>
+                        <span className="text-xl sm:text-2xl font-bold">{day.dayNumber}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
               <div>

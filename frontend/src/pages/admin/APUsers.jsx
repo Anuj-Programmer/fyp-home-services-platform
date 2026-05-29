@@ -138,10 +138,27 @@ function APUsers() {
     }
   };
 
+  // Calculate pending verification count
+  const getPendingVerificationCount = () => {
+    return users.filter(user => 
+      user.addressBook && user.addressBook.some(addr => addr.houseCertificateStatus === "pending")
+    ).length;
+  };
+
+  // Badge component helper
+  const Badge = ({ count }) => {
+    if (!count) return null;
+    return (
+      <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-red-500 rounded-full">
+        {count > 9 ? "9+" : count}
+      </span>
+    );
+  };
+
   return (
     <>
       <Navbar />
-      <div className="flex min-h-screen bg-stone-50 pt-10">
+      <div className="flex min-h-screen bg-stone-50 lg:pt-4">
         <AdminSidebar />
 
         {/* Main Content */}
@@ -189,13 +206,16 @@ function APUsers() {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-3 sm:px-4 py-2.5 font-medium text-xs sm:text-sm whitespace-nowrap transition-all ${
+                className={`px-3 sm:px-4 py-2.5 font-medium text-xs sm:text-sm whitespace-nowrap transition-all flex items-center ${
                   activeTab === tab
                     ? "text-color-main border-b-2 border-color-main"
                     : "text-stone-600 hover:text-stone-900"
                 }`}
               >
                 {tab}
+                {tab === "House verification request" && (
+                  <Badge count={getPendingVerificationCount()} />
+                )}
               </button>
             ))}
           </section>

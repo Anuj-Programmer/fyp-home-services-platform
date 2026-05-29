@@ -3,7 +3,7 @@ import { List, X, Bell, UserCircle, MagnifyingGlass } from "phosphor-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import "../css/nav.css";
-import Logo from "../assets/Logo.png";
+import Logo from "../assets/Logo.svg";
 import { apiClient } from "@/lib/api";
 import toast from "react-hot-toast";
 import { useSocket } from "../context/SocketContext";

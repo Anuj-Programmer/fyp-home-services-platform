@@ -237,8 +237,9 @@ const registerTechnician = async (req, res) => {
         technician.availability.length > 0;
 
 
-      // If profile is complete and status was not active before, set to active
+      // If profile is complete, set profileCompleted to true and update status if needed
       if (isProfileComplete) {
+        technician.profileCompleted = true;
         if (previousStatus !== "active") {
           technician.status = "active";
           // Push notification about profile activation
@@ -249,8 +250,9 @@ const registerTechnician = async (req, res) => {
           });
         }
       } else {
-        // If any required field is missing, set status to inactive
+        // If any required field is missing, set status to inactive and profileCompleted to false
         technician.status = "inactive";
+        technician.profileCompleted = false;
       }
 
       // If status is 'approved', treat as 'inactive' for profile

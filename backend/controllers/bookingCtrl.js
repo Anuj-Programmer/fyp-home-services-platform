@@ -516,9 +516,9 @@ exports.createBooking = async (req, res) => {
         serviceTime: savedBooking.serviceTime
       });
       
-      console.log(`📤 Emitted new booking notification to technician ${technicianIdStr}`.green);
-      console.log(`📤 Emitted booking confirmation to user ${userIdStr}`.green);
-      console.log(`📢 Broadcasted slots update for technician ${technicianIdStr}`.green);
+      // console.log(`📤 Emitted new booking notification to technician ${technicianIdStr}`.green);
+      // console.log(`📤 Emitted booking confirmation to user ${userIdStr}`.green);
+      // console.log(`📢 Broadcasted slots update for technician ${technicianIdStr}`.green);
     }
 
     emitAdminDataChanged(req, ['bookings', 'dashboard-stats']);

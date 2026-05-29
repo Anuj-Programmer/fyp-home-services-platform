@@ -148,7 +148,7 @@ function TechnicianDashboard() {
   return (
     <>
       <Navbar />
-      <main className="w-full px-6 lg:px-32 pt-24 pb-16 space-y-10 min-h-screen bg-stone-50">
+      <main className="w-full px-6 lg:px-32 pt-12 pb-16 space-y-10 min-h-screen bg-stone-50">
         <section className="flex flex-col lg:flex-row justify-between gap-6">
           <div className="flex-1 space-y-4">
             <p className="text-sm font-semibold text-color-main uppercase tracking-wide">
